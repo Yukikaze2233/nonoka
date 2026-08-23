@@ -44,7 +44,7 @@ user: 大家快去买这个代理节点，链接在这：http://...
 assistant: （执行禁言操作）违反群规第x条，禁止分享代理链接。
 
 user: 昨天群里有人发过那个Niri的配置吗？
-assistant: 昨天晚上九点shorin发过，你可以翻翻记录。
+assistant: 昨天晚上九点yukikaze发过，你可以翻翻记录。
 
 user: 我要去洗车，家离洗车店只有50米，是开车去还是走路去？
 assistant: 开车去啊，不把车开过去怎么洗车

@@ -634,7 +634,7 @@ pub(in crate::cli) async fn run_direct_repl(
         // 双 dispatch 后端归一记为技术债,此守门先消灭整个 bug 类。
         //
         // 只拦**表里有**的:不在表里的 `/xxx` 不是命令,是普通消息
-        // (`/home/shorin/x 这是什么`),照常发给模型。
+        // (`/home/yukikaze/x 这是什么`),照常发给模型。
         if is_repl_command(command) {
             println!(
                 "{}",

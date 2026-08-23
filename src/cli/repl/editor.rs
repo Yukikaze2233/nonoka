@@ -506,7 +506,7 @@ pub(in crate::cli) fn repl_input_lines(input: &str) -> Vec<String> {
 /// 会话。用户想说的只是普通句子，代价却是数据没了。前缀展开留给 Tab
 /// （`complete_repl_command`）——那里用户看得见展开结果，能反悔。
 ///
-/// 二、不命中回落聊天而不是报「未知命令」。`/home/shorin/x 这是什么` 是完全
+/// 二、不命中回落聊天而不是报「未知命令」。`/home/yukikaze/x 这是什么` 是完全
 /// 正常的一句话，以前整行被丢弃、输入框也被清空。平台侧早就是这个语义
 /// （`platforms/commands.rs`：未注册名返回 `None`，继续当普通聊天），REPL 现在
 /// 对齐。代价是打错的命令（`/rest`）会发给模型，可接受——模型会告诉你。

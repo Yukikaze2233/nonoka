@@ -16,7 +16,7 @@
 3. [ ] 配置自己的 LLM API（`hotaru config` → 供应商/模型）
 4. [ ] 确定人格设定 → 替换 `src/prompts/hotaru.md`、`hotaru.hint.md`、`hotaru-dialogs.md`
 5. [ ] 替换品牌资源：`pics/`、`web/assets/`、`src/memes/hotaru/`、内置音频
-6. [ ] 选择默认知识库策略（保留 ShorinWiki 或换成自己的）
+6. [ ] 选择默认知识库策略（保留上游 ShorinWiki 或换成自己的）
 7. [ ] 按需接入 QQ：NapCat/OneBot 反向 WS
 8. [ ] 按需发布：GitHub 远程、AUR PKGBUILD、release 资产
 

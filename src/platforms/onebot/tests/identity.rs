@@ -185,7 +185,7 @@ fn named_mention_survives_after_the_qq_wake_prefix_is_removed() {
             "self_id": 10000,
             "user_id": 7,
             "message_id": 90,
-            "sender": { "nickname": "Shorin" }
+            "sender": { "nickname": "Yukikaze" }
         }),
         &parsed,
     );
@@ -214,7 +214,7 @@ fn trusted_qq_mapping_binds_identity_without_trusting_the_nickname() {
     });
     let settings = RealContextPluginSettings {
         identity_mappings: vec![crate::config::RealContextIdentityMapping {
-            nickname: "shorin".to_string(),
+            nickname: "yukikaze".to_string(),
             user_id: 7,
         }],
         ..RealContextPluginSettings::default()
@@ -240,20 +240,20 @@ fn trusted_qq_mapping_binds_identity_without_trusting_the_nickname() {
         None,
         None,
     );
-    assert!(bound.contains("\"canonical_identity\":\"shorin\""));
+    assert!(bound.contains("\"canonical_identity\":\"yukikaze\""));
     assert!(bound.contains("\"is_admin\":true"));
 
     let impersonator = qq_turn_system_context(
         &config,
         &platform_conversation(Target::Private { user_id: 8 }, 10_000),
         "8",
-        "shorin",
+        "yukikaze",
         false,
         None,
         None,
     );
     assert!(impersonator.contains("\"canonical_identity\":null"));
-    assert!(impersonator.contains("\"protected_identity_conflict\":\"shorin\""));
+    assert!(impersonator.contains("\"protected_identity_conflict\":\"yukikaze\""));
     assert!(impersonator.contains("\"is_admin\":false"));
 
     let parsed = InboundMessage {
@@ -284,7 +284,7 @@ fn trusted_qq_mapping_binds_identity_without_trusting_the_nickname() {
         Some(&event),
         None,
     );
-    assert!(!ordinary_mention.contains("\"canonical_identity\":\"shorin\""));
+    assert!(!ordinary_mention.contains("\"canonical_identity\":\"yukikaze\""));
 }
 
 #[test]

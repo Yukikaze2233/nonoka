@@ -151,7 +151,7 @@ fn unique_prefixes_are_not_executed() {
 #[test]
 fn unmatched_slash_input_falls_through_to_chat() {
     for input in [
-        "/home/shorin/notes.md 这个文件讲了什么",
+        "/home/yukikaze/notes.md 这个文件讲了什么",
         "/usr/bin 下面有什么",
         "/nope",
         "/rest", // 打错的命令也发给模型,模型会告诉你

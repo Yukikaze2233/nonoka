@@ -183,7 +183,7 @@ const PLATFORM_INSTRUCTION: &str = "The image was saved to disk at the returned 
 ///
 /// 在 stub 加载模式下模型看到的只有一句摘要和宽松参数壳，没取契约就调用时
 /// 很容易把数组写成"数组的 JSON 字符串"——实测 mimo-v2.5 传的就是
-/// `"[\"/home/shorin/Pictures/3.png\"]"`。此前这里只认真数组，其余一律
+/// `"[\"/home/yukikaze/Pictures/3.png\"]"`。此前这里只认真数组，其余一律
 /// `as_array()` 拿到 None 后**静默**退回纯文生图：用户连传了三次才从返回体
 /// 的 `reference_images: 0` 看出没生效。
 ///
@@ -524,20 +524,20 @@ mod tests {
     /// mimo-v2.5 传的是 `"[\"/path.png\"]"`，此前被静默丢弃。
     #[test]
     fn reference_images_accepts_the_shapes_models_actually_send() {
-        let one = vec!["/home/shorin/Pictures/3.png".to_string()];
+        let one = vec!["/home/yukikaze/Pictures/3.png".to_string()];
         // 真数组。
         assert_eq!(
-            reference_list(&json!(["/home/shorin/Pictures/3.png"])).unwrap(),
+            reference_list(&json!(["/home/yukikaze/Pictures/3.png"])).unwrap(),
             one
         );
         // 单个字符串。
         assert_eq!(
-            reference_list(&json!("/home/shorin/Pictures/3.png")).unwrap(),
+            reference_list(&json!("/home/yukikaze/Pictures/3.png")).unwrap(),
             one
         );
         // 字符串里装着 JSON 数组——线上实际踩到的那种。
         assert_eq!(
-            reference_list(&json!(r#"["/home/shorin/Pictures/3.png"]"#)).unwrap(),
+            reference_list(&json!(r#"["/home/yukikaze/Pictures/3.png"]"#)).unwrap(),
             one
         );
         assert_eq!(

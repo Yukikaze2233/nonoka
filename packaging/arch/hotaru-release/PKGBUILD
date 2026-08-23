@@ -1,4 +1,4 @@
-# Maintainer: SHORiN <shorin@users.noreply.github.com>
+# Maintainer: Yukikaze <yingziyuw@gmail.com>
 #
 # 发布资产构建器：从 v${pkgver} 标签源码构建预编译包
 # hotaru-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst，上传到 GitHub Release 作为资产。
