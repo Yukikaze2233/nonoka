@@ -63,7 +63,7 @@ fn untrusted_send_tool_schema_does_not_expose_local_attachments() {
     let parameters = &registry.get("send_message_to_user").unwrap().parameters;
 
     assert!(parameters["properties"].get("text").is_some());
-    // 非管理员也能发 Hotaru 自产的生成图(执行侧按生图目录豁免校验),
+    // 非管理员也能发 Nanoka 自产的生成图(执行侧按生图目录豁免校验),
     // 任意本地文件仍只对管理员开放。
     assert!(parameters["properties"].get("images").is_some());
     assert!(parameters["properties"].get("files").is_none());

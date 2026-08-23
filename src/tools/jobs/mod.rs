@@ -12,7 +12,7 @@ pub(crate) use ledger::*;
 pub(crate) use output::*;
 
 use super::{CommandOutputStream, ToolProgress, ToolRegistry, ToolSpec};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -150,7 +150,7 @@ pub struct JobOverview {
 }
 
 struct JobHost {
-    paths: HotaruPaths,
+    paths: NanokaPaths,
 }
 
 fn jobs() -> &'static Mutex<HashMap<String, JobEntry>> {
@@ -252,7 +252,7 @@ pub fn set_completion_hook(hook: CompletionHook) {
 
 /// One-time host init: remembers paths and sweeps ledger entries
 /// left behind by dead predecessor processes.
-pub fn init(paths: &HotaruPaths) {
+pub fn init(paths: &NanokaPaths) {
     let _ = host().set(JobHost {
         paths: paths.clone(),
     });
@@ -331,10 +331,10 @@ pub async fn spawn_background(
         .arg("-lc")
         .arg(command)
         .current_dir(&workspace)
-        // 工具桥环境:后台脚本里的 `hotaru tool-call` 也能以本会话身份执行。
+        // 工具桥环境:后台脚本里的 `nanoka tool-call` 也能以本会话身份执行。
         .envs(
             super::workspace::try_session()
-                .map(|session| ("HOTARU_SESSION".to_string(), session.to_string())),
+                .map(|session| ("NANOKA_SESSION".to_string(), session.to_string())),
         )
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::from(log.try_clone()?))

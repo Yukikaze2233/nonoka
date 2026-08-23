@@ -7,15 +7,15 @@ use crate::cli::*;
 
 pub(in crate::cli) fn print_mode_help() {
     if crate::i18n::is_zh() {
-        println!("请选择模式。想让裸 hotaru 命令直接进某个模式,可以在设置中修改(config.jsonc 的 default_mode)。\n");
-        println!("  hotaru normal   普通模式。可使用全部工具,适合日常使用。支持角色扮演、娱乐聊天、记忆、技能等全部能力。");
-        println!("  hotaru dev      开发模式。与普通模式明确区分,用于开发工作;移除与开发无关的角色扮演与娱乐工具,提示词极简可编辑,记忆独立。");
-        println!("  hotaru '<your_prompts>'   使用普通模式进行一次性对话");
+        println!("请选择模式。想让裸 nanoka 命令直接进某个模式,可以在设置中修改(config.jsonc 的 default_mode)。\n");
+        println!("  nanoka normal   普通模式。可使用全部工具,适合日常使用。支持角色扮演、娱乐聊天、记忆、技能等全部能力。");
+        println!("  nanoka dev      开发模式。与普通模式明确区分,用于开发工作;移除与开发无关的角色扮演与娱乐工具,提示词极简可编辑,记忆独立。");
+        println!("  nanoka '<your_prompts>'   使用普通模式进行一次性对话");
     } else {
-        println!("Pick a mode. To make bare `hotaru` enter one directly, set default_mode in config.jsonc.\n");
-        println!("  hotaru normal   full-capability mode: persona, memory, every tool.");
-        println!("  hotaru dev      development mode: minimal editable prompt, coding tools only, separate memory.");
-        println!("  hotaru '<your_prompts>'   one-shot ask in normal mode");
+        println!("Pick a mode. To make bare `nanoka` enter one directly, set default_mode in config.jsonc.\n");
+        println!("  nanoka normal   full-capability mode: persona, memory, every tool.");
+        println!("  nanoka dev      development mode: minimal editable prompt, coding tools only, separate memory.");
+        println!("  nanoka '<your_prompts>'   one-shot ask in normal mode");
     }
 }
 

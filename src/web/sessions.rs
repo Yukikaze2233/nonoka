@@ -347,7 +347,7 @@ pub(in crate::web) fn fallback_session_id(
 }
 
 /// 普通人格 + dev 保留人格的本地会话合并,按更新时间排。WebUI 侧栏与
-/// `hotaru session` 管理面共用:mode 字段(session_record_json)区分分组。
+/// `nanoka session` 管理面共用:mode 字段(session_record_json)区分分组。
 pub(in crate::web) fn sessions_with_dev(
     store: &StateStore,
     persona: &str,
@@ -505,7 +505,7 @@ pub(in crate::web) async fn reset_conversation(
 /// detached on the actor's LocalSet — never blocks the turn.
 pub(in crate::web) fn spawn_session_title_refinement(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     store: &StateStore,
     events: &EventHub,
     fallback: String,
@@ -677,7 +677,7 @@ pub(in crate::web) fn session_title_from_prompt(prompt: &str) -> String {
 
 pub(in crate::web) fn build_session_agent(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     state: &StateStore,
     mode: AgentMode,
 ) -> Result<Agent> {

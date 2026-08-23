@@ -64,7 +64,7 @@ pub(crate) async fn run_platform_turn(
     {
         let mut manager = state.manager.lock().unwrap();
         if manager.admin_busy {
-            bail!("Hotaru is busy with another operation");
+            bail!("Nanoka is busy with another operation");
         }
         manager.active_runs.insert(
             run_id.clone(),
@@ -119,7 +119,7 @@ pub(crate) async fn run_platform_turn(
         .is_err()
     {
         crate::runtime::finish_run(&state.manager, &run_id, None);
-        bail!("Hotaru core worker is unavailable");
+        bail!("Nanoka core worker is unavailable");
     }
     // Cancels the run if this task dies before the turn settles.
     let mut run_guard = IpcRunGuard {
@@ -151,7 +151,7 @@ pub(crate) async fn run_platform_turn(
                 }
                 Ok(Err(broadcast::error::RecvError::Closed)) => {
                     break TurnDispatch::Failed(
-                        crate::i18n::text("Hotaru core stopped", "Hotaru 核心已停止").to_string(),
+                        crate::i18n::text("Nanoka core stopped", "Nanoka 核心已停止").to_string(),
                     );
                 }
             }
@@ -192,7 +192,7 @@ pub(crate) async fn run_platform_turn(
             }
             "tool.started" => {
                 let readable = format_platform_tool_started_log(&run_id, &data);
-                tracing::info!(target: "hotaru::qq", "\n{readable}");
+                tracing::info!(target: "nanoka::qq", "\n{readable}");
             }
             "tool.image" => {
                 if let Some(id) = data
@@ -210,7 +210,7 @@ pub(crate) async fn run_platform_turn(
                         .unwrap_or("unknown")
                         .to_string();
                     tracing::warn!(
-                        target: "hotaru::qq",
+                        target: "nanoka::qq",
                         run_id = %run_id,
                         error = %error,
                         "平台工具图片事件不带资产,已跳过(图片不会投递)"
@@ -219,7 +219,7 @@ pub(crate) async fn run_platform_turn(
             }
             "tool.finished" => {
                 let readable = format_platform_tool_finished_log(&run_id, &data);
-                tracing::info!(target: "hotaru::qq", "\n{readable}");
+                tracing::info!(target: "nanoka::qq", "\n{readable}");
                 let suppression_start = platform_context
                     .as_ref()
                     .and_then(|context| context.take_final_reply_suppression_start(text.len()));

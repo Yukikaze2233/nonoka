@@ -4,7 +4,7 @@ pub(crate) use index::*;
 use super::registry::UnregisteredScript;
 use super::{ToolRegistry, ToolSpec};
 use crate::i18n::is_zh;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::tools::tool_descriptions::LoadPolicy;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ use tokio::process::Command;
 const SCRIPT_TIMEOUT_SECS: u64 = 120;
 const MAX_SCRIPT_OUTPUT_CHARS: usize = 20_000;
 
-pub fn register(registry: &mut ToolRegistry, paths: &HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: &NanokaPaths) {
     let dirs = [
         paths.system_scripts_dir.as_path(),
         paths.scripts_dir.as_path(),
@@ -26,11 +26,11 @@ pub fn register(registry: &mut ToolRegistry, paths: &HotaruPaths) {
         Ok(scan) => {
             let specs = script_specs(&scan.entries, &paths.scripts_dir);
             if let Err(error) = registry.replace_script_tools(specs, scan.unregistered) {
-                tracing::warn!(error = %error, "failed to register Hotaru script tools");
+                tracing::warn!(error = %error, "failed to register Nanoka script tools");
             }
         }
         Err(error) => {
-            tracing::warn!(error = %error, "failed to scan Hotaru script directories during tool registration");
+            tracing::warn!(error = %error, "failed to scan Nanoka script directories during tool registration");
         }
     }
     register_script_tools(registry, paths.scripts_dir.clone());
@@ -193,7 +193,7 @@ fn register_script_tools(registry: &mut ToolRegistry, scripts_dir: PathBuf) {
                 },
                 "description": {
                     "type": "string",
-                    "description": "Optional tool description override. If omitted, Hotaru reads the script header lines `Description:`/`description:` or `描述：` and sends only one localized description to the AI."
+                    "description": "Optional tool description override. If omitted, Nanoka reads the script header lines `Description:`/`description:` or `描述：` and sends only one localized description to the AI."
                 },
                 "path": {
                     "type": "string",

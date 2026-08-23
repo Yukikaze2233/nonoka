@@ -1,6 +1,6 @@
 //! 从管道读输入。
 //!
-//! `hotaru < file` 或 `cmd | hotaru` 时把 stdin 并进提示词。有字符上限与超时
+//! `nanoka < file` 或 `cmd | nanoka` 时把 stdin 并进提示词。有字符上限与超时
 //! （`STDIN_MAX_CHARS` / `STDIN_TIMEOUT_SECS`）——管道可能永远不关，也可能吐出
 //! 几个 G。
 

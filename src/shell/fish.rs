@@ -1,5 +1,5 @@
 use crate::i18n::text as t;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::Result;
 
 fn completion_entries() -> [(&'static str, &'static str); 16] {
@@ -26,8 +26,8 @@ fn completion_entries() -> [(&'static str, &'static str); 16] {
         (
             "reload",
             t(
-                "Reload configuration in the running Hotaru daemon",
-                "在运行中的 Hotaru daemon 内重新加载配置",
+                "Reload configuration in the running Nanoka daemon",
+                "在运行中的 Nanoka daemon 内重新加载配置",
             ),
         ),
         ("models", t("List or switch models", "列出或切换模型")),
@@ -55,15 +55,15 @@ fn completion_entries() -> [(&'static str, &'static str); 16] {
         (
             "remove-shell-hook",
             t(
-                "Remove installed Hotaru shell hooks",
-                "安全删除已安装的 Hotaru shell hook",
+                "Remove installed Nanoka shell hooks",
+                "安全删除已安装的 Nanoka shell hook",
             ),
         ),
         ("history", t("Show conversation history", "显示会话历史")),
         ("kb", t("Manage the local knowledge base", "管理本地知识库")),
         (
             "update-default-kb",
-            t("Update the default knowledge base", "更新 Hotaru 默认知识库"),
+            t("Update the default knowledge base", "更新 Nanoka 默认知识库"),
         ),
         (
             "memory",
@@ -81,19 +81,19 @@ pub fn hook() -> String {
     let mut output = String::new();
     for (command, description) in completion_entries() {
         output.push_str(&format!(
-            "complete -c hotaru -n __fish_use_subcommand -f -a {command} -d '{description}'\n"
+            "complete -c nanoka -n __fish_use_subcommand -f -a {command} -d '{description}'\n"
         ));
     }
     output.push('\n');
     output.push_str(
-        r#"function __hotaru_paste
-    set -l output (hotaru --clipboard-paste 2>/dev/null)
+        r#"function __nanoka_paste
+    set -l output (nanoka --clipboard-paste 2>/dev/null)
     if test $status -eq 0; and test -n "$output"
-        if not set -q __hotaru_image_counter
-            set -g __hotaru_image_counter 0
+        if not set -q __nanoka_image_counter
+            set -g __nanoka_image_counter 0
         end
-        set __hotaru_image_counter (math $__hotaru_image_counter + 1)
-        set output (string replace "Image 1" "Image $__hotaru_image_counter" -- $output)
+        set __nanoka_image_counter (math $__nanoka_image_counter + 1)
+        set output (string replace "Image 1" "Image $__nanoka_image_counter" -- $output)
         commandline -i -- $output
         commandline -f repaint
     else
@@ -101,33 +101,33 @@ pub fn hook() -> String {
     end
 end
 
-bind \cv __hotaru_paste
+bind \cv __nanoka_paste
 
-function __hotaru_insert_newline
+function __nanoka_insert_newline
     commandline -f expand-abbr
     commandline -i \n
 end
 
-bind ctrl-j __hotaru_insert_newline
-bind \cj __hotaru_insert_newline
-bind -M insert ctrl-j __hotaru_insert_newline
-bind -M insert \cj __hotaru_insert_newline
+bind ctrl-j __nanoka_insert_newline
+bind \cj __nanoka_insert_newline
+bind -M insert ctrl-j __nanoka_insert_newline
+bind -M insert \cj __nanoka_insert_newline
 
-function __hotaru_wrap_fish_prompt
-    functions -q __hotaru_original_fish_prompt; and return
+function __nanoka_wrap_fish_prompt
+    functions -q __nanoka_original_fish_prompt; and return
     functions -q fish_prompt; or fish_prompt >/dev/null 2>/dev/null
     functions -q fish_prompt; or return
 
-    functions -c fish_prompt __hotaru_original_fish_prompt
+    functions -c fish_prompt __nanoka_original_fish_prompt
     function fish_prompt
-        if set -q __hotaru_pending_buffer
+        if set -q __nanoka_pending_buffer
             printf '\e[?25l'
         end
-        __hotaru_original_fish_prompt
+        __nanoka_original_fish_prompt
     end
 end
 
-function __hotaru_replay_buffer
+function __nanoka_replay_buffer
     set -l buffer $argv[1]
     set -l lines (string split \n -- "$buffer")
     if test (count $lines) -gt 0
@@ -147,45 +147,45 @@ function __hotaru_replay_buffer
     end
 end
 
-function __hotaru_restore_cursor
+function __nanoka_restore_cursor
     printf '\e[?25h'
-    set -e __hotaru_cursor_hidden
+    set -e __nanoka_cursor_hidden
 end
 
-function __hotaru_on_prompt --on-event fish_prompt
-    set -q __hotaru_pending_buffer; or return
+function __nanoka_on_prompt --on-event fish_prompt
+    set -q __nanoka_pending_buffer; or return
 
-    set -l buffer $__hotaru_pending_buffer
-    set -e __hotaru_pending_buffer
-    set -e __hotaru_image_counter
+    set -l buffer $__nanoka_pending_buffer
+    set -e __nanoka_pending_buffer
+    set -e __nanoka_image_counter
 
-    trap __hotaru_restore_cursor INT TERM EXIT
-    __hotaru_replay_buffer "$buffer"
+    trap __nanoka_restore_cursor INT TERM EXIT
+    __nanoka_replay_buffer "$buffer"
     printf '\n'
-    printf '%s' "$buffer" | hotaru --shell-intercept --shell fish --stdin
-    set -l hotaru_status $status
+    printf '%s' "$buffer" | nanoka --shell-intercept --shell fish --stdin
+    set -l nanoka_status $status
     trap - INT TERM EXIT
-    __hotaru_restore_cursor
-    return $hotaru_status
+    __nanoka_restore_cursor
+    return $nanoka_status
 end
 
-function __hotaru_execute_or_continue
+function __nanoka_execute_or_continue
     commandline --is-valid
     set -l valid_status $status
     if test $valid_status -eq 2
         commandline -i \n
         commandline -f repaint
     else
-        set -e __hotaru_image_counter
+        set -e __nanoka_image_counter
         commandline -f execute
     end
 end
 
-function __hotaru_buffer_is_multiline
+function __nanoka_buffer_is_multiline
     test (string split \n -- "$argv[1]" | count) -gt 1
 end
 
-function __hotaru_first_command
+function __nanoka_first_command
     set -l tokens (commandline --input="$argv[1]" --tokens-expanded 2>/dev/null)
     while test (count $tokens) -gt 0
         set -l token $tokens[1]
@@ -199,64 +199,64 @@ function __hotaru_first_command
     return 1
 end
 
-function __hotaru_accept_line
+function __nanoka_accept_line
     status is-interactive; or return
 
     commandline -f expand-abbr
     set -l buffer (commandline -b | string collect)
     set -l trimmed (string trim -- "$buffer")
     if test -z "$trimmed"
-        __hotaru_execute_or_continue
+        __nanoka_execute_or_continue
         return
     end
 
-    if not __hotaru_buffer_is_multiline "$buffer"
-        __hotaru_execute_or_continue
+    if not __nanoka_buffer_is_multiline "$buffer"
+        __nanoka_execute_or_continue
         return
     end
 
-    set -l first_command (__hotaru_first_command "$buffer")
+    set -l first_command (__nanoka_first_command "$buffer")
     if test -n "$first_command"; and not contains -- "$first_command" time test date which type command history; and type -q -- "$first_command"
-        __hotaru_execute_or_continue
+        __nanoka_execute_or_continue
         return
     end
 
-    printf '%s' "$buffer" | hotaru --shell-classify --shell fish --stdin 2>/dev/null
+    printf '%s' "$buffer" | nanoka --shell-classify --shell fish --stdin 2>/dev/null
     set -l classify_status $status
     if test $classify_status -eq 0
-        __hotaru_execute_or_continue
+        __nanoka_execute_or_continue
         return
     else if test $classify_status -ne 1
-        __hotaru_execute_or_continue
+        __nanoka_execute_or_continue
         return
     end
 
-    set -e __hotaru_image_counter
-    __hotaru_wrap_fish_prompt
-    set -g __hotaru_cursor_hidden 1
+    set -e __nanoka_image_counter
+    __nanoka_wrap_fish_prompt
+    set -g __nanoka_cursor_hidden 1
     history append -- "$buffer"
-    set -g __hotaru_pending_buffer "$buffer"
+    set -g __nanoka_pending_buffer "$buffer"
     commandline -b -- ""
     printf '\e[?25l'
     commandline -f execute
 end
 
-bind enter __hotaru_accept_line
-bind \r __hotaru_accept_line
-bind -M insert enter __hotaru_accept_line
-bind -M insert \r __hotaru_accept_line
+bind enter __nanoka_accept_line
+bind \r __nanoka_accept_line
+bind -M insert enter __nanoka_accept_line
+bind -M insert \r __nanoka_accept_line
 
 function fish_command_not_found
     status is-interactive; or return 127
 
-    set -e __hotaru_image_counter
+    set -e __nanoka_image_counter
 
     set -l current_line (status current-commandline 2>/dev/null | string collect)
     if test -n "$current_line"; and not string match -qr '[\n\r]' -- "$current_line"
-        set -l top_command (__hotaru_first_command "$current_line")
+        set -l top_command (__nanoka_first_command "$current_line")
         if test -z "$top_command"; or not type -q -- "$top_command"
             printf '\n'
-            printf '%s' "$current_line" | hotaru --shell-intercept --shell fish --stdin 2>/dev/null
+            printf '%s' "$current_line" | nanoka --shell-intercept --shell fish --stdin 2>/dev/null
             return 127
         end
     end
@@ -269,7 +269,7 @@ function fish_command_not_found
     set -l text (string join ' ' -- $command)
     string match -qr '[\n\r]' -- $text; and return 127
 
-    hotaru --shell-intercept --shell fish -- $command 2>/dev/null
+    nanoka --shell-intercept --shell fish -- $command 2>/dev/null
     return 127
 end
 "#,
@@ -277,7 +277,7 @@ end
     output
 }
 
-pub fn install(paths: &HotaruPaths) -> Result<()> {
+pub fn install(paths: &NanokaPaths) -> Result<()> {
     if let Some(parent) = paths.fish_hook_file.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -291,7 +291,7 @@ pub fn install(paths: &HotaruPaths) -> Result<()> {
     Ok(())
 }
 
-pub fn uninstall(paths: &HotaruPaths) -> Result<bool> {
+pub fn uninstall(paths: &NanokaPaths) -> Result<bool> {
     let removed = match std::fs::remove_file(&paths.fish_hook_file) {
         Ok(()) => true,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => false,
@@ -300,7 +300,7 @@ pub fn uninstall(paths: &HotaruPaths) -> Result<bool> {
     if removed {
         println!(
             "{}: fish",
-            t("removed Hotaru shell hook", "已移除 Hotaru shell hook")
+            t("removed Nanoka shell hook", "已移除 Nanoka shell hook")
         );
     }
     Ok(removed)
@@ -318,7 +318,7 @@ mod tests {
         assert!(hook.contains("--shell fish"));
         assert!(hook.contains("status current-commandline 2>/dev/null | string collect"));
         assert!(hook.contains("not type -q -- \"$top_command\"\n            printf '\\n'"));
-        assert!(hook.contains("printf '%s' \"$current_line\" | hotaru --shell-intercept"));
+        assert!(hook.contains("printf '%s' \"$current_line\" | nanoka --shell-intercept"));
         assert!(hook.contains("return 127"));
     }
 
@@ -328,13 +328,13 @@ mod tests {
         let expected = completion_entries();
         let completion_lines = hook
             .lines()
-            .filter(|line| line.starts_with("complete -c hotaru "))
+            .filter(|line| line.starts_with("complete -c nanoka "))
             .collect::<Vec<_>>();
 
         assert_eq!(completion_lines.len(), expected.len());
         for (command, description) in expected {
             let completion = format!(
-                "complete -c hotaru -n __fish_use_subcommand -f -a {command} -d '{description}'"
+                "complete -c nanoka -n __fish_use_subcommand -f -a {command} -d '{description}'"
             );
             assert!(completion_lines.contains(&completion.as_str()));
         }
@@ -343,21 +343,21 @@ mod tests {
     #[test]
     fn fish_hook_defines_paste_binding() {
         let hook = hook();
-        assert!(hook.contains("__hotaru_paste"));
-        assert!(hook.contains("bind \\cv __hotaru_paste"));
-        assert!(hook.contains("hotaru --clipboard-paste"));
+        assert!(hook.contains("__nanoka_paste"));
+        assert!(hook.contains("bind \\cv __nanoka_paste"));
+        assert!(hook.contains("nanoka --clipboard-paste"));
     }
 
     #[test]
     fn fish_hook_defines_enter_binding() {
         let hook = hook();
-        assert!(hook.contains("__hotaru_accept_line"));
-        assert!(hook.contains("__hotaru_wrap_fish_prompt"));
-        assert!(hook.contains("functions -c fish_prompt __hotaru_original_fish_prompt"));
-        assert!(hook.contains("if set -q __hotaru_pending_buffer"));
-        assert!(hook.contains("__hotaru_replay_buffer"));
-        assert!(hook.contains("__hotaru_on_prompt --on-event fish_prompt"));
-        assert!(hook.contains("__hotaru_replay_buffer \"$buffer\"\n    printf '\\n'"));
+        assert!(hook.contains("__nanoka_accept_line"));
+        assert!(hook.contains("__nanoka_wrap_fish_prompt"));
+        assert!(hook.contains("functions -c fish_prompt __nanoka_original_fish_prompt"));
+        assert!(hook.contains("if set -q __nanoka_pending_buffer"));
+        assert!(hook.contains("__nanoka_replay_buffer"));
+        assert!(hook.contains("__nanoka_on_prompt --on-event fish_prompt"));
+        assert!(hook.contains("__nanoka_replay_buffer \"$buffer\"\n    printf '\\n'"));
         assert!(!hook.contains("        fish_prompt\n"));
         assert!(hook.contains("string length --visible"));
         assert!(hook.contains("printf '\\e[?25l'"));
@@ -365,16 +365,16 @@ mod tests {
         assert!(hook.contains("not set_color $fish_color_error 2>/dev/null"));
         assert!(hook.contains("set_color normal"));
         assert!(hook.contains("printf '\\e[?25h'"));
-        assert!(hook.contains("set -g __hotaru_cursor_hidden 1"));
-        assert!(hook.contains("set -e __hotaru_cursor_hidden"));
-        assert!(hook.contains("return $hotaru_status"));
-        assert!(hook.contains("__hotaru_execute_or_continue"));
-        assert!(hook.contains("__hotaru_buffer_is_multiline"));
+        assert!(hook.contains("set -g __nanoka_cursor_hidden 1"));
+        assert!(hook.contains("set -e __nanoka_cursor_hidden"));
+        assert!(hook.contains("return $nanoka_status"));
+        assert!(hook.contains("__nanoka_execute_or_continue"));
+        assert!(hook.contains("__nanoka_buffer_is_multiline"));
         assert!(hook.contains("test (string split \\n -- \"$argv[1]\" | count) -gt 1"));
-        assert!(hook.contains("__hotaru_first_command"));
+        assert!(hook.contains("__nanoka_first_command"));
         assert!(hook.contains("commandline --input=\"$argv[1]\" --tokens-expanded"));
         assert!(hook.contains("type -q -- \"$first_command\""));
-        assert!(hook.contains("set -g __hotaru_pending_buffer \"$buffer\""));
+        assert!(hook.contains("set -g __nanoka_pending_buffer \"$buffer\""));
         assert!(hook.contains("history append -- \"$buffer\""));
         assert!(hook.contains("commandline -b -- \"\""));
         assert!(hook.contains("commandline -f execute"));
@@ -383,20 +383,20 @@ mod tests {
         assert!(!hook.contains("cancel-commandline"));
         assert!(hook.contains("commandline -b | string collect"));
         assert!(!hook.contains("commandline -b | string collect -N"));
-        assert!(!hook.contains("__hotaru_multiline_has_unknown_command"));
+        assert!(!hook.contains("__nanoka_multiline_has_unknown_command"));
         assert!(hook.contains("--shell-classify --shell fish --stdin"));
         assert!(hook.contains("--shell-intercept --shell fish --stdin"));
-        assert!(hook.contains("bind enter __hotaru_accept_line"));
-        assert!(hook.contains("bind \\r __hotaru_accept_line"));
-        assert!(hook.contains("bind ctrl-j __hotaru_insert_newline"));
-        assert!(hook.contains("bind -M insert enter __hotaru_accept_line"));
-        assert!(hook.contains("bind -M insert ctrl-j __hotaru_insert_newline"));
+        assert!(hook.contains("bind enter __nanoka_accept_line"));
+        assert!(hook.contains("bind \\r __nanoka_accept_line"));
+        assert!(hook.contains("bind ctrl-j __nanoka_insert_newline"));
+        assert!(hook.contains("bind -M insert enter __nanoka_accept_line"));
+        assert!(hook.contains("bind -M insert ctrl-j __nanoka_insert_newline"));
     }
 
     #[test]
     fn fish_hook_resets_image_counter_on_command_not_found() {
         let hook = hook();
-        assert!(hook.contains("set -e __hotaru_image_counter"));
+        assert!(hook.contains("set -e __nanoka_image_counter"));
     }
 
     #[test]
@@ -410,7 +410,7 @@ mod tests {
     #[test]
     fn uninstall_reports_only_existing_hook() {
         let temp = tempfile::tempdir().unwrap();
-        let paths = HotaruPaths {
+        let paths = NanokaPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().to_path_buf(),
             config_file: temp.path().join("config.json"),
@@ -419,7 +419,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("hotaru.fish"),
+            fish_hook_file: temp.path().join("nanoka.fish"),
             bash_hook_file: temp.path().join("bash-hook.sh"),
             zsh_hook_file: temp.path().join("zsh-hook.zsh"),
             scripts_dir: temp.path().join("scripts"),

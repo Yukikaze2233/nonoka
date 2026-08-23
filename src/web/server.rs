@@ -7,7 +7,7 @@
 
 use crate::web::*;
 
-pub async fn run(paths: HotaruPaths, args: WebArgs) -> Result<()> {
+pub async fn run(paths: NanokaPaths, args: WebArgs) -> Result<()> {
     let password = resolve_web_password(&args)?;
     AppConfig::init_files(&paths)?;
     let config = AppConfig::load_or_default(&paths)?;
@@ -53,17 +53,17 @@ pub async fn run(paths: HotaruPaths, args: WebArgs) -> Result<()> {
                 requested_port = args.port,
                 "{}",
                 t(
-                    "Hotaru WebUI default port is occupied; selecting an ephemeral port",
-                    "Hotaru WebUI 默认端口已被占用；将选择临时端口"
+                    "Nanoka WebUI default port is occupied; selecting an ephemeral port",
+                    "Nanoka WebUI 默认端口已被占用；将选择临时端口"
                 )
             );
             tokio::net::TcpListener::bind(SocketAddr::new(bind_ip, 0))
                 .await
-                .context("binding Hotaru WebUI to an ephemeral fallback port")?
+                .context("binding Nanoka WebUI to an ephemeral fallback port")?
         }
         Err(error) => {
             return Err(error)
-                .with_context(|| format!("binding Hotaru WebUI to {bind_ip}:{}", args.port));
+                .with_context(|| format!("binding Nanoka WebUI to {bind_ip}:{}", args.port));
         }
     };
     let port = listener.local_addr()?.port();
@@ -132,7 +132,7 @@ pub async fn run(paths: HotaruPaths, args: WebArgs) -> Result<()> {
     // share_file 工具用这些地址把相对下载路径拼成局域网完整链接。
     tools::set_share_url_bases(urls.clone());
     for url in &urls {
-        println!("Hotaru WebUI: {url}");
+        println!("Nanoka WebUI: {url}");
     }
     if password.is_none() && !bind_ip.is_loopback() {
         eprintln!(
@@ -169,7 +169,7 @@ pub async fn run(paths: HotaruPaths, args: WebArgs) -> Result<()> {
         .map_err(|_| anyhow::anyhow!("WebUI actor thread panicked"))?;
     memory_organizer.shutdown();
     drop(ipc_lease);
-    serve_result.context("serving Hotaru WebUI")?;
+    serve_result.context("serving Nanoka WebUI")?;
     actor_result
 }
 
@@ -217,7 +217,7 @@ pub(in crate::web) async fn follow_run(
         if record.kind == "resync_required" {
             ipc::send(
                 stream,
-                &IpcFrame::error("Hotaru core event history was exhausted"),
+                &IpcFrame::error("Nanoka core event history was exhausted"),
             )
             .await?;
             break;
@@ -273,8 +273,8 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route("/vendor/katex/katex.min.css", get(katex_css_asset))
         .route("/vendor/katex/fonts/{font}", get(katex_font_asset))
         .route("/api/media", get(media_stream))
-        .route("/assets/hotaru-logo.png", get(logo_asset))
-        .route("/assets/hotaruwallpaper.png", get(wallpaper_asset))
+        .route("/assets/nanoka-logo.png", get(logo_asset))
+        .route("/assets/nanokawallpaper.png", get(wallpaper_asset))
         .route("/api/health", get(health))
         .route("/api/auth/login", post(auth_login))
         .route("/api/bootstrap", get(bootstrap))
@@ -372,7 +372,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         // OneBot v11 reverse-WS endpoint: NapCat connects here as a WS
         // client. Gated by platforms.qq config, not web auth.
         .route("/ws", get(platforms::onebot::onebot_ws_on_web_port))
-        // Backward-compatible endpoint used by earlier Hotaru releases.
+        // Backward-compatible endpoint used by earlier Nanoka releases.
         .route(
             "/onebot/v11/ws",
             get(platforms::onebot::onebot_ws_on_web_port),
@@ -386,7 +386,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
 /// never pin a stale file.
 pub(in crate::web) fn build_etag() -> &'static HeaderValue {
     static ETAG_VALUE: std::sync::LazyLock<HeaderValue> = std::sync::LazyLock::new(|| {
-        HeaderValue::from_str(concat!("\"", env!("HOTARU_BUILD_ID"), "\""))
+        HeaderValue::from_str(concat!("\"", env!("NANOKA_BUILD_ID"), "\""))
             .expect("build id forms a valid header value")
     });
     &ETAG_VALUE

@@ -1,7 +1,7 @@
 {
   "name": "alarm",
   "display_name": "闹钟",
-  "description": "Manage local alarms: action=set to set one, list to list them, cancel to cancel one.\ntime accepts 30s, 10m, 1h 30m, or 14:30. Alarms run in the background Hotaru process using a built-in sound; pass audio_file to use a local .wav/.mp3 instead.",
+  "description": "Manage local alarms: action=set to set one, list to list them, cancel to cancel one.\ntime accepts 30s, 10m, 1h 30m, or 14:30. Alarms run in the background Nanoka process using a built-in sound; pass audio_file to use a local .wav/.mp3 instead.",
   "parameters": {
     "type": "object",
     "properties": {

@@ -55,7 +55,7 @@ pub struct PluginsConfig {
 }
 
 /// 本机 Claude Code CLI 接入：`claude_code` 委托工具与 `claude-code` 供应商
-/// 协议共用这份配置。CLI 用用户既有的订阅登录态，Hotaru 不经手任何凭据。
+/// 协议共用这份配置。CLI 用用户既有的订阅登录态，Nanoka 不经手任何凭据。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeCodePluginConfig {
     /// 空 = 从 PATH 解析 `claude`。
@@ -74,14 +74,14 @@ pub struct ClaudeCodePluginConfig {
     pub max_output_bytes: u64,
     /// 哪些模式的会话让 claude 用自带原生工具(Bash/Edit/Read…):
     /// off/dev/normal/all。原生工具在 claude 训练分布内,编码能力最强;
-    /// 经桥的 Hotaru 工具反正不走 Hotaru 渲染管线,所以默认 all。
+    /// 经桥的 Nanoka 工具反正不走 Nanoka 渲染管线,所以默认 all。
     #[serde(default = "default_claude_code_native_tools")]
     pub native_tools: String,
-    /// 哪些模式的会话把 Hotaru 工具经 MCP 桥挂给 claude(记忆/生图/表情包等
+    /// 哪些模式的会话把 Nanoka 工具经 MCP 桥挂给 claude(记忆/生图/表情包等
     /// claude 没有的能力):off/dev/normal/all,默认 normal(dev 走原生工具
-    /// 的极简形态)。两套同开时与原生重复的 Hotaru 工具被剔除,原生优先。
-    #[serde(default = "default_claude_code_hotaru_tools")]
-    pub hotaru_tools: String,
+    /// 的极简形态)。两套同开时与原生重复的 Nanoka 工具被剔除,原生优先。
+    #[serde(default = "default_claude_code_nanoka_tools")]
+    pub nanoka_tools: String,
     /// 供应商中转模式的流空闲看门狗（秒）：这么久没有任何输出就杀进程。
     #[serde(default = "default_claude_code_idle_timeout_seconds")]
     pub idle_timeout_seconds: u64,
@@ -99,7 +99,7 @@ impl Default for ClaudeCodePluginConfig {
             timeout_seconds: default_claude_code_timeout_seconds(),
             max_output_bytes: default_claude_code_max_output_bytes(),
             native_tools: default_claude_code_native_tools(),
-            hotaru_tools: default_claude_code_hotaru_tools(),
+            nanoka_tools: default_claude_code_nanoka_tools(),
             idle_timeout_seconds: default_claude_code_idle_timeout_seconds(),
             prefer_subscription: true,
         }
@@ -650,7 +650,7 @@ impl MemesPluginConfig {
                 .persona_libraries
                 .get("default")
                 .cloned()
-                .unwrap_or_else(|| "hotaru".to_string());
+                .unwrap_or_else(|| "nanoka".to_string());
         }
         let persona = persona_scope_name(persona);
         self.persona_libraries

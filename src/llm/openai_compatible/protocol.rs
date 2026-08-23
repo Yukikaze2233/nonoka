@@ -207,11 +207,11 @@ pub(crate) struct ThinkingVariantPreferences {
     pub(in crate::llm::openai_compatible) provider_renames: Vec<(String, String)>,
 }
 
-pub(in crate::llm::openai_compatible) fn thinking_variant_preferences_file(paths: &HotaruPaths) -> PathBuf {
+pub(in crate::llm::openai_compatible) fn thinking_variant_preferences_file(paths: &NanokaPaths) -> PathBuf {
     paths.state_dir.join("thinking-variants.json")
 }
 
-pub(in crate::llm::openai_compatible) fn lock_thinking_variant_preferences(paths: &HotaruPaths) -> Result<File> {
+pub(in crate::llm::openai_compatible) fn lock_thinking_variant_preferences(paths: &NanokaPaths) -> Result<File> {
     let lock_path = paths.state_dir.join("thinking-variants.lock");
     let lock = OpenOptions::new()
         .create(true)
@@ -236,16 +236,16 @@ pub(in crate::llm::openai_compatible) fn lock_thinking_variant_preferences(paths
     Ok(lock)
 }
 
-pub(in crate::llm::openai_compatible) fn load_thinking_variant_preferences(paths: &HotaruPaths) -> ThinkingVariantPreferences {
+pub(in crate::llm::openai_compatible) fn load_thinking_variant_preferences(paths: &NanokaPaths) -> ThinkingVariantPreferences {
     ThinkingVariantPreferences::load(paths)
 }
 
 impl ThinkingVariantPreferences {
-    pub(crate) fn load(paths: &HotaruPaths) -> Self {
+    pub(crate) fn load(paths: &NanokaPaths) -> Self {
         Self::load_for_update(paths).unwrap_or_default()
     }
 
-    pub(in crate::llm::openai_compatible) fn load_for_update(paths: &HotaruPaths) -> Result<Self> {
+    pub(in crate::llm::openai_compatible) fn load_for_update(paths: &NanokaPaths) -> Result<Self> {
         let path = thinking_variant_preferences_file(paths);
         match std::fs::read_to_string(&path) {
             Ok(text) => serde_json::from_str(&text).with_context(|| {
@@ -293,7 +293,7 @@ impl ThinkingVariantPreferences {
         !self.changes.is_empty() || !self.provider_renames.is_empty()
     }
 
-    pub(crate) fn save(&self, paths: &HotaruPaths) -> Result<()> {
+    pub(crate) fn save(&self, paths: &NanokaPaths) -> Result<()> {
         if self.changes.is_empty() && self.provider_renames.is_empty() {
             return Ok(());
         }

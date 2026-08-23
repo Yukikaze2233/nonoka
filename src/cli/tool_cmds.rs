@@ -1,11 +1,11 @@
-//! `hotaru tool` 与 `hotaru tool-call`：在命令行里直接调工具。
+//! `nanoka tool` 与 `nanoka tool-call`：在命令行里直接调工具。
 //!
 //! 调试与脚本化用的入口。工具的产出（图片、artifact）在终端里要能看见，所以
 //! 这里有一小段远端图片预览的处理。
 
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_tool(paths: &HotaruPaths, mode: AgentMode, args: ToolArgs) -> Result<()> {
+pub(in crate::cli) async fn run_tool(paths: &NanokaPaths, mode: AgentMode, args: ToolArgs) -> Result<()> {
     let config = AppConfig::load_or_default(paths)?;
     let registry = build_tool_registry(&config, paths, mode, false)?;
     let output = registry
@@ -19,9 +19,9 @@ pub(in crate::cli) async fn run_tool(paths: &HotaruPaths, mode: AgentMode, args:
 /// 工具,中间数据本地流动、不经模型上下文往返;每次内层调用都以本回合的
 /// 会话身份与来源在 daemon 侧过 guard/超时管线。daemon 不在(直连调试
 /// 形态)则本地执行,语义一致但 jobs 等 daemon 态不可见。
-pub(in crate::cli) async fn run_tool_call(paths: &HotaruPaths, args: ToolCallArgs) -> Result<()> {
+pub(in crate::cli) async fn run_tool_call(paths: &NanokaPaths, args: ToolCallArgs) -> Result<()> {
     let config = AppConfig::load_or_default(paths)?;
-    let env_mode = std::env::var("HOTARU_TURN_MODE").unwrap_or_default();
+    let env_mode = std::env::var("NANOKA_TURN_MODE").unwrap_or_default();
     let mode = if env_mode == "dev" {
         AgentMode::Dev
     } else {
@@ -33,10 +33,10 @@ pub(in crate::cli) async fn run_tool_call(paths: &HotaruPaths, args: ToolCallArg
         }
         // daemon 存活时目录走 IPC:与 ToolCall 同一条会话→模式→registry
         // 解析链,--list 列出的就是本会话真能调的集合。此前本地建表按
-        // HOTARU_TURN_MODE 环境变量定模式(run_command 并不注入它),dev 会话
+        // NANOKA_TURN_MODE 环境变量定模式(run_command 并不注入它),dev 会话
         // 里 --list 展示普通人格全量目录,实测逐个调用全报 unknown tool。
         if ipc::daemon_info(paths).await.is_some() {
-            let session = std::env::var("HOTARU_SESSION").ok().filter(|s| !s.is_empty());
+            let session = std::env::var("NANOKA_SESSION").ok().filter(|s| !s.is_empty());
             let (_, data) = send_ipc_admin(
                 paths,
                 IpcCommand::ToolCatalog {
@@ -127,7 +127,7 @@ pub(in crate::cli) async fn run_tool_call(paths: &HotaruPaths, args: ToolCallArg
         return Ok(());
     }
     let Some(name) = args.name.clone() else {
-        // 裸 `hotaru tool-call` 是来问路的,给完整帮助而不是一行报错。
+        // 裸 `nanoka tool-call` 是来问路的,给完整帮助而不是一行报错。
         localized_command()
             .find_subcommand_mut("tool-call")
             .expect("tool-call subcommand exists")
@@ -144,9 +144,9 @@ pub(in crate::cli) async fn run_tool_call(paths: &HotaruPaths, args: ToolCallArg
     } else {
         args.arguments.clone().unwrap_or_else(|| "{}".to_string())
     };
-    let session = std::env::var("HOTARU_SESSION").ok().filter(|s| !s.is_empty());
-    let origin = std::env::var("HOTARU_TURN_ORIGIN").ok().filter(|s| !s.is_empty());
-    let depth: u32 = std::env::var("HOTARU_BRIDGE_DEPTH")
+    let session = std::env::var("NANOKA_SESSION").ok().filter(|s| !s.is_empty());
+    let origin = std::env::var("NANOKA_TURN_ORIGIN").ok().filter(|s| !s.is_empty());
+    let depth: u32 = std::env::var("NANOKA_BRIDGE_DEPTH")
         .ok()
         .and_then(|raw| raw.parse().ok())
         .unwrap_or(0);
@@ -182,8 +182,8 @@ pub(in crate::cli) async fn run_tool_call(paths: &HotaruPaths, args: ToolCallArg
             "{:#}. {}",
             registry.unknown_tool_error(&name),
             t(
-                "run `hotaru tool-call --list` to see tools callable in this session",
-                "用 `hotaru tool-call --list` 查看本会话可调用的工具"
+                "run `nanoka tool-call --list` to see tools callable in this session",
+                "用 `nanoka tool-call --list` 查看本会话可调用的工具"
             )
         );
     }
@@ -296,7 +296,7 @@ mod remote_tool_image_tests {
         assert!(validate_ipc_command_response(Some(IpcFrame::Ack)).is_ok());
         let rejected = validate_ipc_command_response(Some(IpcFrame::Error {
             code: None,
-            message: "Hotaru is busy with another operation".to_string(),
+            message: "Nanoka is busy with another operation".to_string(),
         }))
         .unwrap_err();
         assert!(rejected.to_string().contains("busy with another operation"));

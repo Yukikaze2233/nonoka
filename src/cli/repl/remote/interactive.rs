@@ -11,10 +11,10 @@ use crate::cli::repl::input::*;
 use crate::cli::repl::tail::*;
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_remote_repl(paths: &HotaruPaths, mut mode: AgentMode) -> Result<()> {
+pub(in crate::cli) async fn run_remote_repl(paths: &NanokaPaths, mut mode: AgentMode) -> Result<()> {
     let _cursor_restore = ReplCursorRestore;
     ipc::ensure_daemon(paths, None).await?;
-    let refreshed = HotaruPaths::new()?;
+    let refreshed = NanokaPaths::new()?;
     let paths = &refreshed;
     initialize_models_cache(paths);
     let mut config = AppConfig::load_or_default(paths)?;
@@ -1026,8 +1026,8 @@ pub(in crate::cli) async fn run_remote_repl(paths: &HotaruPaths, mut mode: Agent
             Ok(None) => bail!(
                 "{}",
                 t(
-                    "the Hotaru Web core stopped; start the REPL again to use direct mode",
-                    "Hotaru Web 核心已停止；请重新启动 REPL 以使用直连模式"
+                    "the Nanoka Web core stopped; start the REPL again to use direct mode",
+                    "Nanoka Web 核心已停止；请重新启动 REPL 以使用直连模式"
                 )
             ),
             Err(err) if is_remote_turn_detached(&err) => {

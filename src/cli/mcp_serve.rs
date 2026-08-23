@@ -1,7 +1,7 @@
-//! `hotaru mcp-serve`:把本会话的工具注册表以 MCP stdio server 形态挂给外部
+//! `nanoka mcp-serve`:把本会话的工具注册表以 MCP stdio server 形态挂给外部
 //! agent(claude-code 供应商中转的工具桥,由 claude 作为子进程拉起)。
 //!
-//! 与 `hotaru tool-call` 同源:daemon 存活时经 IPC 以 HOTARU_SESSION 的会话身份
+//! 与 `nanoka tool-call` 同源:daemon 存活时经 IPC 以 NANOKA_SESSION 的会话身份
 //! 解析目录并执行(guard/超时管线齐备);daemon 不在(直连调试形态)则本地
 //! 建 registry 兜底。传输是 MCP stdio(JSON-RPC 2.0 行分隔),只实现 tools
 //! 能力;工具失败按 MCP 语义回 `isError` 结果而不是 JSON-RPC error,让上游
@@ -9,21 +9,21 @@
 
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_mcp_serve(paths: &HotaruPaths) -> Result<()> {
-    let session = std::env::var("HOTARU_SESSION").ok().filter(|s| !s.is_empty());
+pub(in crate::cli) async fn run_mcp_serve(paths: &NanokaPaths) -> Result<()> {
+    let session = std::env::var("NANOKA_SESSION").ok().filter(|s| !s.is_empty());
     // 与 claude 原生重复的工具由拉起方经 env 点名剔除(原生优先):目录里
     // 不出现、调用被拒,两边同源。
-    let excluded: std::collections::HashSet<String> = std::env::var("HOTARU_MCP_EXCLUDE")
+    let excluded: std::collections::HashSet<String> = std::env::var("NANOKA_MCP_EXCLUDE")
         .unwrap_or_default()
         .split(',')
         .map(str::trim)
         .filter(|name| !name.is_empty())
         .map(str::to_string)
         .collect();
-    let origin = std::env::var("HOTARU_TURN_ORIGIN")
+    let origin = std::env::var("NANOKA_TURN_ORIGIN")
         .ok()
         .filter(|s| !s.is_empty());
-    let depth: u32 = std::env::var("HOTARU_BRIDGE_DEPTH")
+    let depth: u32 = std::env::var("NANOKA_BRIDGE_DEPTH")
         .ok()
         .and_then(|raw| raw.parse().ok())
         .unwrap_or(0);
@@ -88,7 +88,7 @@ fn write_line(value: &serde_json::Value) -> Result<()> {
 }
 
 async fn handle_request(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     session: &Option<String>,
     origin: &Option<String>,
     depth: u32,
@@ -106,7 +106,7 @@ async fn handle_request(
             Ok(serde_json::json!({
                 "protocolVersion": version,
                 "capabilities": { "tools": {} },
-                "serverInfo": { "name": "hotaru", "version": env!("CARGO_PKG_VERSION") },
+                "serverInfo": { "name": "nanoka", "version": env!("CARGO_PKG_VERSION") },
             }))
         }
         "ping" => Ok(serde_json::json!({})),
@@ -159,7 +159,7 @@ async fn handle_request(
     }
 }
 
-async fn list_tools(paths: &HotaruPaths, session: &Option<String>) -> Result<serde_json::Value> {
+async fn list_tools(paths: &NanokaPaths, session: &Option<String>) -> Result<serde_json::Value> {
     if ipc::daemon_info(paths).await.is_some() {
         let (_, data) = send_ipc_admin(
             paths,
@@ -201,9 +201,9 @@ async fn list_tools(paths: &HotaruPaths, session: &Option<String>) -> Result<ser
             .collect::<Vec<_>>();
         return Ok(serde_json::json!({ "tools": tools }));
     }
-    // 直连回退:与 tool-call 的回退同一构建方式(模式取 HOTARU_TURN_MODE)。
+    // 直连回退:与 tool-call 的回退同一构建方式(模式取 NANOKA_TURN_MODE)。
     let config = AppConfig::load_or_default(paths)?;
-    let mode = if std::env::var("HOTARU_TURN_MODE").unwrap_or_default() == "dev" {
+    let mode = if std::env::var("NANOKA_TURN_MODE").unwrap_or_default() == "dev" {
         AgentMode::Dev
     } else {
         AgentMode::Normal
@@ -226,7 +226,7 @@ async fn list_tools(paths: &HotaruPaths, session: &Option<String>) -> Result<ser
 }
 
 async fn call_tool(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     session: &Option<String>,
     origin: &Option<String>,
     depth: u32,
@@ -255,7 +255,7 @@ async fn call_tool(
         bail!("tool bridge recursion limit reached (depth {depth})");
     }
     let config = AppConfig::load_or_default(paths)?;
-    let mode = if std::env::var("HOTARU_TURN_MODE").unwrap_or_default() == "dev" {
+    let mode = if std::env::var("NANOKA_TURN_MODE").unwrap_or_default() == "dev" {
         AgentMode::Dev
     } else {
         AgentMode::Normal

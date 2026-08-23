@@ -9,10 +9,10 @@ use crate::cli::*;
 pub(in crate::cli) fn localized_command() -> clap::Command {
     let mut command = Cli::command();
     command = command
-        .about(t("Hotaru AI assistant", "Hotaru AI 助手"))
+        .about(t("Nanoka AI assistant", "Nanoka AI 助手"))
         .override_usage(t(
-            "hotaru [OPTIONS] [MESSAGE]... [COMMAND]",
-            "hotaru [选项] [消息]... [命令]",
+            "nanoka [OPTIONS] [MESSAGE]... [COMMAND]",
+            "nanoka [选项] [消息]... [命令]",
         ));
     if is_zh() {
         command = command
@@ -20,12 +20,12 @@ pub(in crate::cli) fn localized_command() -> clap::Command {
             .arg_required_else_help(false)
             .next_help_heading("选项")
             .help_template("{about}\n\n用法: {usage}\n\n命令:\n{subcommands}\n参数:\n{positionals}\n选项:\n{options}\n{after-help}")
-            .after_help("提示：不带参数进入 REPL；直接输入消息会发送一次对话。可在配置界面设置语言，HOTARU_LANG 可临时覆盖。")
+            .after_help("提示：不带参数进入 REPL；直接输入消息会发送一次对话。可在配置界面设置语言，NANOKA_LANG 可临时覆盖。")
             .disable_help_subcommand(true);
     } else {
         command = command
             .after_help(
-                "Tip: run without arguments to enter the REPL; pass MESSAGE to send one chat turn. Set the language in the configuration UI; HOTARU_LANG is a temporary override.",
+                "Tip: run without arguments to enter the REPL; pass MESSAGE to send one chat turn. Set the language in the configuration UI; NANOKA_LANG is a temporary override.",
             )
             .disable_help_subcommand(true);
     }
@@ -46,7 +46,7 @@ pub(in crate::cli) fn root_help_template() -> String {
         "  fish-init          Integrate with fish; then chat in natural language directly in the terminal
   bash-init          Integrate with bash
   zsh-init           Integrate with zsh
-  remove-shell-hook  Safely remove installed Hotaru shell hooks
+  remove-shell-hook  Safely remove installed Nanoka shell hooks
   models             Switch the terminal session's model (-g edits the global pool)
   variant            Switch the terminal session model's thinking level
   history            Show conversation history
@@ -56,7 +56,7 @@ pub(in crate::cli) fn root_help_template() -> String {
         "  fish-init          集成到 fish，集成后可在终端直接使用自然语言交流
   bash-init          集成到 bash
   zsh-init           集成到 zsh
-  remove-shell-hook  安全删除已安装的 Hotaru shell hook
+  remove-shell-hook  安全删除已安装的 Nanoka shell hook
   models             修改终端集成会话的模型（-g 改全局模型池）
   variant            切换终端集成会话模型的思考档位
   history            显示会话历史
@@ -157,8 +157,8 @@ pub(in crate::cli) fn localize_top_args(command: clap::Command) -> clap::Command
     command
         .mut_arg("debug", |arg| {
             arg.help(t(
-                "Write detailed diagnostics to the Hotaru log directory",
-                "将详细诊断信息写入 Hotaru 日志目录",
+                "Write detailed diagnostics to the Nanoka log directory",
+                "将详细诊断信息写入 Nanoka 日志目录",
             ))
         })
         .mut_arg("stdout", |arg| {
@@ -235,8 +235,8 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
         ("zsh-init", "Integrate with zsh", "集成到 zsh"),
         (
             "remove-shell-hook",
-            "Safely remove installed Hotaru shell hooks",
-            "安全删除已安装的 Hotaru shell hook",
+            "Safely remove installed Nanoka shell hooks",
+            "安全删除已安装的 Nanoka shell hook",
         ),
         ("history", "Show conversation history", "显示会话历史"),
         (
@@ -247,8 +247,8 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
         ("kb", "Manage the knowledge base", "管理知识库"),
         (
             "update-default-kb",
-            "Update Hotaru default knowledge base",
-            "更新 Hotaru 默认知识库",
+            "Update Nanoka default knowledge base",
+            "更新 Nanoka 默认知识库",
         ),
         ("memory", "Manage assistant memory", "管理记忆"),
         ("skills", "Manage assistant skills", "管理助手 skills"),
@@ -267,11 +267,11 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
             "Erase all conversation history, memory, group contexts and their artifacts",
             "抹掉所有会话历史、记忆、群聊上下文和其产物",
         ),
-                                                ("web", "Open the local Hotaru WebUI", "访问本地 Hotaru WebUI"),
+                                                ("web", "Open the local Nanoka WebUI", "访问本地 Nanoka WebUI"),
         (
             "daemon",
-            "Manage the unified Hotaru background service",
-            "管理 Hotaru 统一后台服务",
+            "Manage the unified Nanoka background service",
+            "管理 Nanoka 统一后台服务",
         ),
         (
             "export",
@@ -284,7 +284,7 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
         command = command.mut_subcommand(name, |subcommand| subcommand.about(t(en, zh)));
     }
     // 终端无缝集成组:从 {subcommands} 里藏掉,根帮助模板里以静态段
-    // 单独成节(clap 不支持子命令分组);`hotaru <cmd> -h` 不受影响。
+    // 单独成节(clap 不支持子命令分组);`nanoka <cmd> -h` 不受影响。
     for name in [
         "fish-init",
         "bash-init",
@@ -358,8 +358,8 @@ pub(in crate::cli) fn localize_export_command(command: clap::Command) -> clap::C
         })
         .mut_arg("index", |arg| {
             arg.help(t(
-                "Include the knowledge-base vector index (large; rebuildable with `hotaru kb embed`)",
-                "包含知识库向量索引（很大；可用 hotaru kb embed 重建）",
+                "Include the knowledge-base vector index (large; rebuildable with `nanoka kb embed`)",
+                "包含知识库向量索引（很大；可用 nanoka kb embed 重建）",
             ))
         })
         .mut_arg("platforms", |arg| {
@@ -388,7 +388,7 @@ pub(in crate::cli) fn localize_export_command(command: clap::Command) -> clap::C
 pub(in crate::cli) fn localize_import_command(command: clap::Command) -> clap::Command {
     command
         .mut_arg("archive", |arg| {
-            arg.help(t("Archive produced by `hotaru export`", "hotaru export 生成的归档"))
+            arg.help(t("Archive produced by `nanoka export`", "nanoka export 生成的归档"))
         })
         .mut_arg("force", |arg| {
             arg.help(t(
@@ -475,18 +475,18 @@ pub(in crate::cli) fn localize_daemon_command(mut command: clap::Command) -> cla
     let descriptions = [
         (
             "start",
-            "Start all configured Hotaru interfaces",
-            "启动所有已配置的 Hotaru 接口",
+            "Start all configured Nanoka interfaces",
+            "启动所有已配置的 Nanoka 接口",
         ),
         (
             "stop",
-            "Stop the Hotaru background service",
-            "停止 Hotaru 后台服务",
+            "Stop the Nanoka background service",
+            "停止 Nanoka 后台服务",
         ),
         (
             "restart",
-            "Restart the Hotaru background service",
-            "重启 Hotaru 后台服务",
+            "Restart the Nanoka background service",
+            "重启 Nanoka 后台服务",
         ),
         (
             "status",

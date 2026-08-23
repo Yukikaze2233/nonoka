@@ -1,6 +1,6 @@
 use super::{ToolRegistry, ToolSpec};
 use crate::alarm::{self, AlarmRecord, AlarmStatus};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::{bail, Result};
 use chrono::Local;
 use serde_json::{json, Value};
@@ -10,10 +10,10 @@ use tokio::process::Command;
 
 /// 三件闹钟工具合并成一件 `alarm`(08-17):set/list/cancel 是同一个对象的
 /// 三种操作,拆开只是让 tools 数组多背两份外壳。
-pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: NanokaPaths) {
     registry.register(ToolSpec::new(
         "alarm",
-        "Manage local alarms. action=set schedules one (time accepts 30s, 10m, 1h 30m, or 14:30); action=list shows scheduled and ringing alarms; action=cancel removes one by id. Alarms run in a background Hotaru process with Hotaru's embedded sound.",
+        "Manage local alarms. action=set schedules one (time accepts 30s, 10m, 1h 30m, or 14:30); action=list shows scheduled and ringing alarms; action=cancel removes one by id. Alarms run in a background Nanoka process with Nanoka's embedded sound.",
         json!({
             "type": "object",
             "properties": {
@@ -24,7 +24,7 @@ pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
                 },
                 "time": { "type": "string", "description": "Required for set: duration or clock time." },
                 "label": { "type": "string", "description": "Optional alarm label for set." },
-                "audio_file": { "type": "string", "description": "Optional local .wav or .mp3 for set, replacing Hotaru's built-in sound." },
+                "audio_file": { "type": "string", "description": "Optional local .wav or .mp3 for set, replacing Nanoka's built-in sound." },
                 "id": { "type": "string", "description": "Required for cancel: alarm id from set or list." }
             },
             "required": ["action"],
@@ -43,7 +43,7 @@ pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
         },
     ).writes());
 }
-async fn set_alarm(args: Value, paths: HotaruPaths) -> Result<String> {
+async fn set_alarm(args: Value, paths: NanokaPaths) -> Result<String> {
     let time = args
         .get("time")
         .and_then(Value::as_str)
@@ -55,7 +55,7 @@ async fn set_alarm(args: Value, paths: HotaruPaths) -> Result<String> {
     let label = args
         .get("label")
         .and_then(Value::as_str)
-        .unwrap_or("Hotaru alarm")
+        .unwrap_or("Nanoka alarm")
         .trim();
     let audio_file = args
         .get("audio_file")
@@ -69,7 +69,7 @@ async fn set_alarm(args: Value, paths: HotaruPaths) -> Result<String> {
         Local::now().timestamp_millis(),
         std::process::id()
     );
-    let exe = crate::paths::hotaru_executable()?;
+    let exe = crate::paths::nanoka_executable()?;
     let mut command = Command::new(exe);
     command
         .arg("__alarm-worker")
@@ -117,7 +117,7 @@ async fn set_alarm(args: Value, paths: HotaruPaths) -> Result<String> {
     .to_string())
 }
 
-async fn list_alarms(paths: HotaruPaths) -> Result<String> {
+async fn list_alarms(paths: NanokaPaths) -> Result<String> {
     let records = alarm::cleanup_dead(&paths)?;
     let alarms = records
         .into_iter()
@@ -137,7 +137,7 @@ async fn list_alarms(paths: HotaruPaths) -> Result<String> {
     Ok(json!({"ok": true, "alarms": alarms}).to_string())
 }
 
-async fn cancel_alarm(args: Value, paths: HotaruPaths) -> Result<String> {
+async fn cancel_alarm(args: Value, paths: NanokaPaths) -> Result<String> {
     let id = args
         .get("id")
         .and_then(Value::as_str)

@@ -7,7 +7,7 @@ use super::{ToolRegistry, ToolSpec};
 use crate::clipboard::write_image_cache_file;
 use crate::config::{AppConfig, PrintImagePluginConfig};
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::platform_types::{PlatformContextImageRef, PlatformImageData};
 // 工具层只认这个 trait：主体身份、管理员标志、宿主工具放行、按消息取图。
 // 依赖 PlatformTurnContext 本身等于把整个平台运行时钉进工具层。
@@ -29,7 +29,7 @@ use tokio::process::Command;
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     register_analyze: bool,
 ) {
     if !register_analyze {
@@ -58,7 +58,7 @@ pub fn register(
 pub fn register_scoped_local(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     allowed_images: Vec<PathBuf>,
 ) {
     register_scoped(
@@ -75,7 +75,7 @@ pub fn register_scoped_local(
 pub fn register_scoped_platform(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
     platform_context: Arc<dyn PlatformToolContext>,
@@ -95,7 +95,7 @@ pub fn register_scoped_platform(
 fn register_scoped(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
     platform_context: Option<Arc<dyn PlatformToolContext>>,
@@ -173,7 +173,7 @@ fn register_scoped(
     );
 }
 
-async fn analyze_image(args: Value, config: AppConfig, paths: HotaruPaths) -> Result<String> {
+async fn analyze_image(args: Value, config: AppConfig, paths: NanokaPaths) -> Result<String> {
     let vision = &config.plugins.vision;
     if !vision.enabled {
         bail!("vision plugin is disabled")
@@ -203,7 +203,7 @@ async fn analyze_image(args: Value, config: AppConfig, paths: HotaruPaths) -> Re
 async fn analyze_scoped_image(
     args: Value,
     config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     state: Arc<ScopedVisionState>,
 ) -> Result<String> {
     let image = args
@@ -261,7 +261,7 @@ async fn analyze_scoped_image(
 
 pub async fn analyze_local_image_with_prompt(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     image: &Path,
     prompt: &str,
 ) -> Result<String> {
@@ -271,7 +271,7 @@ pub async fn analyze_local_image_with_prompt(
 
 pub async fn analyze_image_url_with_prompt(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     image_url: &str,
     prompt: &str,
 ) -> Result<String> {
@@ -357,7 +357,7 @@ fn active_text_pool_for_vision(
     usable.then_some(pool)
 }
 
-fn vision_client(config: &AppConfig, paths: &HotaruPaths) -> Result<OpenAiCompatibleClient> {
+fn vision_client(config: &AppConfig, paths: &NanokaPaths) -> Result<OpenAiCompatibleClient> {
     // An explicit global vision provider preserves its existing precedence.
     // Platform turns with a conversation override clear that single-provider
     // field in their private config clone, exposing the full routed pool here.
@@ -462,7 +462,7 @@ mod tests {
         }
 
         fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-            Box::pin(async { Ok("Hotaru".to_string()) })
+            Box::pin(async { Ok("Nanoka".to_string()) })
         }
 
         fn message_images<'a>(
@@ -479,8 +479,8 @@ mod tests {
         }
     }
 
-    fn test_paths(root: &Path) -> HotaruPaths {
-        HotaruPaths {
+    fn test_paths(root: &Path) -> NanokaPaths {
+        NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -502,7 +502,7 @@ mod tests {
     #[test]
     fn scoped_registration_binds_image_generation_even_without_vision() {
         let temp = tempfile::tempdir().unwrap();
-        let paths = crate::paths::HotaruPaths {
+        let paths = crate::paths::NanokaPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),

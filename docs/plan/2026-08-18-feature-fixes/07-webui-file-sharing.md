@@ -2,7 +2,7 @@
 
 ## 1. 现状（已定位）
 
-Hotaru **已经有大部分机制**：
+Nanoka **已经有大部分机制**：
 
 - Web server 默认 bind `0.0.0.0`，局域网可达（`src/web/server.rs`）。
 - AI 在 WebUI 会话可调用 `create_artifact` / `present_artifact`（`src/tools/artifact.rs`）。

@@ -52,7 +52,7 @@ async fn get_weather(args: Value) -> Result<String> {
     }
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
-        .user_agent("hotaru-weather/0.1")
+        .user_agent("nanoka-weather/0.1")
         .build()?;
 
     match request.query_type {

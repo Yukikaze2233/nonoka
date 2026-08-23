@@ -2,8 +2,8 @@
 
 use crate::state::*;
 
-pub(super) fn test_paths(root: &Path) -> HotaruPaths {
-    HotaruPaths {
+pub(super) fn test_paths(root: &Path) -> NanokaPaths {
+    NanokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -12,7 +12,7 @@ pub(super) fn test_paths(root: &Path) -> HotaruPaths {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("fish/hotaru.fish"),
+        fish_hook_file: root.join("fish/nanoka.fish"),
         bash_hook_file: root.join("shell/bash-hook.sh"),
         zsh_hook_file: root.join("shell/zsh-hook.zsh"),
         scripts_dir: root.join("config/scripts"),

@@ -1,10 +1,10 @@
-//! `hotaru import`: restore an exported installation onto this machine.
+//! `nanoka import`: restore an exported installation onto this machine.
 
-use super::export::hotaru_home;
+use super::export::nanoka_home;
 use super::manifest::{Manifest, MANIFEST_NAME};
 use super::registry::unit_for;
 use crate::i18n::text as t;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::{bail, Context, Result};
 use flate2::read::GzDecoder;
 use std::collections::BTreeSet;
@@ -28,8 +28,8 @@ pub struct ImportReport {
     pub cleared_workspaces: usize,
 }
 
-pub fn import(paths: &HotaruPaths, archive: &Path, options: &ImportOptions) -> Result<ImportReport> {
-    let root = hotaru_home(paths)?;
+pub fn import(paths: &NanokaPaths, archive: &Path, options: &ImportOptions) -> Result<ImportReport> {
+    let root = nanoka_home(paths)?;
     let manifest = read_manifest(archive)?;
     check_versions(&manifest)?;
 
@@ -53,7 +53,7 @@ pub fn import(paths: &HotaruPaths, archive: &Path, options: &ImportOptions) -> R
     };
 
     // Unpack beside the target first: a half-extracted archive must never be
-    // able to leave HOTARU_HOME in a mixed state.
+    // able to leave NANOKA_HOME in a mixed state.
     let staging = tempfile::tempdir_in(root.parent().unwrap_or(&root))
         .context("creating a staging directory")?;
     let staged = staging.path().join("home");
@@ -84,7 +84,7 @@ pub fn import(paths: &HotaruPaths, archive: &Path, options: &ImportOptions) -> R
 
 /// Why importing here would destroy something, or `None` when the target is
 /// effectively empty.
-fn occupied(paths: &HotaruPaths) -> Option<String> {
+fn occupied(paths: &NanokaPaths) -> Option<String> {
     if paths.config_file.exists() {
         return Some(format!(
             "{}: {}",
@@ -115,8 +115,8 @@ fn read_manifest(archive: &Path) -> Result<Manifest> {
     bail!(
         "{}",
         t(
-            "this file has no Hotaru manifest; it is not a hotaru export archive",
-            "包里没有 Hotaru 清单，这不是 hotaru export 生成的归档"
+            "this file has no Nanoka manifest; it is not a nanoka export archive",
+            "包里没有 Nanoka 清单，这不是 nanoka export 生成的归档"
         )
     )
 }
@@ -128,8 +128,8 @@ fn check_versions(manifest: &Manifest) -> Result<()> {
         bail!(
             "{} ({} > {})",
             t(
-                "the archive's configuration is newer than this build supports; upgrade Hotaru first",
-                "包里的配置版本高于当前 Hotaru 支持的版本；请先升级 Hotaru"
+                "the archive's configuration is newer than this build supports; upgrade Nanoka first",
+                "包里的配置版本高于当前 Nanoka 支持的版本；请先升级 Nanoka"
             ),
             manifest.config_version,
             crate::config::CURRENT_CONFIG_VERSION
@@ -145,8 +145,8 @@ fn check_versions(manifest: &Manifest) -> Result<()> {
         bail!(
             "{} ({detail} > {})",
             t(
-                "the archive's database schema is newer than this build supports; upgrade Hotaru first",
-                "包里的数据库 schema 高于当前 Hotaru 支持的版本；请先升级 Hotaru"
+                "the archive's database schema is newer than this build supports; upgrade Nanoka first",
+                "包里的数据库 schema 高于当前 Nanoka 支持的版本；请先升级 Nanoka"
             ),
             crate::state::latest_schema_version()
         );
@@ -210,7 +210,7 @@ fn install(staged: &Path, root: &Path) -> Result<usize> {
 }
 
 /// Marks the restored tree as already using the current layout, so
-/// `HotaruPaths::new` does not try to migrate it from a legacy one.
+/// `NanokaPaths::new` does not try to migrate it from a legacy one.
 fn stamp_layout_markers(root: &Path) -> Result<()> {
     for marker in [".layout-v1", ".resource-layout-v1"] {
         let path = root.join(marker);
@@ -221,10 +221,10 @@ fn stamp_layout_markers(root: &Path) -> Result<()> {
     Ok(())
 }
 
-fn backup_current(paths: &HotaruPaths, archive: &Path) -> Result<PathBuf> {
+fn backup_current(paths: &NanokaPaths, archive: &Path) -> Result<PathBuf> {
     let directory = archive.parent().unwrap_or(Path::new("."));
     let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
-    let destination = directory.join(format!("hotaru-backup-{stamp}.tar.gz"));
+    let destination = directory.join(format!("nanoka-backup-{stamp}.tar.gz"));
     let options = super::export::ExportOptions {
         all: true,
         ..Default::default()

@@ -1,6 +1,6 @@
 //! 配置里的路径解析与历史布局迁移。
 //!
-//! 配置文件里存的是**相对路径**，运行时再拼上 HOTARU_HOME——绝对路径会让配置没
+//! 配置文件里存的是**相对路径**，运行时再拼上 NANOKA_HOME——绝对路径会让配置没
 //! 法跨机器复制。`normalize_relative_path` 负责统一写法，`config_relative_path`
 //! 是反向。
 //!
@@ -37,12 +37,12 @@ pub(crate) fn relative_path_equals(value: &str, expected: &str) -> bool {
     normalized_relative_path(value).as_deref() == Some(Path::new(expected))
 }
 
-pub(crate) fn migrated_resource_path(paths: &HotaruPaths, value: &str) -> Option<PathBuf> {
+pub(crate) fn migrated_resource_path(paths: &NanokaPaths, value: &str) -> Option<PathBuf> {
     paths.migrated_resource_path(Path::new(value.trim()))
 }
 
 pub(crate) fn fallback_resource_file(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     namespace: &str,
     file_name: &str,
 ) -> PathBuf {
@@ -54,7 +54,7 @@ pub(crate) fn fallback_resource_file(
 }
 
 pub(crate) fn migrated_fallback_file(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     value: &str,
     namespace: &str,
     file_name: &str,
@@ -68,7 +68,7 @@ pub(crate) fn migrated_fallback_file(
         .then(|| fallback_resource_file(paths, namespace, file_name))
 }
 
-pub(crate) fn config_relative_path(paths: &HotaruPaths, value: &str) -> PathBuf {
+pub(crate) fn config_relative_path(paths: &NanokaPaths, value: &str) -> PathBuf {
     let path = PathBuf::from(value.trim());
     if path.is_absolute() {
         path

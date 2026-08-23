@@ -24,8 +24,8 @@ fn mixed_context_window_uses_the_global_default_when_model_metadata_is_missing()
     let provider = &mut config.providers[0];
     let provider_id = provider.id.clone();
     provider.models = vec![
-        "hotaru-known-window-model".to_string(),
-        "hotaru-unknown-window-model".to_string(),
+        "nanoka-known-window-model".to_string(),
+        "nanoka-unknown-window-model".to_string(),
     ];
     provider.default_model = provider.models[0].clone();
     provider
@@ -45,7 +45,7 @@ fn mixed_context_window_uses_the_global_default_when_model_metadata_is_missing()
     assert_eq!(config.active_context_window().unwrap(), Some(168_000));
     config.providers[0]
         .model_context_window
-        .insert("hotaru-unknown-window-model".to_string(), 128_000);
+        .insert("nanoka-unknown-window-model".to_string(), 128_000);
     assert_eq!(config.active_context_window().unwrap(), Some(128_000));
 }
 
@@ -104,7 +104,7 @@ fn display_language_hint_reads_jsonc_without_loading_full_config() {
         "{\n  // UI preference\n  \"display\": { \"language\": \"en\" }\n}\n",
     )
     .unwrap();
-    let paths = HotaruPaths {
+    let paths = NanokaPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().to_path_buf(),
         config_file,
@@ -113,9 +113,9 @@ fn display_language_hint_reads_jsonc_without_loading_full_config() {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("pictures"),
-        fish_hook_file: temp.path().join("hotaru.fish"),
-        bash_hook_file: temp.path().join("hotaru.bash"),
-        zsh_hook_file: temp.path().join("hotaru.zsh"),
+        fish_hook_file: temp.path().join("nanoka.fish"),
+        bash_hook_file: temp.path().join("nanoka.bash"),
+        zsh_hook_file: temp.path().join("nanoka.zsh"),
         scripts_dir: temp.path().join("scripts"),
         system_scripts_dir: temp.path().join("system-scripts"),
     };

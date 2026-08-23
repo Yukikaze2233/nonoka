@@ -1,4 +1,4 @@
-//! 单次远端回合（`hotaru "问题"` 这种用法）。
+//! 单次远端回合（`nanoka "问题"` 这种用法）。
 //!
 //! 和 [`super::interactive`] 共用同一套 IPC 事件流，但生命周期完全不同：跑完
 //! 就退，不进 REPL 循环，也就不需要活动区与输入编辑那一整套。
@@ -8,7 +8,7 @@ use crate::cli::repl::tail::*;
 use crate::cli::*;
 
 pub(in crate::cli) async fn try_run_remote_chat(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     mut live: Option<&mut LiveReplTail>,
     message: &str,
     show_reasoning: Option<bool>,
@@ -24,7 +24,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
         // ensure_daemon also restarts a daemon left over from an older build.
         // Re-resolve paths because that shutdown may complete legacy layout migration.
         ipc::ensure_daemon(paths, None).await?;
-        Some(HotaruPaths::new()?)
+        Some(NanokaPaths::new()?)
     };
     let paths = refreshed_paths.as_ref().unwrap_or(paths);
     let mut stream = if direct_mode_requested() {
@@ -65,12 +65,12 @@ pub(in crate::cli) async fn try_run_remote_chat(
     )
     .await?;
     let Some(first) = ipc::receive::<IpcFrame>(&mut stream).await? else {
-        bail!("Hotaru core closed the connection before accepting the turn");
+        bail!("Nanoka core closed the connection before accepting the turn");
     };
     let run_id = match first {
         IpcFrame::Accepted { run_id, .. } => run_id,
         IpcFrame::Error { message, .. } => bail!("{message}"),
-        _ => bail!("Hotaru core returned an invalid response"),
+        _ => bail!("Nanoka core returned an invalid response"),
     };
     let mut turn_id: Option<String> = None;
 
@@ -338,7 +338,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
             if let Some(live) = live.as_deref_mut() {
                 live.apply_renderer_frame(&mut renderer)?;
             }
-            bail!("Hotaru core disconnected during the turn");
+            bail!("Nanoka core disconnected during the turn");
         };
         let IpcFrame::Event { kind, data, .. } = frame else {
             if let IpcFrame::Error { message, .. } = frame {
@@ -512,7 +512,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
                 notify_if_unfocused(
                     &config,
                     live.as_deref().map(|live| live.editor.focused),
-                    t("Hotaru is waiting on you", "Hotaru 在等你回答"),
+                    t("Nanoka is waiting on you", "Nanoka 在等你回答"),
                     request
                         .questions
                         .first()
@@ -720,7 +720,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
         notify_if_unfocused(
             &config,
             focused,
-            t("Hotaru finished replying", "Hotaru 回复完成"),
+            t("Nanoka finished replying", "Nanoka 回复完成"),
             &result.content,
         );
     }

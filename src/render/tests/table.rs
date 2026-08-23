@@ -28,7 +28,7 @@ fn short_tables_use_content_width() {
     let output = render_table(&[
         "| 项目 | 内容 |".to_string(),
         "|---|---|".to_string(),
-        "| 名字 | 未有 / Hotaru |".to_string(),
+        "| 名字 | 未有 / Nanoka |".to_string(),
         "| 年龄 | 18 |".to_string(),
     ]);
     let terminal_width = terminal::size()

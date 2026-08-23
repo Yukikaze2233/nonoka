@@ -1,6 +1,6 @@
 use super::{ToolRegistry, ToolSpec};
 use crate::clipboard::ClipboardContent;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 use std::env;
@@ -13,7 +13,7 @@ enum PreferredType {
     Image,
 }
 
-pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: NanokaPaths) {
     registry.register(ToolSpec::new(
         "read_clipboard",
         "Read the current Linux clipboard and automatically detect whether it contains text, an image, or a copied local file path. Supports wl-paste, xclip, or xsel.",
@@ -36,7 +36,7 @@ pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
     ));
 }
 
-fn read_clipboard_tool(args: Value, paths: HotaruPaths) -> Result<String> {
+fn read_clipboard_tool(args: Value, paths: NanokaPaths) -> Result<String> {
     if std::env::consts::OS != "linux" {
         return Ok(serde_json::to_string_pretty(&json!({
             "ok": false,
@@ -78,11 +78,11 @@ impl PreferredType {
     }
 }
 
-fn auto_result(paths: HotaruPaths) -> Result<String> {
+fn auto_result(paths: NanokaPaths) -> Result<String> {
     detected_text_result(paths)
 }
 
-fn detected_text_result(paths: HotaruPaths) -> Result<String> {
+fn detected_text_result(paths: NanokaPaths) -> Result<String> {
     match crate::clipboard::read_clipboard()? {
         ClipboardContent::Image(img) => image_binary_result(img, &paths),
         ClipboardContent::ImagePath(path) => image_path_result(path),
@@ -115,7 +115,7 @@ fn text_result() -> Result<String> {
     empty_result()
 }
 
-fn image_binary_result(img: crate::clipboard::ClipboardImage, paths: &HotaruPaths) -> Result<String> {
+fn image_binary_result(img: crate::clipboard::ClipboardImage, paths: &NanokaPaths) -> Result<String> {
     let mime = img.mime.clone();
     let bytes = img.data.len();
     let path = img.write_temp_file(&paths.cache_dir, 0)?;

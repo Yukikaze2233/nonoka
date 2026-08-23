@@ -308,7 +308,7 @@ impl AppConfig {
             .unwrap_or_default();
         match persona {
             PlatformPersonaOverride::Inherit => {}
-            PlatformPersonaOverride::Hotaru => self.prompt.active_persona.clear(),
+            PlatformPersonaOverride::Nanoka => self.prompt.active_persona.clear(),
             PlatformPersonaOverride::Custom { name } => self.prompt.active_persona = name,
         }
     }

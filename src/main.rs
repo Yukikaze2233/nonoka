@@ -4,8 +4,8 @@
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     limit_malloc_arenas();
-    if let Err(error) = hotaru::run().await {
-        eprintln!("{}: {error:#}", hotaru::error_label());
+    if let Err(error) = nanoka::run().await {
+        eprintln!("{}: {error:#}", nanoka::error_label());
         std::process::exit(1);
     }
 }

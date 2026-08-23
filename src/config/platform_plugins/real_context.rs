@@ -718,7 +718,7 @@ pub(crate) fn normalize_unique_strings(values: &mut Vec<String>) {
 
 pub(crate) fn default_real_context_moderation_keywords() -> Vec<String> {
     // Deduplicated from the user's deployed AstrBot real-context configuration.
-    // Keep this self-contained so Hotaru never reads another application's files.
+    // Keep this self-contained so Nanoka never reads another application's files.
     const KEYWORDS: &[&str] = &[
         "3p",
         "4p",

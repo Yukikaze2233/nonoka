@@ -136,7 +136,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
     let mut parsed = parse_message(event.get("message"), event.get("raw_message"), self_id);
     if let Some(reason) = parsed.rejected_reason {
         tracing::warn!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id,
             sender_id = user_id,
             conversation_kind = target.kind(),
@@ -184,7 +184,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
                     .filter(|info| message_info_matches_target(info, target));
                 if info.is_none() {
                     tracing::warn!(
-                        target: "hotaru::qq",
+                        target: "nanoka::qq",
                         quoted_message_id,
                         "{}",
                         t("OneBot quoted-message metadata was missing or mismatched", "OneBot 引用消息元数据缺失或不匹配")
@@ -202,7 +202,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
             }
             Err(error) => {
                 tracing::warn!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     error = %error,
                     quoted_message_id,
                     "{}",
@@ -225,13 +225,13 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
     ) {
         Ok(context) => Arc::new(context),
         Err(error) => {
-            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot platform runtime initialization failed", "OneBot 平台运行时初始化失败"));
+            tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("OneBot platform runtime initialization failed", "OneBot 平台运行时初始化失败"));
             return;
         }
     };
 
     // Classify group traffic before charging rate limits. Busy groups often
-    // produce many messages that do not wake Hotaru and must not starve actual
+    // produce many messages that do not wake Nanoka and must not starve actual
     // mentions or prefix commands.
     // Built-in commands own only their registered names. Other prefixed input
     // remains ordinary chat after plugins have had a chance to claim it.
@@ -252,7 +252,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
         match resolve_onebot_session(&state, &context, target, &event) {
             Ok(session_id) => Some(session_id),
             Err(error) => {
-                tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("resolving the QQ session failed", "解析 QQ 会话失败"));
+                tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("resolving the QQ session failed", "解析 QQ 会话失败"));
                 if matches!(target, Target::Private { .. }) {
                     let _ = context
                         .send_bypass_plugins(OutboundMessage::text(
@@ -356,7 +356,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
             .await
             {
                 Ok(()) => tracing::info!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     session_id,
                     sender_id = user_id,
                     message_id = %inbound_event.message_id,
@@ -364,7 +364,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
                     t("OneBot message queued as a follow-up to the active turn", "OneBot 消息已加入当前回合的后续队列")
                 ),
                 Err(error) => tracing::warn!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     session_id,
                     sender_id = user_id,
                     error = %error,
@@ -405,7 +405,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
                         // 新消息重新起算(链式覆盖)。
                         context.confirm_supersede(&inbound_event).await;
                         tracing::info!(
-                            target: "hotaru::qq",
+                            target: "nanoka::qq",
                             session_id,
                             sender_id = user_id,
                             message_id = %inbound_event.message_id,
@@ -414,7 +414,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
                         )
                     }
                     Err(error) => tracing::warn!(
-                        target: "hotaru::qq",
+                        target: "nanoka::qq",
                         session_id,
                         sender_id = user_id,
                         error = %error,
@@ -462,7 +462,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
             // whoever runs the bot.
             Err(crate::platforms::SessionTurnAcquireError::Full) => {
                 tracing::debug!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     session_id = ?session_id,
                     sender_id = user_id,
                     message_id = %inbound_event.message_id,
@@ -515,7 +515,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
     }
 
     tracing::info!(
-        target: "hotaru::qq",
+        target: "nanoka::qq",
         self_id,
         sender_id = user_id,
         conversation_kind = target.kind(),
@@ -543,9 +543,9 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
             execute_builtin_command(&state, &context, target, &event, command).await
         {
             if let Err(error) = context.send(response).await {
-                tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot built-in command response failed", "OneBot 内置命令响应失败"));
+                tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("OneBot built-in command response failed", "OneBot 内置命令响应失败"));
             } else {
-                tracing::info!(target: "hotaru::qq", self_id, sender_id = user_id, "{}", t("OneBot built-in command response sent", "OneBot 内置命令响应已发送"));
+                tracing::info!(target: "nanoka::qq", self_id, sender_id = user_id, "{}", t("OneBot built-in command response sent", "OneBot 内置命令响应已发送"));
             }
         }
         return;
@@ -566,7 +566,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
         RateDecision::Allow => {}
         RateDecision::DropSilently => {
             tracing::info!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 self_id,
                 sender_id = user_id,
                 conversation_kind = target.kind(),
@@ -580,7 +580,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
         RateDecision::DropWithNotice => {
             let notice_sent = sends_rate_limit_notice(target);
             tracing::info!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 self_id,
                 sender_id = user_id,
                 conversation_kind = target.kind(),
@@ -609,9 +609,9 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
     // 与内置命令同理,插件命令的输出也要过回复处理插件。
     if let Some(response) = plugin_command_response {
         if let Err(error) = context.send(response).await {
-            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot plugin command response failed", "OneBot 插件命令响应失败"));
+            tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("OneBot plugin command response failed", "OneBot 插件命令响应失败"));
         } else {
-            tracing::info!(target: "hotaru::qq", self_id, sender_id = user_id, "{}", t("OneBot plugin command response sent", "OneBot 插件命令响应已发送"));
+            tracing::info!(target: "nanoka::qq", self_id, sender_id = user_id, "{}", t("OneBot plugin command response sent", "OneBot 插件命令响应已发送"));
         }
         return;
     }
@@ -634,12 +634,12 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
     match turn {
         Ok(Some(dispatch)) => match deliver_dispatch(&state, &context, dispatch).await {
             Err(error) => {
-                tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot reply delivery failed", "OneBot 回复投递失败"));
+                tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("OneBot reply delivery failed", "OneBot 回复投递失败"));
                 context.after_turn_aborted().await;
             }
             Ok(true) => {
                 tracing::info!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     self_id,
                     sender_id = user_id,
                     conversation_kind = target.kind(),
@@ -656,7 +656,7 @@ pub(in crate::platforms::onebot) async fn handle_message_with_activity(
             }
         }
         Err(error) => {
-            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot message handling failed", "OneBot 消息处理失败"));
+            tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("OneBot message handling failed", "OneBot 消息处理失败"));
             context.after_turn_aborted().await;
             if matches!(target, Target::Private { .. }) {
                 let _ = context

@@ -269,7 +269,7 @@ pub(crate) fn persona_scope(config: &AppConfig, scope: SkillScope) -> Option<Str
 }
 
 pub(crate) fn target_path(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     name: &str,
     scope: SkillScope,
     persona: Option<&str>,

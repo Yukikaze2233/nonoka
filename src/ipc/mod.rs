@@ -5,7 +5,7 @@ pub(crate) use launch::*;
 pub(crate) use lifecycle::*;
 pub(crate) use protocol::*;
 
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::question::QuestionAnswers;
 use anyhow::{bail, Context, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -23,12 +23,12 @@ use std::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 
-pub const ADMIN_BUSY_MESSAGE: &str = "Hotaru is busy with another operation";
+pub const ADMIN_BUSY_MESSAGE: &str = "Nanoka is busy with another operation";
 
 /// Unique id of this build, stamped by build.rs. A daemon whose build id
 /// differs from the client's is restarted transparently so a rebuild never
 /// keeps serving stale code.
-pub const BUILD_ID: &str = env!("HOTARU_BUILD_ID");
+pub const BUILD_ID: &str = env!("NANOKA_BUILD_ID");
 
 #[cfg(test)]
 mod tests {
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn daemon_process_prefers_the_default_web_port_unless_overridden() {
-        let mut default = std::process::Command::new("hotaru");
+        let mut default = std::process::Command::new("nanoka");
         append_daemon_process_args(&mut default, &DaemonLaunchConfig::default());
         let default_args = default
             .get_args()
@@ -108,7 +108,7 @@ mod tests {
             password_file: Some(PathBuf::from("/private/password")),
             bind: None,
         };
-        let mut overridden = std::process::Command::new("hotaru");
+        let mut overridden = std::process::Command::new("nanoka");
         append_daemon_process_args(&mut overridden, &supplied);
         let overridden_args = overridden
             .get_args()
@@ -121,8 +121,8 @@ mod tests {
         assert!(overridden_args.iter().all(|arg| !arg.contains("secret")));
     }
 
-    fn test_paths(root: &Path) -> HotaruPaths {
-        HotaruPaths {
+    fn test_paths(root: &Path) -> NanokaPaths {
+        NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -131,7 +131,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/hotaru.fish"),
+            fish_hook_file: root.join("fish/nanoka.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -193,7 +193,7 @@ mod tests {
 
         let restored = load_daemon_launch_config(&paths).unwrap();
         assert_eq!(restored, saved);
-        let mut command = std::process::Command::new("hotaru");
+        let mut command = std::process::Command::new("nanoka");
         append_daemon_process_args(&mut command, &restored);
         assert_eq!(
             command.get_args().collect::<Vec<_>>(),
@@ -299,7 +299,7 @@ mod tests {
     fn legacy_inline_password_and_port_are_recovered_into_managed_state() {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
-        let cmdline = b"/usr/bin/hotaru\0__daemon\0--port\09412\0--password=legacy-secret\0";
+        let cmdline = b"/usr/bin/nanoka\0__daemon\0--port\09412\0--password=legacy-secret\0";
 
         let recovered = recover_legacy_daemon_launch_from_cmdline(&paths, cmdline, None).unwrap();
 
@@ -316,7 +316,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
         std::fs::write(temp.path().join("external-password"), "file-secret\n").unwrap();
-        let cmdline = b"hotaru\0__daemon\0--port=9500\0--password-file\0external-password\0";
+        let cmdline = b"nanoka\0__daemon\0--port=9500\0--password-file\0external-password\0";
 
         let recovered =
             recover_legacy_daemon_launch_from_cmdline(&paths, cmdline, Some(temp.path())).unwrap();

@@ -54,7 +54,7 @@ fn repl_history_is_capped() {
 #[test]
 fn models_is_the_cli_model_selector() {
     let matches = localized_command()
-        .try_get_matches_from(["hotaru", "models", "1"])
+        .try_get_matches_from(["nanoka", "models", "1"])
         .unwrap();
     let cli = Cli::from_arg_matches(&matches).unwrap();
 
@@ -63,7 +63,7 @@ fn models_is_the_cli_model_selector() {
         Some(Command::Models(ModelsArgs { target: Some(ref target), global: false })) if target == "1"
     ));
     let old_matches = localized_command()
-        .try_get_matches_from(["hotaru", "providers"])
+        .try_get_matches_from(["nanoka", "providers"])
         .unwrap();
     let old_cli = Cli::from_arg_matches(&old_matches).unwrap();
     assert!(old_cli.command.is_none());
@@ -74,7 +74,7 @@ fn models_is_the_cli_model_selector() {
 async fn one_shot_turns_default_to_a_throwaway_session() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
-    let paths = HotaruPaths {
+    let paths = NanokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -90,7 +90,7 @@ async fn one_shot_turns_default_to_a_throwaway_session() {
         system_scripts_dir: root.join("system-scripts"),
     };
 
-    // Neither flag: `hotaru ask` / `hotaru '<message>'` must not touch a real
+    // Neither flag: `nanoka ask` / `nanoka '<message>'` must not touch a real
     // conversation. `--continue` opts back into the terminal session.
     // Both resolve without contacting the daemon.
     assert_eq!(
@@ -730,8 +730,8 @@ fn strips_terminal_control_sequences_from_repl_text() {
 }
 
 /// 只需要 state_dir 的 fixture：历史文件、状态库都落在它下面。
-fn state_only_paths(root: &std::path::Path) -> HotaruPaths {
-    HotaruPaths {
+fn state_only_paths(root: &std::path::Path) -> NanokaPaths {
+    NanokaPaths {
         root_dir: PathBuf::new(),
         config_dir: PathBuf::new(),
         config_file: PathBuf::new(),

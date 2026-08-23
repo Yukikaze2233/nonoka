@@ -110,9 +110,9 @@ pub(in crate::web) fn persona_identity(config: &AppConfig, prompts: &PromptDocum
     let active = config.prompt.active_persona.trim();
     if active.is_empty() {
         return PersonaIdentity {
-            name: "Hotaru".to_string(),
-            avatar_url: Some("/assets/hotaru-logo.png".to_string()),
-            board_image_url: Some("/assets/hotaruwallpaper.png".to_string()),
+            name: "Nanoka".to_string(),
+            avatar_url: Some("/assets/nanoka-logo.png".to_string()),
+            board_image_url: Some("/assets/nanokawallpaper.png".to_string()),
             board_title: DEFAULT_BOARD_TITLE.to_string(),
             board_subtitle: DEFAULT_BOARD_SUBTITLE.to_string(),
             starter_prompts: DEFAULT_STARTER_PROMPTS.map(str::to_string).to_vec(),
@@ -168,7 +168,7 @@ pub(in crate::web) fn persona_identity(config: &AppConfig, prompts: &PromptDocum
 pub(in crate::web) fn active_persona_avatar_path(
     config: &AppConfig,
     prompts: &PromptDocuments,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
 ) -> Option<PathBuf> {
     let active = config.prompt.active_persona.trim();
     if active.is_empty() {
@@ -185,7 +185,7 @@ pub(in crate::web) fn active_persona_avatar_path(
 pub(in crate::web) fn active_persona_board_path(
     config: &AppConfig,
     prompts: &PromptDocuments,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
 ) -> Option<PathBuf> {
     let active = config.prompt.active_persona.trim();
     let value = prompts
@@ -383,7 +383,7 @@ pub(in crate::web) fn validate_prompt_document_name(name: &str, kind: &str) -> s
     Ok(())
 }
 
-pub(in crate::web) fn read_prompt_documents(config: &AppConfig, paths: &HotaruPaths) -> Result<PromptDocuments> {
+pub(in crate::web) fn read_prompt_documents(config: &AppConfig, paths: &NanokaPaths) -> Result<PromptDocuments> {
     Ok(PromptDocuments {
         personas: read_prompt_document_dir(&config.prompts_dir_path(paths), true)?,
         identities: read_prompt_document_dir(&config.identities_dir_path(paths), false)?,
@@ -545,7 +545,7 @@ pub(in crate::web) fn apply_prompt_documents(
     next_config: &AppConfig,
     current: &PromptDocuments,
     next: &PromptDocuments,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
 ) -> Result<Vec<FileBackup>> {
     let mut mutations = HashMap::<PathBuf, Option<Vec<u8>>>::new();
     collect_prompt_file_mutations(
@@ -595,7 +595,7 @@ pub(in crate::web) fn apply_persona_scope_changes(
     next_config: &AppConfig,
     current: &PromptDocuments,
     next: &PromptDocuments,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
 ) -> Result<Vec<PersonaScopeBackup>> {
     let changes = persona_document_changes(current, next);
     let mut backups = Vec::new();
@@ -621,7 +621,7 @@ pub(in crate::web) fn apply_persona_scope_changes(
                     .parent()
                     .context("persona scope path has no parent")?;
                 let staged = parent.join(format!(
-                    ".hotaru-web-scope-{}-{change_index}-{scope_index}",
+                    ".nanoka-web-scope-{}-{change_index}-{scope_index}",
                     random_token(10)
                 ));
                 std::fs::rename(&original, &staged)?;

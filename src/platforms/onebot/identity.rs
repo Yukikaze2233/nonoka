@@ -108,7 +108,7 @@ pub(in crate::platforms::onebot) async fn resolve_group_name(
         Ok(data) => data,
         Err(error) => {
             tracing::warn!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 error = %error,
                 self_id,
                 group_id,
@@ -120,7 +120,7 @@ pub(in crate::platforms::onebot) async fn resolve_group_name(
     };
     let Some(name) = data_group_name(&data) else {
         tracing::warn!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id,
             group_id,
             "{}",
@@ -169,7 +169,7 @@ pub(in crate::platforms::onebot) async fn resolve_mentioned_users(
                 if user_id == self_id.to_string() {
                     return PlatformMention {
                         user_id,
-                        display_name: Some("Hotaru".to_string()),
+                        display_name: Some("Nanoka".to_string()),
                     };
                 }
                 let key = (self_id, group_id, user_id.clone());
@@ -427,7 +427,7 @@ pub(crate) fn qq_identity_policy(kind: ConversationKind) -> String {
     } else {
         "The history of this private-chat session belongs solely to this transport principal."
     };
-    // is_admin 的语义边界:它只表达 Hotaru 管理面(配置/记忆特权)的访问权。
+    // is_admin 的语义边界:它只表达 Nanoka 管理面(配置/记忆特权)的访问权。
     // 不声明这一条,模型会把 is_admin:false 读成"此人无资格请求任何管理
     // 操作"而直接拒绝——群管工具明明自带非管理员二次确认流程(08-20 伪
     // NapCat 实测,模型原话"我看你的 is_admin 是 false")。

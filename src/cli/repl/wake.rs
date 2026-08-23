@@ -14,7 +14,7 @@ use crate::cli::*;
 /// the turn was already rendered here). Typed submissions queue into the
 /// wake turn as follow-ups.
 pub(in crate::cli) async fn follow_wake_run(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     run_id: &str,
     label: &str,

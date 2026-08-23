@@ -16,7 +16,7 @@ pub(crate) struct ApiProvider {
     pub(crate) models: HashMap<String, ApiModel>,
     #[serde(default)]
     pub(crate) npm: Option<String>,
-    /// 该供应商的 API base URL,用来把 Hotaru 配置里的自定义供应商
+    /// 该供应商的 API base URL,用来把 Nanoka 配置里的自定义供应商
     /// (id 不一定与 models.dev 键一致,如 opencodego vs opencode-go)
     /// 对到目录条目上,计费估算靠它。
     #[serde(default)]
@@ -82,7 +82,7 @@ pub(crate) struct ApiLimit {
 }
 
 impl ApiLimit {
-    /// The window Hotaru may actually fill. Some catalogue entries advertise a
+    /// The window Nanoka may actually fill. Some catalogue entries advertise a
     /// total `context` larger than the `input` the provider will accept —
     /// opencode's big-pickle reports 200k context against a 160k input cap —
     /// and budgeting against the larger number puts compaction 20k of tokens

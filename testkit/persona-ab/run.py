@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """人格提示第二轮 A/B 测具。
 
-驱动方式:PTY 里跑 `HOTARU_DIRECT=1 hotaru` 直连 REPL(不碰 daemon,绝不会连
+驱动方式:PTY 里跑 `NANOKA_DIRECT=1 nanoka` 直连 REPL(不碰 daemon,绝不会连
 QQ);回合完成不靠解析渲染输出,轮询该 home 的 conversation.db。**每个对话
-一个独立 HOTARU_HOME + 独立 REPL 进程**——默认会话即对话,零串扰,也绕开直连
+一个独立 NANOKA_HOME + 独立 REPL 进程**——默认会话即对话,零串扰,也绕开直连
 REPL 不支持 /new 的限制(cli.rs 双 dispatch 分裂,见任务#14)。
 
 测试配置从用户真实 config.jsonc 派生,但剥掉 platforms/web/voice 键、关
-tools 与 memory,人格固定为内置默认 Hotaru。
+tools 与 memory,人格固定为内置默认 Nanoka。
 
 用法:
   python3 run.py smoke   # 冒烟:单对话两轮,验证全链路
@@ -31,9 +31,9 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-HOTARU_BIN = REPO / "target" / "debug" / "hotaru"
+NANOKA_BIN = REPO / "target" / "debug" / "nanoka"
 BASE = Path(__file__).resolve().parent
-REAL_CONFIG = Path.home() / ".hotaru" / "config" / "config.jsonc"
+REAL_CONFIG = Path.home() / ".nanoka" / "config" / "config.jsonc"
 RESULTS = BASE / "results"
 
 # ---------------------------------------------------------------- 配置派生
@@ -81,7 +81,7 @@ def load_real_config() -> dict:
 
 
 def build_home(tag: str, hint: bool, dialogs: bool) -> Path:
-    """为一个对话准备干净的 HOTARU_HOME。"""
+    """为一个对话准备干净的 NANOKA_HOME。"""
     home = BASE / "homes" / tag
     if home.exists():
         shutil.rmtree(home)
@@ -116,15 +116,15 @@ class Repl:
         log.parent.mkdir(parents=True, exist_ok=True)
         self.log = open(log, "wb")
         env = dict(os.environ)
-        env["HOTARU_HOME"] = str(home)
-        env["HOTARU_DIRECT"] = "1"
+        env["NANOKA_HOME"] = str(home)
+        env["NANOKA_DIRECT"] = "1"
         env["TERM"] = "xterm-256color"
         env.setdefault("LANG", "zh_CN.UTF-8")
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
-        # 裸 hotaru 自②批起打印模式帮助退出;测具显式进普通模式。
+        # 裸 nanoka 自②批起打印模式帮助退出;测具显式进普通模式。
         self.proc = subprocess.Popen(
-            [str(HOTARU_BIN), "normal"],
+            [str(NANOKA_BIN), "normal"],
             stdin=slave,
             stdout=slave,
             stderr=slave,
@@ -350,7 +350,7 @@ EMOJI = re.compile(
 
 
 def score_chat(reply: str) -> dict:
-    """默认 Hotaru 人格显式规则的机械化子集(与 08-14 判据同源):
+    """默认 Nanoka 人格显式规则的机械化子集(与 08-14 判据同源):
     ≤100 字、不换行、无表情符号、不用括号写动作(代理:无任何括号)。"""
     return {
         "len_le_100": len(reply) <= 100,

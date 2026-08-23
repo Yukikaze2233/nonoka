@@ -45,7 +45,7 @@ fn group_trigger_matrix() {
     let replied_message = PlatformMessageInfo {
         message_id: "previous".into(),
         sender_id: "10000".into(),
-        sender_display_name: "Hotaru".into(),
+        sender_display_name: "Nanoka".into(),
         timestamp: 1,
         text: "previous reply".into(),
         reply_to_message_id: None,
@@ -76,7 +76,7 @@ async fn busy_model_capacity_waits_silently_without_merging_the_turn() {
             .group_chats
             .non_whitelist_rate_limit
             .max_messages = 0;
-        manager.config.platforms.qq.group_chats.trigger_keywords = vec!["hotaru".to_string()];
+        manager.config.platforms.qq.group_chats.trigger_keywords = vec!["nanoka".to_string()];
     }
     assert!(state
         .platforms
@@ -110,7 +110,7 @@ async fn busy_model_capacity_waits_silently_without_merging_the_turn() {
     assert!(frames.try_recv().is_err());
 
     let mut triggered = base;
-    triggered["message"] = json!([{ "type": "text", "data": { "text": "hotaru hello" } }]);
+    triggered["message"] = json!([{ "type": "text", "data": { "text": "nanoka hello" } }]);
     let task = tokio::spawn(handle_message(
         state,
         handle,

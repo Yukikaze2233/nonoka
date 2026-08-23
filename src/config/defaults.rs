@@ -261,7 +261,7 @@ pub(crate) fn default_web_images_timeout() -> u64 {
 }
 
 pub(crate) fn default_deep_research_dir() -> String {
-    default_hotaru_home()
+    default_nanoka_home()
         .join("data/documents/deep-thinking")
         .display()
         .to_string()
@@ -308,17 +308,17 @@ pub(crate) fn default_image_generation_resolution() -> String {
 }
 
 pub(crate) fn default_image_generation_output_dir() -> String {
-    default_hotaru_home()
+    default_nanoka_home()
         .join("data/pictures/generated-images")
         .display()
         .to_string()
 }
 
-pub(crate) fn default_hotaru_home() -> PathBuf {
-    std::env::var_os("HOTARU_HOME")
+pub(crate) fn default_nanoka_home() -> PathBuf {
+    std::env::var_os("NANOKA_HOME")
         .map(PathBuf::from)
-        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".hotaru")))
-        .unwrap_or_else(|| PathBuf::from("~/.hotaru"))
+        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".nanoka")))
+        .unwrap_or_else(|| PathBuf::from("~/.nanoka"))
 }
 
 pub(crate) fn default_image_generation_timeout() -> u64 {
@@ -435,7 +435,7 @@ pub(crate) fn default_claude_code_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_claude_code_hotaru_tools() -> String {
+pub(crate) fn default_claude_code_nanoka_tools() -> String {
     "all".to_string()
 }
 

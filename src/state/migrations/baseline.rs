@@ -421,7 +421,7 @@ pub(in crate::state) fn apply_v8_artifact_assets(conn: &Connection) -> Result<()
 /// The account scope is deliberately separate from the platform account id:
 /// `*` represents a grant shared by every account on a platform, while a
 /// concrete id leaves room for narrower policies later without changing the
-/// schema. Hotaru currently writes only the global scope for QQ.
+/// schema. Nanoka currently writes only the global scope for QQ.
 pub(in crate::state) fn apply_v9_platform_access_control(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS platform_access_grants (

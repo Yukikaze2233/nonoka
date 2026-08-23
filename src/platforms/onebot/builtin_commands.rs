@@ -32,7 +32,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             } else {
                 match resolve_onebot_session(state, context, target, event) {
                     Err(error) => {
-                        tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("resolving the QQ session for reset failed", "解析待重置的 QQ 会话失败"));
+                        tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("resolving the QQ session for reset failed", "解析待重置的 QQ 会话失败"));
                         t(
                             "The conversation could not be reset. Check the daemon logs for details.",
                             "无法重置当前会话，请查看 daemon 日志。",
@@ -47,7 +47,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                             Ok(()) => match context.after_session_reset().await {
                                 Ok(()) => {
                                 tracing::info!(
-                                    target: "hotaru::qq",
+                                    target: "nanoka::qq",
                                     session_id = %session_id,
                                     sender_id = %context.sender_id,
                                     "{}",
@@ -61,7 +61,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                                 }
                                 Err(error) => {
                                     tracing::warn!(
-                                        target: "hotaru::qq",
+                                        target: "nanoka::qq",
                                         session_id = %session_id,
                                         error = %error,
                                         "{}",
@@ -80,12 +80,12 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                             )
                             .to_string(),
                             Err(PlatformSessionResetError::Unavailable) => t(
-                                "The Hotaru core is unavailable, so the conversation was not reset.",
-                                "Hotaru 核心当前不可用，会话未重置。",
+                                "The Nanoka core is unavailable, so the conversation was not reset.",
+                                "Nanoka 核心当前不可用，会话未重置。",
                             )
                             .to_string(),
                             Err(PlatformSessionResetError::Internal(error)) => {
-                                tracing::warn!(target: "hotaru::qq", session_id = %session_id, error = %error, "{}", t("resetting the QQ conversation failed", "重置 QQ 会话失败"));
+                                tracing::warn!(target: "nanoka::qq", session_id = %session_id, error = %error, "{}", t("resetting the QQ conversation failed", "重置 QQ 会话失败"));
                                 t(
                                     "The conversation could not be reset. Check the daemon logs for details.",
                                     "无法重置当前会话，请查看 daemon 日志。",
@@ -113,8 +113,8 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Busy) => t(
-                        "Hotaru is busy. Try again shortly.",
-                        "Hotaru 正忙，请稍后重试。",
+                        "Nanoka is busy. Try again shortly.",
+                        "Nanoka 正忙，请稍后重试。",
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Unavailable) => t(
@@ -123,7 +123,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Internal(error)) => {
-                        tracing::warn!(target: "hotaru::qq", %error, "{}", t("wiping the QQ persona state failed", "抹除 QQ 人格状态失败"));
+                        tracing::warn!(target: "nanoka::qq", %error, "{}", t("wiping the QQ persona state failed", "抹除 QQ 人格状态失败"));
                         t(
                             "The wipe could not be completed. Check the daemon logs for details.",
                             "抹除未能完成，请查看 daemon 日志。",
@@ -144,7 +144,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             match crate::memory::MemoryStore::new(&context.config, &state.paths).reset_all(false) {
                 Ok(()) => t("Long-term memory erased.", "长期记忆已清空。").to_string(),
                 Err(error) => {
-                    tracing::warn!(target: "hotaru::qq", %error, "{}", t("resetting platform memory failed", "平台记忆清空失败"));
+                    tracing::warn!(target: "nanoka::qq", %error, "{}", t("resetting platform memory failed", "平台记忆清空失败"));
                     t(
                         "The memory reset could not be completed. Check the daemon logs for details.",
                         "记忆清空未能完成，请查看 daemon 日志。",
@@ -163,7 +163,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             } else {
                 match resolve_onebot_session(state, context, target, event) {
                     Err(error) => {
-                        tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("resolving the QQ session for stop failed", "解析待停止的 QQ 会话失败"));
+                        tracing::warn!(target: "nanoka::qq", error = %error, "{}", t("resolving the QQ session for stop failed", "解析待停止的 QQ 会话失败"));
                         t(
                             "The current conversation could not be stopped. Check the daemon logs for details.",
                             "无法停止当前会话，请查看 daemon 日志。",
@@ -187,7 +187,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                         .ok()
                         .and_then(Result::ok);
                         tracing::info!(
-                            target: "hotaru::qq",
+                            target: "nanoka::qq",
                             session_id = %session_id,
                             sender_id = %context.sender_id,
                             cancelled,
@@ -262,8 +262,8 @@ pub(in crate::platforms::onebot) fn execute_models_command(state: &DaemonState, 
     };
     if manager.admin_busy {
         return t(
-            "Hotaru is busy with another admin operation. Try again shortly.",
-            "Hotaru 正忙于其他管理操作，请稍后再试。",
+            "Nanoka is busy with another admin operation. Try again shortly.",
+            "Nanoka 正忙于其他管理操作，请稍后再试。",
         )
         .to_string();
     }
@@ -292,7 +292,7 @@ pub(in crate::platforms::onebot) fn execute_models_command(state: &DaemonState, 
     next_config.platforms.upsert_model_route(route);
     if let Err(error) = next_config.save(&state.paths) {
         tracing::warn!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             error = %error,
             "{}",
             t(

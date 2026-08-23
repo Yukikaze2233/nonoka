@@ -27,7 +27,7 @@
 - 远端：`src/web/ipc_server.rs` `GetReplSession`，`None if dev => 自举 dev`，否则 `store.session_id()`。
 - 直连：`src/cli/repl/direct.rs` `run_direct_repl`，normal 无指针时 `set_repl_session(&persona, &state.session_id())`。
 
-dev 已经自举独立会话；normal 没有，于是第一次 `hotaru normal` 会污染终端集成会话。
+dev 已经自举独立会话；normal 没有，于是第一次 `nanoka normal` 会污染终端集成会话。
 
 ### 方案
 
@@ -57,8 +57,8 @@ dev 已经自举独立会话；normal 没有，于是第一次 `hotaru normal` �
 ### 现状与实测
 
 - 当前实现：远端 REPL 在提交前执行 `persist_repl_history_entry(paths, input)`（`remote/interactive.rs` 约 941 行），写入全局 `state/repl-history.jsonl`；启动时 `load_repl_input_history` 合并“会话历史 + 该文件”。
-- 我在 `/tmp` 沙箱 + mock LLM 下用 tmux 开两个 `hotaru normal` 实测：**第二个 REPL 上键可以看到第一个 REPL 刚输入的内容**。当前代码未复现。
-- 可能变量：两次启动的 `HOTARU_HOME` 不同、第一/第二个 REPL 实际落在不同会话（例如一个先被 `/session` 切走）、直连与 daemon 混用、或第二 REPL 在文件 flush 前极早启动（实测 150ms 也未复现）。
+- 我在 `/tmp` 沙箱 + mock LLM 下用 tmux 开两个 `nanoka normal` 实测：**第二个 REPL 上键可以看到第一个 REPL 刚输入的内容**。当前代码未复现。
+- 可能变量：两次启动的 `NANOKA_HOME` 不同、第一/第二个 REPL 实际落在不同会话（例如一个先被 `/session` 切走）、直连与 daemon 混用、或第二 REPL 在文件 flush 前极早启动（实测 150ms 也未复现）。
 
 ### 方案（先做鲁棒化，不等复现）
 
@@ -66,7 +66,7 @@ dev 已经自举独立会话；normal 没有，于是第一次 `hotaru normal` �
 2. **daemon 是唯一写入者**：客户端提交时通过 IPC `RecordReplHistory { session_id, entry }` 写入；`GetReplSession` 返回该会话历史尾部。两个 REPL 无论启动先后，都从同一真相源读。
 3. 客户端保留现有 file 路径作为离线/直连 fallback；直连模式本地直接写 SQLite（它本就有 StateStore）。
 4. 启动时只显示本会话历史 + legacy 全局条目；`/reset` 不清输入历史（与当前语义一致）。
-5. 给用户补充复现信息：是否两个 REPL 的 `HOTARU_HOME` 一致、是否使用 `/session`、是否是 `HOTARU_DIRECT`。在根因完全确认前，按上面方案实施仍能消除该类问题。
+5. 给用户补充复现信息：是否两个 REPL 的 `NANOKA_HOME` 一致、是否使用 `/session`、是否是 `NANOKA_DIRECT`。在根因完全确认前，按上面方案实施仍能消除该类问题。
 
 ## 5. 修改文件清单
 
@@ -81,7 +81,7 @@ dev 已经自举独立会话；normal 没有，于是第一次 `hotaru normal` �
 ## 6. 验收
 
 1. Ctrl+Left/Right 在 ASCII/CJK/混合文本中按词移动，占位符原子。
-2. 全新 `HOTARU_HOME`：先 `hotaru normal` 后，`hotaru session` 中 terminal 会话与 REPL 会话不同；`hotaru ask --continue` 仍进 terminal 会话。
+2. 全新 `NANOKA_HOME`：先 `nanoka normal` 后，`nanoka session` 中 terminal 会话与 REPL 会话不同；`nanoka ask --continue` 仍进 terminal 会话。
 3. 有历史的 daemon 冷启动：REPL 首帧 footer `context_tokens` 非 0 且与下一次请求前估算一致。
 4. 两个 REPL 同时开：第二个上键有第一个的历史；重启 daemon 后历史仍在且按会话隔离。
 5. 门禁与字节稳定性同总览。

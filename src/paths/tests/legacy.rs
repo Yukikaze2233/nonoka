@@ -80,12 +80,12 @@ fn unified_layout_merges_xdg_documents_and_both_picture_directories() {
     fs::write(legacy.config_dir.join("shell/zsh-hook.zsh"), "zsh hook").unwrap();
     fs::write(
         temp.path().join(".bashrc"),
-        "before\n# >>> hotaru bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< hotaru bash hook <<<\nafter\n",
+        "before\n# >>> nanoka bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< nanoka bash hook <<<\nafter\n",
     )
     .unwrap();
     fs::write(
         temp.path().join(".zshrc"),
-        "before\n# >>> hotaru zsh hook >>>\nsource '/legacy/zsh-hook.zsh'\n# <<< hotaru zsh hook <<<\nafter\n",
+        "before\n# >>> nanoka zsh hook >>>\nsource '/legacy/zsh-hook.zsh'\n# <<< nanoka zsh hook <<<\nafter\n",
     )
     .unwrap();
     fs::write(legacy.data_dir.join("data.bin"), "data").unwrap();
@@ -336,7 +336,7 @@ fn interrupted_shell_hook_refresh_is_retried_before_marking_layout_complete() {
     fs::write(legacy.config_dir.join("shell/bash-hook.sh"), "bash hook").unwrap();
     fs::write(
         temp.path().join(".bashrc"),
-        "# >>> hotaru bash hook >>>\nsource '/legacy/bash-hook.sh'\n",
+        "# >>> nanoka bash hook >>>\nsource '/legacy/bash-hook.sh'\n",
     )
     .unwrap();
 
@@ -347,7 +347,7 @@ fn interrupted_shell_hook_refresh_is_retried_before_marking_layout_complete() {
 
     fs::write(
         temp.path().join(".bashrc"),
-        "# >>> hotaru bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< hotaru bash hook <<<\n",
+        "# >>> nanoka bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< nanoka bash hook <<<\n",
     )
     .unwrap();
     migrate_legacy_layout(&legacy, &next).unwrap();
@@ -423,7 +423,7 @@ fn legacy_data_and_state_alias_is_migrated_once() {
 fn legacy_layout_stays_put_while_the_core_lock_is_held() {
     let temp = tempfile::tempdir().unwrap();
     let (legacy, _) = test_layouts(temp.path());
-    let runtime_dir = legacy.state_dir.join("hotaru");
+    let runtime_dir = legacy.state_dir.join("nanoka");
     fs::create_dir_all(&runtime_dir).unwrap();
     let lock = OpenOptions::new()
         .create(true)
@@ -448,7 +448,7 @@ fn legacy_layout_stays_put_while_the_core_lock_is_held() {
 fn legacy_layout_stays_put_while_the_starter_lock_is_held() {
     let temp = tempfile::tempdir().unwrap();
     let (legacy, _) = test_layouts(temp.path());
-    let runtime_dir = legacy.state_dir.join("hotaru");
+    let runtime_dir = legacy.state_dir.join("nanoka");
     fs::create_dir_all(&runtime_dir).unwrap();
     let lock = OpenOptions::new()
         .create(true)

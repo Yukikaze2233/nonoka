@@ -46,7 +46,7 @@ use crate::config::{
 };
 use crate::i18n::{text_for, Locale};
 use crate::ipc::ImageAttachment;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::state::{PlatformSessionBindingKey, StateStore};
 use crate::runtime::{random_id, validate_content, ActorCommand, DaemonState, IpcRunGuard, RunInfo};
 use anyhow::{anyhow, bail, Context, Result};

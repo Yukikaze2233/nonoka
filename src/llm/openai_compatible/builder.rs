@@ -40,7 +40,7 @@ impl OpenAiCompatibleClient {
         }
     }
 
-    pub fn from_config(config: &AppConfig, paths: &HotaruPaths) -> Result<Self> {
+    pub fn from_config(config: &AppConfig, paths: &NanokaPaths) -> Result<Self> {
         crate::llm::cache_log::configure(paths, &config.cache);
         let endpoints = llm_endpoints(config, paths)?;
         let first = endpoints
@@ -73,7 +73,7 @@ impl OpenAiCompatibleClient {
     /// the shared endpoint scheduler, exactly like the main model pool.
     pub fn from_choices(
         config: &AppConfig,
-        paths: &HotaruPaths,
+        paths: &NanokaPaths,
         choices: &[crate::config::ProviderModelChoice],
     ) -> Result<Self> {
         crate::llm::cache_log::configure(paths, &config.cache);
@@ -157,7 +157,7 @@ impl OpenAiCompatibleClient {
         Ok(client)
     }
 
-    pub fn new(provider: &ProviderConfig, config: &AppConfig, paths: &HotaruPaths) -> Result<Self> {
+    pub fn new(provider: &ProviderConfig, config: &AppConfig, paths: &NanokaPaths) -> Result<Self> {
         if !provider.enabled {
             bail!(
                 "{}: {}",
@@ -337,7 +337,7 @@ impl OpenAiCompatibleClient {
         }
     }
 
-    /// Agent 构造时声明会话模式:claude-code 的原生工具/Hotaru 工具双作用域
+    /// Agent 构造时声明会话模式:claude-code 的原生工具/Nanoka 工具双作用域
     /// (off/dev/normal/all)按它裁决。其他协议不受影响。
     pub fn with_claude_code_dev_mode(mut self, dev: bool) -> Self {
         self.claude_code_dev_mode = dev;
@@ -373,7 +373,7 @@ impl OpenAiCompatibleClient {
 pub(in crate::llm::openai_compatible) fn claude_code_runtime(
     endpoints: &[LlmEndpoint],
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
 ) -> Option<Arc<ClaudeCodeRuntime>> {
     if !endpoints
         .iter()

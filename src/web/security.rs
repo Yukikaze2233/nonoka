@@ -11,7 +11,7 @@ use crate::web::*;
 
 pub(in crate::web) const MAX_SECRET_CHARS: usize = 100_000;
 
-pub(in crate::web) const AUTH_COOKIE: &str = "hotaru_session";
+pub(in crate::web) const AUTH_COOKIE: &str = "nanoka_session";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

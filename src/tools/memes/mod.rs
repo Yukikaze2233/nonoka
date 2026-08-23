@@ -7,7 +7,7 @@ pub(crate) use validate::*;
 
 use super::{vision, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, MemesPluginConfig};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::prompts::MEME_DESCRIPTION_PROMPT;
 use anyhow::{bail, Context, Result};
 use image::AnimationDecoder;
@@ -80,7 +80,7 @@ pub(crate) fn auto_meme_reminder(
 /// 两个上下文都注册这两个工具：群聊里也要能加表情。`manage_meme` 是写工具，
 /// 但它只写人格自己的表情库目录，和 `generate_image` 同类——平台注册表那条
 /// 「全员 ReadOnly」的断言把它们俩列为明示例外。
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
     if !config.plugins.memes.enabled {
         return;
     }
@@ -89,11 +89,11 @@ pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPat
 }
 
 /// 平台/群聊上下文：读写都给。
-pub fn register_chat(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPaths) {
+pub fn register_chat(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
     register(registry, config, paths);
 }
 
-fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPaths) {
+fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
     // 参数与描述都来自 descriptions/use_meme.json（注册后被整体覆盖），
     // 这里给的只是占位。
     registry.register(ToolSpec::new_with_progress(
@@ -123,7 +123,7 @@ fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPat
     ));
 }
 
-fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: HotaruPaths) {
+fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
     registry.register(
         ToolSpec::new(
             "manage_meme",
@@ -157,7 +157,7 @@ fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: Hotaru
     );
 }
 
-async fn search_meme(args: Value, config: &AppConfig, paths: &HotaruPaths) -> Result<String> {
+async fn search_meme(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<String> {
     let library = selected_library(&args, config);
     let query = args
         .get("query")
@@ -211,7 +211,7 @@ async fn search_meme(args: Value, config: &AppConfig, paths: &HotaruPaths) -> Re
 async fn show_meme(
     args: Value,
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     progress: crate::tools::ToolProgress,
 ) -> Result<String> {
     let library = selected_library(&args, config);
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn sanitize_library_keeps_simple_names() {
-        assert_eq!(sanitize_library("Hotaru"), "hotaru");
+        assert_eq!(sanitize_library("Nanoka"), "nanoka");
         assert_eq!(sanitize_library("默认 表情"), "default");
     }
 
@@ -317,7 +317,7 @@ mod tests {
     #[test]
     fn current_library_follows_persona_mapping() {
         let mut config = AppConfig::default();
-        assert_eq!(current_persona_library(&config), "hotaru");
+        assert_eq!(current_persona_library(&config), "nanoka");
         config.prompt.active_persona = "Custom Persona.md".to_string();
         config.plugins.memes.persona_libraries.insert(
             config.active_persona_scope(),
@@ -385,16 +385,16 @@ mod tests {
         assert_eq!(origin.sent_at, "2026-08-10T12:00:00+00:00");
     }
 
-    /// 真实链路实测：cargo test --bin hotaru -- --ignored collect_meme_records_origin
-    /// 需要 HOTARU_E2E_CONFIG_DIR 指向含识图模型配置的真实 config 目录，
-    /// HOTARU_E2E_IMAGE 指向一张能通过表情判定的图片；数据写入临时目录。
+    /// 真实链路实测：cargo test --bin nanoka -- --ignored collect_meme_records_origin
+    /// 需要 NANOKA_E2E_CONFIG_DIR 指向含识图模型配置的真实 config 目录，
+    /// NANOKA_E2E_IMAGE 指向一张能通过表情判定的图片；数据写入临时目录。
     #[tokio::test]
-    #[ignore = "hits the real vision model; needs HOTARU_E2E_CONFIG_DIR + HOTARU_E2E_IMAGE"]
+    #[ignore = "hits the real vision model; needs NANOKA_E2E_CONFIG_DIR + NANOKA_E2E_IMAGE"]
     async fn collect_meme_records_origin_end_to_end() {
-        let config_dir = PathBuf::from(std::env::var("HOTARU_E2E_CONFIG_DIR").unwrap());
-        let image = PathBuf::from(std::env::var("HOTARU_E2E_IMAGE").unwrap());
+        let config_dir = PathBuf::from(std::env::var("NANOKA_E2E_CONFIG_DIR").unwrap());
+        let image = PathBuf::from(std::env::var("NANOKA_E2E_IMAGE").unwrap());
         let temp = tempfile::tempdir().unwrap();
-        let paths = HotaruPaths {
+        let paths = NanokaPaths {
             root_dir: config_dir.clone(),
             config_dir: config_dir.clone(),
             config_file: config_dir.join("config.jsonc"),
@@ -403,7 +403,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("fish/hotaru.fish"),
+            fish_hook_file: temp.path().join("fish/nanoka.fish"),
             bash_hook_file: temp.path().join("shell/bash-hook.sh"),
             zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
             scripts_dir: config_dir.join("scripts"),
@@ -709,10 +709,10 @@ mod tests {
 #[cfg(test)]
 mod register_tests {
     use super::*;
-    use crate::paths::HotaruPaths;
+    use crate::paths::NanokaPaths;
 
-    fn test_paths(root: &std::path::Path) -> HotaruPaths {
-        HotaruPaths {
+    fn test_paths(root: &std::path::Path) -> NanokaPaths {
+        NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -721,7 +721,7 @@ mod register_tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/hotaru.fish"),
+            fish_hook_file: root.join("fish/nanoka.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

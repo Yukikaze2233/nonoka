@@ -57,7 +57,7 @@ pub(crate) struct PlatformTurnContext {
     pub(crate) sender_display_name: String,
     pub(crate) is_admin: bool,
     pub(crate) config: AppConfig,
-    pub(crate) paths: HotaruPaths,
+    pub(crate) paths: NanokaPaths,
     pub(crate) state_store: StateStore,
     pub(crate) adapter: Arc<dyn PlatformAdapter>,
     pub(crate) plugins: Arc<plugins::PlatformPluginRegistry>,
@@ -83,7 +83,7 @@ impl PlatformTurnContext {
         sender_display_name: String,
         is_admin: bool,
         config: AppConfig,
-        paths: HotaruPaths,
+        paths: NanokaPaths,
         state_store: StateStore,
         adapter: Arc<dyn PlatformAdapter>,
         plugins: Arc<plugins::PlatformPluginRegistry>,
@@ -431,14 +431,14 @@ impl PlatformTurnContext {
                     self.record_partial_delivery(&error);
                 match (partially_delivered, prepared.fallback) {
                     (true, _) => {
-                        // `hotaru::qq` and not the module default: these are
+                        // `nanoka::qq` and not the module default: these are
                         // delivery outcomes an operator reads next to the
                         // "回复已投递" lines, and every other target is filtered
-                        // to ERROR unless HOTARU_LOG says otherwise (see
+                        // to ERROR unless NANOKA_LOG says otherwise (see
                         // `logging::init`), which kept this whole branch
                         // invisible in the QQ log.
                         tracing::warn!(
-                            target: "hotaru::qq",
+                            target: "nanoka::qq",
                             error = %error,
                             "{}",
                             crate::i18n::text(
@@ -449,7 +449,7 @@ impl PlatformTurnContext {
                         Err((error, response_target_delivered))
                     }
                     (false, Some(fallback)) => {
-                        tracing::warn!(target: "hotaru::qq", error = %error, "{}", crate::i18n::text("transformed platform message failed; sending fallback", "转换后的平台消息发送失败；正在发送回退消息"));
+                        tracing::warn!(target: "nanoka::qq", error = %error, "{}", crate::i18n::text("transformed platform message failed; sending fallback", "转换后的平台消息发送失败；正在发送回退消息"));
                         match self.adapter.send(fallback.clone()).await {
                             Ok(receipt) => Ok((fallback, receipt, false)),
                             Err(error) => {
@@ -494,7 +494,7 @@ impl PlatformTurnContext {
                 }
                 Err(error) => {
                     let _ = self.record_partial_delivery(&error);
-                    tracing::warn!(target: "hotaru::qq", error = %error, "{}", crate::i18n::text("platform plugin follow-up send failed", "平台插件后续消息发送失败"));
+                    tracing::warn!(target: "nanoka::qq", error = %error, "{}", crate::i18n::text("platform plugin follow-up send failed", "平台插件后续消息发送失败"));
                 }
             }
         }

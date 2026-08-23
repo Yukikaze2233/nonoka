@@ -6,7 +6,7 @@
 use crate::cli::*;
 
 #[derive(Debug, Parser)]
-#[command(name = "hotaru", version, about = "Hotaru CLI AI Agent")]
+#[command(name = "nanoka", version, about = "Nanoka CLI AI Agent")]
 pub struct Cli {
     #[arg(long, global = true)]
     pub debug: bool,
@@ -81,8 +81,8 @@ pub enum Command {
     AlarmWorker(AlarmWorkerArgs),
     #[command(name = "__tool", hide = true)]
     Tool(ToolArgs),
-    /// Internal: run as the Hotaru daemon (spawned by the CLI via
-    /// `current_exe`, replacing the former separate `hotarud` binary).
+    /// Internal: run as the Nanoka daemon (spawned by the CLI via
+    /// `current_exe`, replacing the former separate `nanokad` binary).
     #[command(name = "__daemon", hide = true)]
     DaemonWorker(WebArgs),
     Ask(MessageArgs),
@@ -170,7 +170,7 @@ pub struct ToolArgs {
     pub arguments: Option<String>,
 }
 
-/// 工具桥:以本会话身份(HOTARU_SESSION)调用结构化工具。--list 列出的即
+/// 工具桥:以本会话身份(NANOKA_SESSION)调用结构化工具。--list 列出的即
 /// 本会话可调用的集合;内层调用在 daemon 侧的会话工作区执行,不继承本
 /// shell 的环境变量与当前目录,跨工具传数据走参数 JSON 或文件。
 #[derive(Debug, Args)]

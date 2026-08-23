@@ -188,8 +188,8 @@ fn resource_layout_rejects_absolute_symlinks_into_moved_trees() {
 #[test]
 fn resource_path_remapping_includes_the_legacy_xdg_config_root() {
     let base = BaseDirs::new().unwrap();
-    let root = base.home_dir().join(".hotaru");
-    let paths = HotaruPaths {
+    let root = base.home_dir().join(".nanoka");
+    let paths = NanokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -198,14 +198,14 @@ fn resource_path_remapping_includes_the_legacy_xdg_config_root() {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("data/pictures"),
-        fish_hook_file: base.config_dir().join("fish/conf.d/hotaru.fish"),
+        fish_hook_file: base.config_dir().join("fish/conf.d/nanoka.fish"),
         bash_hook_file: root.join("config/shell/bash-hook.sh"),
         zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
         scripts_dir: root.join("data/scripts"),
-        system_scripts_dir: PathBuf::from("/usr/share/hotaru/scripts"),
+        system_scripts_dir: PathBuf::from("/usr/share/nanoka/scripts"),
     };
     assert_eq!(
-        paths.migrated_resource_path(&base.config_dir().join("hotaru/prompts/team")),
+        paths.migrated_resource_path(&base.config_dir().join("nanoka/prompts/team")),
         Some(root.join("data/prompts/team"))
     );
     assert_eq!(
@@ -241,7 +241,7 @@ fn resource_migration_holds_runtime_exclusion_through_commit() {
     let (_, layout) = test_layouts(temp.path());
     fs::create_dir_all(layout.config_dir.join("skills/demo")).unwrap();
     fs::write(layout.config_dir.join("skills/demo/SKILL.md"), "skill").unwrap();
-    let runtime_dir = layout.state_dir.join("hotaru");
+    let runtime_dir = layout.state_dir.join("nanoka");
     fs::create_dir_all(&runtime_dir).unwrap();
     let starter = OpenOptions::new()
         .create(true)

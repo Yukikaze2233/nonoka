@@ -11,7 +11,7 @@ use crate::cli::*;
 /// Which session a one-shot CLI turn lands in.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::cli) enum TurnSession {
-    /// The terminal session — what shell-hook and `hotaru new`/`session` drive.
+    /// The terminal session — what shell-hook and `nanoka new`/`session` drive.
     Current,
     /// An explicit `--session` target, resolved to a session id.
     Explicit(String),
@@ -20,11 +20,11 @@ pub(in crate::cli) enum TurnSession {
     Ephemeral,
 }
 
-/// Picks the session for `hotaru ask` / a bare `hotaru '<message>'`. Both default
+/// Picks the session for `nanoka ask` / a bare `nanoka '<message>'`. Both default
 /// to a throwaway session; `--session` and `--continue` opt back into a real
 /// one (clap already rejects passing both).
 pub(in crate::cli) async fn one_shot_session(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     session_arg: Option<&str>,
     continue_session: bool,
 ) -> Result<TurnSession> {
@@ -46,7 +46,7 @@ pub(in crate::cli) fn ephemeral_session_name() -> String {
     t("One-shot", "一次性对话").to_string()
 }
 
-pub(in crate::cli) async fn create_ephemeral_session(paths: &HotaruPaths) -> Result<String> {
+pub(in crate::cli) async fn create_ephemeral_session(paths: &NanokaPaths) -> Result<String> {
     let (_, data) = session_admin(
         paths,
         IpcCommand::CreateSession {
@@ -61,13 +61,13 @@ pub(in crate::cli) async fn create_ephemeral_session(paths: &HotaruPaths) -> Res
         .and_then(|session| session.get("session_id"))
         .and_then(serde_json::Value::as_str)
         .map(str::to_string)
-        .ok_or_else(|| anyhow::anyhow!("Hotaru core returned an invalid response"))
+        .ok_or_else(|| anyhow::anyhow!("Nanoka core returned an invalid response"))
 }
 
 /// Tears a throwaway session down. Background jobs go first so nothing is left
 /// pointing at a session that is about to disappear. Best effort: a daemon
 /// that has gone away leaves a row the startup sweep collects.
-pub(in crate::cli) async fn discard_ephemeral_session(paths: &HotaruPaths, session_id: &str) {
+pub(in crate::cli) async fn discard_ephemeral_session(paths: &NanokaPaths, session_id: &str) {
     let _ = send_ipc_admin(
         paths,
         IpcCommand::StopSessionJobs {
@@ -160,7 +160,7 @@ pub(in crate::cli) fn detect_origin_tty() -> Option<crate::ipc::OriginTty> {
     })
 }
 
-pub(in crate::cli) async fn send_ipc_command(paths: &HotaruPaths, command: IpcCommand) -> Result<()> {
+pub(in crate::cli) async fn send_ipc_command(paths: &NanokaPaths, command: IpcCommand) -> Result<()> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
     ipc::send(&mut stream, &IpcRequest::new(command)).await?;
     validate_ipc_command_response(ipc::receive::<IpcFrame>(&mut stream).await?)
@@ -172,8 +172,8 @@ pub(in crate::cli) fn validate_ipc_command_response(frame: Option<IpcFrame>) -> 
             Ok(())
         }
         Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-        Some(other) => bail!("Hotaru core returned an unexpected response: {other:?}"),
-        None => bail!("Hotaru core closed the connection without a response"),
+        Some(other) => bail!("Nanoka core returned an unexpected response: {other:?}"),
+        None => bail!("Nanoka core closed the connection without a response"),
     }
 }
 
@@ -195,7 +195,7 @@ pub(in crate::cli) fn display_session_name(name: &str) -> &str {
 }
 
 pub(in crate::cli) async fn apply_repl_session_switch(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     config: &AppConfig,
     state: &ipc::SessionState,
     active_session_id: &mut String,
@@ -439,7 +439,7 @@ pub(in crate::cli) fn repl_list_mode(mode: AgentMode) -> Option<String> {
 }
 
 pub(in crate::cli) async fn resolve_repl_session_target(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
     arg: &str,
@@ -488,7 +488,7 @@ pub(in crate::cli) async fn resolve_repl_session_target(
 
 pub(in crate::cli) fn reload_repl_queue(
     live: &mut LiveReplTail,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     session_id: &str,
 ) -> Result<()> {
     let store = StateStore::new(paths)?.pinned(session_id);
@@ -514,7 +514,7 @@ pub(in crate::cli) fn confirm_stdin(prompt: &str) -> Result<bool> {
 /// busy, core restarting, …) through the live tail instead of propagating
 /// them so the REPL survives.
 pub(in crate::cli) async fn repl_ipc_admin(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     command: IpcCommand,
 ) -> Result<Option<(ipc::SessionState, serde_json::Value)>> {
@@ -531,7 +531,7 @@ pub(in crate::cli) async fn repl_ipc_admin(
 }
 
 pub(in crate::cli) async fn repl_get_session_state(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     target: crate::ipc::SessionRef,
 ) -> Result<Option<ipc::SessionState>> {
@@ -543,7 +543,7 @@ pub(in crate::cli) async fn repl_get_session_state(
 }
 
 pub(in crate::cli) async fn repl_fallback_session_state(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
 ) -> Result<Option<ipc::SessionState>> {
@@ -588,7 +588,7 @@ pub(in crate::cli) async fn repl_fallback_session_state(
 /// session when the REPL's own session was one of the ones deleted, so backing
 /// out never strands the REPL on a session that no longer exists.
 pub(in crate::cli) async fn repl_pick_session(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
     active_session_id: &str,
@@ -658,7 +658,7 @@ pub(in crate::cli) async fn repl_pick_session(
 }
 
 pub(in crate::cli) async fn repl_active_or_default_state(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     active_session_id: &str,
 ) -> Result<(ipc::SessionState, bool)> {
     match send_ipc_admin(
@@ -681,22 +681,22 @@ pub(in crate::cli) async fn repl_active_or_default_state(
 }
 
 /// Ensures the daemon is running, then sends one admin command; used by the
-/// one-shot session subcommands (`hotaru new/session/rename/...`).
+/// one-shot session subcommands (`nanoka new/session/rename/...`).
 pub(in crate::cli) async fn session_admin(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     command: IpcCommand,
 ) -> Result<(ipc::SessionState, serde_json::Value)> {
     ipc::ensure_daemon(paths, None).await?;
-    let refreshed = HotaruPaths::new()?;
+    let refreshed = NanokaPaths::new()?;
     send_ipc_admin(&refreshed, command).await
 }
 
-/// Resolves a `hotaru session/delete` target argument outside the REPL:
+/// Resolves a `nanoka session/delete` target argument outside the REPL:
 /// numbers index into the visible session list, anything else is a name.
 /// Resolves a `--session` argument (name or list index) to a concrete
 /// session id, without moving the global current pointer.
 pub(in crate::cli) async fn resolve_session_id_for_turn(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     arg: &str,
 ) -> Result<String> {
     let (_, data) = session_admin(paths, IpcCommand::ListSessions { mode: None }).await?;
@@ -724,7 +724,7 @@ pub(in crate::cli) async fn resolve_session_id_for_turn(
 /// 「/goal edit 被当作消息发出去了」。返回 true 表示已变身（调用方跳过这次
 /// 提交并重绘输入行）；没有目标时返回 false，走正常提交让命令层去报错。
 pub(in crate::cli) fn prefill_goal_edit_input(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     session_id: Option<&str>,
     live: &mut LiveReplTail,
 ) -> bool {
@@ -745,7 +745,7 @@ pub(in crate::cli) fn prefill_goal_edit_input(
 }
 
 pub(in crate::cli) async fn send_ipc_admin(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     command: IpcCommand,
 ) -> Result<(ipc::SessionState, serde_json::Value)> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
@@ -753,7 +753,7 @@ pub(in crate::cli) async fn send_ipc_admin(
     match ipc::receive::<IpcFrame>(&mut stream).await? {
         Some(IpcFrame::AdminResult { state, data }) => Ok((state, data)),
         Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-        _ => bail!("Hotaru core returned an invalid admin response"),
+        _ => bail!("Nanoka core returned an invalid admin response"),
     }
 }
 

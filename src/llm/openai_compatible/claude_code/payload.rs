@@ -1,4 +1,4 @@
-//! Hotaru 消息增量 → claude stream-json user 消息的翻译。
+//! Nanoka 消息增量 → claude stream-json user 消息的翻译。
 //!
 //! claude 的 stream-json 输入只接受 user 消息,不能注入 assistant 历史。
 //! 所以增量按「历史段 + 活跃尾巴」二分:活跃尾巴(结尾连续的 user 消息,

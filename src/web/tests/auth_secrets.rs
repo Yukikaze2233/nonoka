@@ -7,7 +7,7 @@ fn cookie_parser_matches_an_exact_cookie_name() {
     let mut headers = HeaderMap::new();
     headers.insert(
         COOKIE,
-        HeaderValue::from_static("other=1; hotaru_session=secret-token; suffix=2"),
+        HeaderValue::from_static("other=1; nanoka_session=secret-token; suffix=2"),
     );
     assert_eq!(cookie_value(&headers, AUTH_COOKIE), Some("secret-token"));
     assert_eq!(cookie_value(&headers, "session"), None);
@@ -36,7 +36,7 @@ fn config_response_never_serializes_secret_values() {
     config.plugins.api_quota.deepseek.api_key = "deepseek-secret".to_string();
     config.plugins.api_quota.openrouter.api_key = "openrouter-secret".to_string();
     let paths = tempfile::tempdir().unwrap();
-    let paths = HotaruPaths {
+    let paths = NanokaPaths {
         root_dir: paths.path().to_path_buf(),
         config_dir: paths.path().join("config"),
         config_file: paths.path().join("config/config.jsonc"),

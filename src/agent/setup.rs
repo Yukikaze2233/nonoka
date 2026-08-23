@@ -11,7 +11,7 @@ use crate::agent::*;
 impl Agent {
     pub fn new(
         config: AppConfig,
-        paths: &HotaruPaths,
+        paths: &NanokaPaths,
         state: StateStore,
         client: OpenAiCompatibleClient,
         tools: ToolRegistry,
@@ -30,7 +30,7 @@ impl Agent {
 
     pub(crate) fn new_for_audience(
         config: AppConfig,
-        paths: &HotaruPaths,
+        paths: &NanokaPaths,
         state: StateStore,
         client: OpenAiCompatibleClient,
         tools: ToolRegistry,

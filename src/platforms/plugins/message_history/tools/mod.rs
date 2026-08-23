@@ -599,7 +599,7 @@ async fn download_avatar(
 mod tests {
     use super::*;
     use crate::config::AppConfig;
-    use crate::paths::HotaruPaths;
+    use crate::paths::NanokaPaths;
     use crate::platforms::plugins::PlatformPluginRegistry;
     use crate::platforms::{OutboundMessage, PlatformAdapter, PlatformConversation, SendReceipt};
     use crate::state::StateStore;
@@ -614,12 +614,12 @@ mod tests {
         }
 
         fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-            Box::pin(async { Ok("Hotaru".to_string()) })
+            Box::pin(async { Ok("Nanoka".to_string()) })
         }
     }
 
-    fn test_paths(root: &std::path::Path) -> HotaruPaths {
-        HotaruPaths {
+    fn test_paths(root: &std::path::Path) -> NanokaPaths {
+        NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),

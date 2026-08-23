@@ -1,12 +1,12 @@
 //! shell 集成。
 //!
-//! 装在 shell 里的钩子会把命令行内容交给 Hotaru 判断：这是一条要执行的命令，
-//! 还是一句想问 Hotaru 的话？判断在毫秒级发生（人还按着回车），所以这条路要
+//! 装在 shell 里的钩子会把命令行内容交给 Nanoka 判断：这是一条要执行的命令，
+//! 还是一句想问 Nanoka 的话？判断在毫秒级发生（人还按着回车），所以这条路要
 //! 尽量短。剪贴板粘贴与占位符展开也在这里。
 
 use crate::cli::*;
 
-pub(in crate::cli) fn remove_shell_hooks(paths: &HotaruPaths) -> Result<()> {
+pub(in crate::cli) fn remove_shell_hooks(paths: &NanokaPaths) -> Result<()> {
     let removed = shell::fish::uninstall(paths)?;
     let removed = shell::bash::uninstall(paths)? || removed;
     let removed = shell::zsh::uninstall(paths)? || removed;
@@ -14,15 +14,15 @@ pub(in crate::cli) fn remove_shell_hooks(paths: &HotaruPaths) -> Result<()> {
         println!(
             "{}",
             t(
-                "no installed Hotaru shell hooks found",
-                "未找到已安装的 Hotaru shell hook"
+                "no installed Nanoka shell hooks found",
+                "未找到已安装的 Nanoka shell hook"
             )
         );
     }
     Ok(())
 }
 
-pub(in crate::cli) fn run_clipboard_paste(paths: &HotaruPaths) -> Result<()> {
+pub(in crate::cli) fn run_clipboard_paste(paths: &NanokaPaths) -> Result<()> {
     match crate::clipboard::read_clipboard() {
         Ok(crate::clipboard::ClipboardContent::Image(img)) => {
             let path = img.write_temp_file(&paths.cache_dir, 0)?;
@@ -118,7 +118,7 @@ pub(in crate::cli) fn run_shell_classify(shell_name: &str, message: &str) -> Res
 }
 
 pub(in crate::cli) async fn run_shell_intercept(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     shell_name: &str,
     message: String,
 ) -> Result<()> {
@@ -168,7 +168,7 @@ pub(in crate::cli) async fn run_shell_intercept(
 }
 
 pub(in crate::cli) fn expand_shell_pasted_text_placeholders(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     message: &str,
 ) -> Result<String> {
     let placeholders = find_pasted_text_placeholders(message);

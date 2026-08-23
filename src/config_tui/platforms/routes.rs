@@ -8,7 +8,7 @@ use crate::config_tui::*;
 
 pub(in crate::config_tui) fn select_platform_model_routes(
     stdout: &mut io::Stdout,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;
@@ -81,7 +81,7 @@ pub(in crate::config_tui) fn platform_model_route_label(route: &PlatformModelRou
 
 pub(in crate::config_tui) fn edit_platform_model_route(
     stdout: &mut io::Stdout,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     config: &mut AppConfig,
     route_index: Option<usize>,
 ) -> Result<()> {
@@ -265,14 +265,14 @@ pub(in crate::config_tui) fn platform_persona_summary(persona: &PlatformPersonaO
         PlatformPersonaOverride::Inherit => {
             t("inherit current persona", "继承当前人格").to_string()
         }
-        PlatformPersonaOverride::Hotaru => "Hotaru".to_string(),
+        PlatformPersonaOverride::Nanoka => "Nanoka".to_string(),
         PlatformPersonaOverride::Custom { name } => persona_display_name(name).to_string(),
     }
 }
 
 pub(in crate::config_tui) fn edit_platform_personas(
     stdout: &mut io::Stdout,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     config: &mut AppConfig,
     persona: &mut PlatformPersonaOverride,
 ) -> Result<()> {

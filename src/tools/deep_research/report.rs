@@ -162,7 +162,7 @@ pub(in crate::tools::deep_research) fn strip_reference_section(value: &str) -> S
 
 pub(in crate::tools::deep_research) fn write_report(
     plugin: &DeepResearchPluginConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     topic: &str,
     final_answer: &str,
     state: &Arc<Mutex<ResearchState>>,

@@ -133,7 +133,7 @@ fn clip(value: &str) -> String {
 fn client() -> reqwest::Client {
     reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
-        .user_agent("hotaru/0.1")
+        .user_agent("nanoka/0.1")
         .build()
         .expect("valid reqwest client")
 }

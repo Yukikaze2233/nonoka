@@ -13,10 +13,10 @@ pub(in crate::web) fn start_ipc_server(
     state: &DaemonState,
 ) -> Result<(crate::ipc::WebCoreLease, TokioJoinHandle<()>)> {
     let lease = ipc::acquire_web_core(&state.paths)
-        .context("another Hotaru core is already running or starting")?;
+        .context("another Nanoka core is already running or starting")?;
     let socket_path = state.paths.ipc_socket();
     let listener = tokio::net::UnixListener::bind(&socket_path)
-        .with_context(|| format!("binding Hotaru IPC socket at {}", socket_path.display()))?;
+        .with_context(|| format!("binding Nanoka IPC socket at {}", socket_path.display()))?;
     std::fs::set_permissions(&socket_path, std::fs::Permissions::from_mode(0o600))?;
 
     let server_state = state.clone();
@@ -29,7 +29,7 @@ pub(in crate::web) fn start_ipc_server(
                     tracing::warn!(
                         error = %error,
                         "{}",
-                        t("Hotaru IPC listener stopped", "Hotaru IPC 监听器已停止")
+                        t("Nanoka IPC listener stopped", "Nanoka IPC 监听器已停止")
                     );
                     break;
                 }
@@ -46,8 +46,8 @@ pub(in crate::web) fn start_ipc_server(
                         error = %error,
                         "{}",
                         t(
-                            "Hotaru IPC connection closed with an error",
-                            "Hotaru IPC 连接因错误关闭"
+                            "Nanoka IPC connection closed with an error",
+                            "Nanoka IPC 连接因错误关闭"
                         )
                     );
                 }
@@ -66,7 +66,7 @@ pub(in crate::web) async fn handle_ipc_connection(
         ipc::receive::<IpcRequest>(&mut stream),
     )
     .await
-    .context("timed out waiting for a Hotaru IPC request")??
+    .context("timed out waiting for a Nanoka IPC request")??
     else {
         return Ok(());
     };
@@ -181,7 +181,7 @@ pub(in crate::web) async fn handle_ipc_connection(
             // 缺失或指向已删/已归档的会话时,一律自举一个新的本地会话。
             //
             // normal 以前在这两处都退到 `store.session_id()`——那是终端集成
-            // (shellhook)的车道。于是第一次 `hotaru normal` 就把 REPL 焊在终端
+            // (shellhook)的车道。于是第一次 `nanoka normal` 就把 REPL 焊在终端
             // 会话上,两边的对话混成一摊。dev 早就是自举的,normal 没跟上。
             //
             // 空名字是有意的:首条消息会自动命名(与 dev 同路)。不动
@@ -297,7 +297,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 release_admin(&state.manager);
                 ipc::send(
                     &mut stream,
-                    &IpcFrame::error("Hotaru core worker is unavailable"),
+                    &IpcFrame::error("Nanoka core worker is unavailable"),
                 )
                 .await?;
                 return Ok(());
@@ -329,7 +329,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                     release_admin(&state.manager);
                     ipc::send(
                         &mut stream,
-                        &IpcFrame::error("Hotaru core stopped while reloading configuration"),
+                        &IpcFrame::error("Nanoka core stopped while reloading configuration"),
                     )
                     .await?
                 }
@@ -356,7 +356,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Hotaru core worker is unavailable");
+                anyhow::bail!("Nanoka core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(())) => {
@@ -374,7 +374,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Hotaru core stopped while resetting the conversation");
+                    anyhow::bail!("Nanoka core stopped while resetting the conversation");
                 }
             }
         }
@@ -400,7 +400,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                     .await?;
                 }
                 Err(PlatformPersonaResetError::Unavailable) => {
-                    anyhow::bail!("Hotaru core worker is unavailable");
+                    anyhow::bail!("Nanoka core worker is unavailable");
                 }
                 Err(PlatformPersonaResetError::Internal(message)) => {
                     ipc::send(&mut stream, &IpcFrame::error(message)).await?;
@@ -428,7 +428,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Hotaru core worker is unavailable");
+                anyhow::bail!("Nanoka core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(data)) => {
@@ -446,7 +446,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Hotaru core stopped while undoing the conversation");
+                    anyhow::bail!("Nanoka core stopped while undoing the conversation");
                 }
             }
         }
@@ -472,7 +472,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Hotaru core worker is unavailable");
+                anyhow::bail!("Nanoka core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(data)) => {
@@ -490,7 +490,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Hotaru core stopped while popping the conversation");
+                    anyhow::bail!("Nanoka core stopped while popping the conversation");
                 }
             }
         }
@@ -515,7 +515,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Hotaru core worker is unavailable");
+                anyhow::bail!("Nanoka core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(data)) => {
@@ -533,7 +533,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Hotaru core stopped while compacting the conversation");
+                    anyhow::bail!("Nanoka core stopped while compacting the conversation");
                 }
             }
         }
@@ -693,14 +693,14 @@ pub(in crate::web) async fn switch_session_via_actor(
         .is_err()
     {
         release_admin(&state.manager);
-        return Err("Hotaru core worker is unavailable".to_string());
+        return Err("Nanoka core worker is unavailable".to_string());
     }
     match receiver.await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(AdminFailure::Invalid(message) | AdminFailure::Internal(message))) => Err(message),
         Err(_) => {
             release_admin(&state.manager);
-            Err("Hotaru core stopped while switching sessions".to_string())
+            Err("Nanoka core stopped while switching sessions".to_string())
         }
     }
 }
@@ -719,12 +719,12 @@ pub(in crate::web) async fn switch_session_via_actor_reserved(
         })
         .is_err()
     {
-        return Err("Hotaru core worker is unavailable".to_string());
+        return Err("Nanoka core worker is unavailable".to_string());
     }
     match receiver.await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(AdminFailure::Invalid(message) | AdminFailure::Internal(message))) => Err(message),
-        Err(_) => Err("Hotaru core stopped while switching sessions".to_string()),
+        Err(_) => Err("Nanoka core stopped while switching sessions".to_string()),
     }
 }
 
@@ -824,7 +824,7 @@ pub(in crate::web) async fn handle_ipc_turn(
         .is_err()
     {
         finish_run(&state.manager, &run_id, None);
-        ipc::send(stream, &IpcFrame::error("Hotaru core worker is unavailable")).await?;
+        ipc::send(stream, &IpcFrame::error("Nanoka core worker is unavailable")).await?;
         return Ok(());
     }
     let mut run_guard = IpcRunGuard {
@@ -858,7 +858,7 @@ pub(in crate::web) async fn handle_ipc_turn(
         if record.kind == "resync_required" {
             ipc::send(
                 stream,
-                &IpcFrame::error("Hotaru core event history was exhausted; the turn was cancelled"),
+                &IpcFrame::error("Nanoka core event history was exhausted; the turn was cancelled"),
             )
             .await?;
             break;

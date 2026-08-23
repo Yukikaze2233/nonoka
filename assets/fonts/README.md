@@ -1,10 +1,10 @@
 # Renderer fonts
 
-These fonts are loaded only by Hotaru's long-image renderer worker. The worker
+These fonts are loaded only by Nanoka's long-image renderer worker. The worker
 starts with the CJK font and adds the Emoji font only for content that needs it.
-They are installed under `/usr/share/hotaru/fonts` so rendering is deterministic
+They are installed under `/usr/share/nanoka/fonts` so rendering is deterministic
 and never needs to scan host fonts. Development builds read this directory in
-the source tree. `HOTARU_RENDERER_FONTS_DIR` can override the location for
+the source tree. `NANOKA_RENDERER_FONTS_DIR` can override the location for
 portable builds.
 
 - `NotoSansCJK-Regular.ttc`: unmodified Noto Sans CJK release `Sans2.004`

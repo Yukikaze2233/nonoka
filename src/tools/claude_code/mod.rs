@@ -1,5 +1,5 @@
 //! `claude_code` 委托工具:把任务交给本机安装的 Claude Code CLI headless
-//! 跑(用用户既有订阅登录态,Hotaru 不经手任何凭据)。
+//! 跑(用用户既有订阅登录态,Nanoka 不经手任何凭据)。
 //!
 //! 注册面(§09):只进本机 owner 底座(builtin/dev),平台受限表不注册;
 //! host_tools_allowed 的平台管理员会话复用 normal 底座,由 turn 装配层按
@@ -8,13 +8,13 @@
 mod runner;
 
 use crate::config::ClaudeCodePluginConfig;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::tools::{ToolRegistry, ToolSpec};
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-pub fn register(registry: &mut ToolRegistry, plugin: ClaudeCodePluginConfig, paths: HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, plugin: ClaudeCodePluginConfig, paths: NanokaPaths) {
     registry.register(
         ToolSpec::new(
             "claude_code",
@@ -40,7 +40,7 @@ pub fn register(registry: &mut ToolRegistry, plugin: ClaudeCodePluginConfig, pat
 async fn run_claude_code(
     args: Value,
     plugin: ClaudeCodePluginConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
 ) -> Result<String> {
     let prompt = args
         .get("prompt")
@@ -104,7 +104,7 @@ mod tests {
         session: &str,
         args: Value,
         plugin: ClaudeCodePluginConfig,
-        paths: HotaruPaths,
+        paths: NanokaPaths,
     ) -> Result<String> {
         // 每个测试各占一个会话键:并发互斥名单是进程级的,测试并行跑时
         // 共用 "local" 会互相顶掉。

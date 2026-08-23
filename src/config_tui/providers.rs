@@ -9,7 +9,7 @@
 use crate::config_tui::*;
 
 pub(in crate::config_tui) struct ProviderBrowser<'a> {
-    pub(in crate::config_tui) paths: &'a HotaruPaths,
+    pub(in crate::config_tui) paths: &'a NanokaPaths,
     pub(in crate::config_tui) config: &'a mut AppConfig,
     pub(in crate::config_tui) thinking_variants: &'a mut ThinkingVariantPreferences,
     pub(in crate::config_tui) active_col: usize,
@@ -74,7 +74,7 @@ pub(in crate::config_tui) fn fetch_models(provider: &ProviderConfig) -> Result<V
         .build()?
         .get(url)
         .header("Accept", "application/json")
-        .header("User-Agent", "hotaru-config");
+        .header("User-Agent", "nanoka-config");
     if !api_key.is_empty() {
         request = request.bearer_auth(api_key);
     }
@@ -94,7 +94,7 @@ pub(in crate::config_tui) fn fetch_models(provider: &ProviderConfig) -> Result<V
 }
 
 pub(in crate::config_tui) fn auto_configure_model_tags(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     provider: &mut ProviderConfig,
     model: &str,
 ) {

@@ -76,16 +76,16 @@ pub(in crate::platforms::onebot) async fn handle_friend_add_request(state: Daemo
         .filter(|flag| !flag.is_empty())
         .map(str::to_string);
     let Some(flag) = flag else {
-        tracing::warn!(target: "hotaru::qq", "{}", t("OneBot friend request is missing flag", "OneBot 好友请求缺少 flag"));
+        tracing::warn!(target: "nanoka::qq", "{}", t("OneBot friend request is missing flag", "OneBot 好友请求缺少 flag"));
         return;
     };
     if self_id == 0 || user_id == 0 {
-        tracing::warn!(target: "hotaru::qq", self_id, user_id, "{}", t("OneBot friend request has invalid ids", "OneBot 好友请求包含无效 QQ 号"));
+        tracing::warn!(target: "nanoka::qq", self_id, user_id, "{}", t("OneBot friend request has invalid ids", "OneBot 好友请求包含无效 QQ 号"));
         return;
     }
     if !friend_request_allowed(config, &state.state_store, self_id, user_id) {
         tracing::info!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id,
             user_id,
             "{}",
@@ -101,14 +101,14 @@ pub(in crate::platforms::onebot) async fn handle_friend_add_request(state: Daemo
         .await
     {
         Ok(_) => tracing::info!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id,
             user_id,
             "{}",
             t("OneBot friend request accepted", "OneBot 好友请求已通过")
         ),
         Err(error) => tracing::warn!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id,
             user_id,
             error = %error,
@@ -258,7 +258,7 @@ pub(in crate::platforms::onebot) fn parse_group_join_decision(text: &str) -> Res
 
 pub(in crate::platforms::onebot) async fn ai_review_group_join(
     mut config: AppConfig,
-    paths: HotaruPaths,
+    paths: NanokaPaths,
     settings: QqGroupJoinApprovalPluginSettings,
     condition: String,
     request: GroupJoinRequest,
@@ -351,7 +351,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
 ) where
     F: FnOnce(
         AppConfig,
-        HotaruPaths,
+        NanokaPaths,
         QqGroupJoinApprovalPluginSettings,
         String,
         GroupJoinRequest,
@@ -361,7 +361,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
 {
     let Some(request) = parse_group_add_request(&event) else {
         tracing::warn!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             "{}",
             t(
                 "OneBot group join request has invalid ids or flag",
@@ -374,7 +374,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
     let flag_rewritten = action_flag != request.flag;
     let filtered = group_join_request_is_filtered(&request.flag);
     tracing::info!(
-        target: "hotaru::qq",
+        target: "nanoka::qq",
         self_id = request.self_id,
         group_id = request.group_id,
         user_id = request.user_id,
@@ -399,7 +399,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
         .get(QQ_GROUP_JOIN_APPROVAL_PLUGIN_ID)
     else {
         tracing::info!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id = request.self_id,
             group_id = request.group_id,
             user_id = request.user_id,
@@ -413,7 +413,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
     };
     if !instance.enabled_or(true) {
         tracing::info!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id = request.self_id,
             group_id = request.group_id,
             user_id = request.user_id,
@@ -429,7 +429,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
         Ok(settings) => settings,
         Err(error) => {
             tracing::warn!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 self_id = request.self_id,
                 group_id = request.group_id,
                 error = %error,
@@ -448,7 +448,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
         .find(|group| group.group_id == request.group_id)
     else {
         tracing::info!(
-            target: "hotaru::qq",
+            target: "nanoka::qq",
             self_id = request.self_id,
             group_id = request.group_id,
             user_id = request.user_id,
@@ -474,7 +474,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
         Ok(decision) => decision,
         Err(error) => {
             tracing::warn!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 self_id = request.self_id,
                 group_id = request.group_id,
                 user_id = request.user_id,
@@ -491,7 +491,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
     match decision {
         GroupJoinDecision::Pending => {
             tracing::info!(
-                target: "hotaru::qq",
+                target: "nanoka::qq",
                 self_id = request.self_id,
                 group_id = request.group_id,
                 user_id = request.user_id,
@@ -515,7 +515,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
             }
             match conn.call_api("set_group_add_request", params).await {
                 Ok(_) => tracing::info!(
-                    target: "hotaru::qq",
+                    target: "nanoka::qq",
                     self_id = request.self_id,
                     group_id = request.group_id,
                     user_id = request.user_id,
@@ -530,7 +530,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
                     let message = error.to_string();
                     if message.contains("already deleted by system") {
                         tracing::info!(
-                            target: "hotaru::qq",
+                            target: "nanoka::qq",
                             self_id = request.self_id,
                             group_id = request.group_id,
                             user_id = request.user_id,
@@ -543,7 +543,7 @@ pub(in crate::platforms::onebot) async fn handle_group_add_request_with_llm<F, F
                         );
                     } else {
                         tracing::warn!(
-                            target: "hotaru::qq",
+                            target: "nanoka::qq",
                             self_id = request.self_id,
                             group_id = request.group_id,
                             user_id = request.user_id,

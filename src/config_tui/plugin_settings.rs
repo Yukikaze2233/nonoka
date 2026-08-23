@@ -60,7 +60,7 @@ impl Default for ReplyProcessorSettingsForm {
 
 pub(in crate::config_tui) fn select_platform_plugins(
     stdout: &mut io::Stdout,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;

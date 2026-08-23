@@ -62,7 +62,7 @@ pub(in crate::agent) fn clipboard_binary_image_from_tool_result(
 
 pub(in crate::agent) fn resolve_pasted_image_paths(
     images: &[Option<PastedImage>],
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     image_platform: Option<&str>,
 ) -> Vec<Option<String>> {
     images

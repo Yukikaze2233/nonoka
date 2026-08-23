@@ -4,7 +4,7 @@ pub(crate) use draft::*;
 pub(crate) use manifest::*;
 
 use crate::config::{persona_scope_name, AppConfig};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -32,7 +32,7 @@ const MAX_SKILL_CATALOG_ENTRIES: usize = 256;
 const MAX_SKILL_ROOT_DIRECTORIES: usize = 1_024;
 const MAX_SKILL_RESOURCE_ENTRIES: usize = 256;
 
-pub fn discover(config: &AppConfig, paths: &HotaruPaths) -> Result<Vec<SkillEntry>> {
+pub fn discover(config: &AppConfig, paths: &NanokaPaths) -> Result<Vec<SkillEntry>> {
     let mut entries = Vec::new();
     let mut seen = BTreeSet::new();
     for (root, source) in skill_roots(config, paths) {
@@ -86,7 +86,7 @@ pub fn discover(config: &AppConfig, paths: &HotaruPaths) -> Result<Vec<SkillEntr
     Ok(entries)
 }
 
-pub fn catalog_fingerprint(config: &AppConfig, paths: &HotaruPaths) -> Result<[u8; 32]> {
+pub fn catalog_fingerprint(config: &AppConfig, paths: &NanokaPaths) -> Result<[u8; 32]> {
     let mut hasher = blake3::Hasher::new();
     for (root, source) in skill_roots(config, paths) {
         hasher.update(source.as_str().as_bytes());
@@ -103,7 +103,7 @@ pub fn catalog_fingerprint(config: &AppConfig, paths: &HotaruPaths) -> Result<[u
     Ok(*hasher.finalize().as_bytes())
 }
 
-pub fn load(name: &str, config: &AppConfig, paths: &HotaruPaths) -> Result<LoadedSkill> {
+pub fn load(name: &str, config: &AppConfig, paths: &NanokaPaths) -> Result<LoadedSkill> {
     let name = name.trim();
     if name.is_empty() {
         bail!("skill name is required");
@@ -156,14 +156,14 @@ pub fn load(name: &str, config: &AppConfig, paths: &HotaruPaths) -> Result<Loade
 pub fn is_generated_skill(raw: &str) -> bool {
     parse_skill_metadata(raw, None)
         .ok()
-        .and_then(|metadata| metadata.metadata.get("hotaru.generated").cloned())
+        .and_then(|metadata| metadata.metadata.get("nanoka.generated").cloned())
         .is_some_and(|value| value.eq_ignore_ascii_case("true"))
-        || raw.contains("generated_by: hotaru")
+        || raw.contains("generated_by: nanoka")
         || raw.contains("Auto-learned method from assistant conversation")
-        || raw.contains("Auto-learned method from Hotaru conversation")
+        || raw.contains("Auto-learned method from Nanoka conversation")
 }
 
-fn skill_roots(config: &AppConfig, paths: &HotaruPaths) -> Vec<(PathBuf, SkillSource)> {
+fn skill_roots(config: &AppConfig, paths: &NanokaPaths) -> Vec<(PathBuf, SkillSource)> {
     vec![
         (
             config.active_persona_skills_dir(paths),
@@ -203,8 +203,8 @@ fn sorted_skill_directories(root: &Path) -> Result<Vec<PathBuf>> {
 mod tests {
     use super::*;
 
-    fn test_paths(root: &Path) -> HotaruPaths {
-        HotaruPaths {
+    fn test_paths(root: &Path) -> NanokaPaths {
+        NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -213,7 +213,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("data/pictures"),
-            fish_hook_file: root.join("fish/hotaru.fish"),
+            fish_hook_file: root.join("fish/nanoka.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("data/scripts"),
@@ -223,10 +223,10 @@ mod tests {
 
     #[test]
     fn parses_standard_frontmatter_fields() {
-        let raw = "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: Hotaru\nallowed-tools: read_file\nmetadata:\n  author: test\n---\n\nBody.";
+        let raw = "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: Nanoka\nallowed-tools: read_file\nmetadata:\n  author: test\n---\n\nBody.";
         let metadata = parse_skill_metadata(raw, Some("sample-skill")).unwrap();
         assert_eq!(metadata.license.as_deref(), Some("MIT"));
-        assert_eq!(metadata.compatibility.as_deref(), Some("Hotaru"));
+        assert_eq!(metadata.compatibility.as_deref(), Some("Nanoka"));
         assert_eq!(metadata.allowed_tools.as_deref(), Some("read_file"));
         assert_eq!(
             metadata.metadata.get("author").map(String::as_str),

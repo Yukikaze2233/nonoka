@@ -22,7 +22,7 @@ pub(in crate::platforms::plugins::real_context::affection) fn log_profile_initia
         crate::i18n::locale(),
     );
     tracing::info!(
-        target: "hotaru::qq",
+        target: "nanoka::qq",
         "\n{readable}"
     );
 }
@@ -71,7 +71,7 @@ pub(crate) fn log_update_skipped(
         crate::i18n::locale(),
     );
     tracing::debug!(
-        target: "hotaru::qq",
+        target: "nanoka::qq",
         "\n{readable}"
     );
 }

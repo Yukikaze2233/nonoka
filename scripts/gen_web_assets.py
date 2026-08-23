@@ -4,8 +4,8 @@
 ## 为什么要有副本
 
 浏览器给一张图分配的 GPU 纹理是按**像素数**算的，跟 CSS 里写多大无关。
-`pics/hotaru-logo.png` 是 1254×1254，WebUI 里却只在侧栏显示 38 px、登录页 64 px；
-`pics/hotaruwallpaper.png` 是 3344×1882，看板框最大 330×178 px。直接用原图等于
+`pics/nanoka-logo.png` 是 1254×1254，WebUI 里却只在侧栏显示 38 px、登录页 64 px；
+`pics/nanokawallpaper.png` 是 3344×1882，看板框最大 330×178 px。直接用原图等于
 花 30 MiB 显存去画两个缩略图，二进制和每次 HTTP 传输还各多背 7.2 MiB。
 
 原图**不覆盖**——README、终端演示、外部链接都在引用它们。副本单独放在
@@ -45,10 +45,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # (原图, 副本, 覆盖框, 实际显示尺寸们)
 ASSETS = [
-    ("pics/hotaru-logo.png", "web/assets/hotaru-logo.png", (256, 256), [(38, 38), (64, 64)]),
+    ("pics/nanoka-logo.png", "web/assets/nanoka-logo.png", (256, 256), [(38, 38), (64, 64)]),
     (
-        "pics/hotaruwallpaper.png",
-        "web/assets/hotaruwallpaper.png",
+        "pics/nanokawallpaper.png",
+        "web/assets/nanokawallpaper.png",
         (1280, 720),
         [(330, 178), (660, 356)],
     ),

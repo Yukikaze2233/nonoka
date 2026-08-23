@@ -15,7 +15,7 @@ pub(super) fn shared_init() {
     INIT.get_or_init(|| {
         let temp = Box::leak(Box::new(tempfile::tempdir().unwrap()));
         let root = temp.path().to_path_buf();
-        let paths = HotaruPaths {
+        let paths = NanokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -23,7 +23,7 @@ pub(super) fn shared_init() {
             data_dir: root.join("data"),
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
-            ..crate::paths::HotaruPaths::new().unwrap()
+            ..crate::paths::NanokaPaths::new().unwrap()
         };
         init(&paths);
     });

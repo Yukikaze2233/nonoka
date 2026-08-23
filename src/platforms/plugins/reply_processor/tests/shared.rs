@@ -2,7 +2,7 @@
 
 use crate::platforms::plugins::reply_processor::*;
 use crate::config::AppConfig;
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::platforms::{ConversationKind, PlatformAdapter, PlatformConversation};
 use crate::state::StateStore;
 use futures_util::future::BoxFuture;
@@ -11,7 +11,7 @@ use std::path::PathBuf;
 pub(super) fn test_context(is_admin: bool) -> (tempfile::TempDir, PlatformTurnContext) {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
-    let paths = HotaruPaths {
+    let paths = NanokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -20,7 +20,7 @@ pub(super) fn test_context(is_admin: bool) -> (tempfile::TempDir, PlatformTurnCo
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("fish/hotaru.fish"),
+        fish_hook_file: root.join("fish/nanoka.fish"),
         bash_hook_file: root.join("shell/bash-hook.sh"),
         zsh_hook_file: root.join("shell/zsh-hook.zsh"),
         scripts_dir: root.join("config/scripts"),
@@ -65,6 +65,6 @@ impl PlatformAdapter for NoopAdapter {
     }
 
     fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-        Box::pin(async { Ok("Hotaru".to_string()) })
+        Box::pin(async { Ok("Nanoka".to_string()) })
     }
 }

@@ -24,7 +24,7 @@ pub use runtime::{
 };
 
 use super::{ToolRegistry, ToolSpec};
-use crate::paths::HotaruPaths;
+use crate::paths::NanokaPaths;
 use crate::state::{GoalDenied, GoalRecord, StateStore};
 use crate::tools::workspace::{self, TurnOrigin};
 use anyhow::{bail, Result};
@@ -43,7 +43,7 @@ pub const BLOCKED_AFTER_CONSECUTIVE_ROUNDS: i64 = 3;
 /// 顶一行只会把真正的输出挤散。REPL 和 WebUI 都拿这个常量识别它。
 pub const GOAL_ROUND_LABEL: &str = "goal-round";
 
-fn store(paths: &HotaruPaths) -> Result<StateStore> {
+fn store(paths: &NanokaPaths) -> Result<StateStore> {
     StateStore::new(paths)
 }
 
@@ -109,7 +109,7 @@ fn require_human(origin: &TurnOrigin, verb: &str) -> Result<()> {
     bail!("goal {verb} requires a direct human turn (this turn was started automatically)");
 }
 
-pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: NanokaPaths) {
     let get_paths = paths.clone();
     registry.register(
         ToolSpec::new(
@@ -191,7 +191,7 @@ pub fn register(registry: &mut ToolRegistry, paths: HotaruPaths) {
     );
 }
 
-async fn update_goal(paths: &HotaruPaths, args: Value) -> Result<String> {
+async fn update_goal(paths: &NanokaPaths, args: Value) -> Result<String> {
     let session = session_for_call()?;
     let origin = workspace::current_turn_origin();
     let store = store(paths)?;

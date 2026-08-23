@@ -10,7 +10,7 @@
  * 这里把那坨 JSON 画成一张卡片,挂在工具签下方(收起态也可见)。
  * 单独成文件:app.js 已经九千多行。
  */
-window.HotaruTodos = (() => {
+window.NanokaTodos = (() => {
   const STATUS_ORDER = ["in_progress", "pending", "completed", "cancelled"];
   const STATUS_LABEL = {
     pending: "待处理",

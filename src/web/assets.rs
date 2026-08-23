@@ -57,31 +57,31 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
     // serve a stale app.js/styles.css after an upgrade.
     static VERSIONED_INDEX: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
         INDEX_HTML
-            .replace("href=\"/styles.css\"", concat!("href=\"/styles.css?v=", env!("HOTARU_BUILD_ID"), "\""))
-            .replace("src=\"/app.js\"", concat!("src=\"/app.js?v=", env!("HOTARU_BUILD_ID"), "\""))
+            .replace("href=\"/styles.css\"", concat!("href=\"/styles.css?v=", env!("NANOKA_BUILD_ID"), "\""))
+            .replace("src=\"/app.js\"", concat!("src=\"/app.js?v=", env!("NANOKA_BUILD_ID"), "\""))
             .replace(
                 "src=\"/commands.js\"",
-                concat!("src=\"/commands.js?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("src=\"/commands.js?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/lightbox.js\"",
-                concat!("src=\"/lightbox.js?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("src=\"/lightbox.js?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/todos.js\"",
-                concat!("src=\"/todos.js?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("src=\"/todos.js?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/shared.js\"",
-                concat!("src=\"/shared.js?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("src=\"/shared.js?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
             .replace(
                 "href=\"/vendor/katex/katex.min.css\"",
-                concat!("href=\"/vendor/katex/katex.min.css?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("href=\"/vendor/katex/katex.min.css?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/vendor/katex/katex.min.js\"",
-                concat!("src=\"/vendor/katex/katex.min.js?v=", env!("HOTARU_BUILD_ID"), "\""),
+                concat!("src=\"/vendor/katex/katex.min.js?v=", env!("NANOKA_BUILD_ID"), "\""),
             )
     });
     embedded_asset(&headers, VERSIONED_INDEX.as_bytes(), "text/html; charset=utf-8")
@@ -128,7 +128,7 @@ pub(in crate::web) async fn shared_js_asset(headers: HeaderMap) -> Response {
 }
 
 pub(in crate::web) async fn logo_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, HOTARU_LOGO, "image/png")
+    embedded_asset(&headers, NANOKA_LOGO, "image/png")
 }
 
 pub(in crate::web) async fn katex_js_asset(headers: HeaderMap) -> Response {
@@ -147,7 +147,7 @@ pub(in crate::web) async fn katex_font_asset(headers: HeaderMap, Path(font): Pat
 }
 
 pub(in crate::web) async fn wallpaper_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, HOTARU_WALLPAPER, "image/png")
+    embedded_asset(&headers, NANOKA_WALLPAPER, "image/png")
 }
 
 pub(in crate::web) async fn upload_persona_asset(
@@ -322,7 +322,7 @@ pub(in crate::web) fn finish_asset_response(mut response: Response, content_type
 }
 
 pub(in crate::web) fn cleanup_persona_assets(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     previous: &PromptDocuments,
     current: &PromptDocuments,
 ) {
@@ -497,7 +497,7 @@ pub(in crate::web) async fn artifact_asset(
     Ok(response)
 }
 
-pub(in crate::web) fn resolve_persona_asset_path(paths: &HotaruPaths, value: &str) -> Option<PathBuf> {
+pub(in crate::web) fn resolve_persona_asset_path(paths: &NanokaPaths, value: &str) -> Option<PathBuf> {
     let value = value.trim();
     if persona_asset_uses_managed_namespace(value) {
         return managed_persona_asset_path(paths, value);
@@ -513,7 +513,7 @@ pub(in crate::web) fn resolve_persona_asset_path(paths: &HotaruPaths, value: &st
     })
 }
 
-pub(in crate::web) fn managed_persona_asset_path(paths: &HotaruPaths, value: &str) -> Option<PathBuf> {
+pub(in crate::web) fn managed_persona_asset_path(paths: &NanokaPaths, value: &str) -> Option<PathBuf> {
     let value = value.trim();
     if value.contains('\\') || value.chars().any(char::is_control) {
         return None;
@@ -551,7 +551,7 @@ pub(in crate::web) fn persona_asset_uses_managed_namespace(value: &str) -> bool 
         })
 }
 
-pub(in crate::web) fn validate_managed_persona_asset_file(paths: &HotaruPaths, path: &FilePath) -> Result<()> {
+pub(in crate::web) fn validate_managed_persona_asset_file(paths: &NanokaPaths, path: &FilePath) -> Result<()> {
     let root_path = paths.persona_avatars_dir();
     let root_metadata = std::fs::symlink_metadata(&root_path)?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {

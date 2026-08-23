@@ -72,9 +72,9 @@ fn render_request(markdown: &str) -> Vec<u8> {
 
 #[test]
 fn hidden_renderer_worker_returns_one_unicode_png() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_hotaru"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_nanoka"))
         .arg("__renderer-worker")
-        .env("HOTARU_INTERNAL_RENDERER_WORKER", "1")
+        .env("NANOKA_INTERNAL_RENDERER_WORKER", "1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -82,7 +82,7 @@ fn hidden_renderer_worker_returns_one_unicode_png() {
         .unwrap();
 
     let cjk_request = render_request(
-        r#"# Hotaru 长图
+        r#"# Nanoka 长图
 
 纯中文、`inline code`。
 

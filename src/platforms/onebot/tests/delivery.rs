@@ -417,7 +417,7 @@ async fn file_upload_falls_back_to_base64_after_url_failure() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("sample.txt");
     tokio::fs::write(&path, b"hello").await.unwrap();
-    let (handle, mut frames) = test_connection(Some("http://hotaru.test:8300".to_string()));
+    let (handle, mut frames) = test_connection(Some("http://nanoka.test:8300".to_string()));
     let adapter = test_adapter(handle.clone(), Target::Private { user_id: 42 });
     let upload = tokio::spawn(async move { adapter.upload_file(&path, None).await });
 
@@ -426,7 +426,7 @@ async fn file_upload_falls_back_to_base64_after_url_failure() {
     assert!(first["params"]["file"]
         .as_str()
         .unwrap()
-        .starts_with("http://hotaru.test:8300/api/platform-assets/"));
+        .starts_with("http://nanoka.test:8300/api/platform-assets/"));
     route_api_response(
         &handle,
         json!({
@@ -566,7 +566,7 @@ async fn adapter_smoke_test_sends_replies_images_and_forward_nodes() {
     let forward = OutboundMessage {
         body: OutboundBody::Forward(vec![ForwardNode {
             user_id: "10000".to_string(),
-            display_name: "Hotaru".to_string(),
+            display_name: "Nanoka".to_string(),
             segments: vec![OutboundSegment::Markdown("**long**".to_string())],
         }]),
         response_target: Some(ResponseTarget {
@@ -730,7 +730,7 @@ async fn forward_marker_failure_is_reported_as_partial_delivery() {
     let message = OutboundMessage {
         body: OutboundBody::Forward(vec![ForwardNode {
             user_id: "10000".to_string(),
-            display_name: "Hotaru".to_string(),
+            display_name: "Nanoka".to_string(),
             segments: vec![OutboundSegment::Text("forward".to_string())],
         }]),
         response_target: Some(ResponseTarget {

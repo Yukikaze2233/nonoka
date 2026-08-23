@@ -69,7 +69,7 @@ pub fn is_loaded() -> bool {
     cache_lock().lock().unwrap().is_some()
 }
 
-fn cache_file(paths: &crate::paths::HotaruPaths) -> PathBuf {
+fn cache_file(paths: &crate::paths::NanokaPaths) -> PathBuf {
     paths.cache_dir.join("models_cache.json")
 }
 
@@ -86,7 +86,7 @@ fn fetch_and_cache(path: &PathBuf) -> Result<Cache> {
         .build()?;
     let text = client
         .get(API_URL)
-        .header("User-Agent", "Mozilla/5.0 Hotaru/0.1")
+        .header("User-Agent", "Mozilla/5.0 Nanoka/0.1")
         .send()?
         .error_for_status()?
         .text()?;
@@ -105,7 +105,7 @@ fn fetch_and_cache(path: &PathBuf) -> Result<Cache> {
     Ok(cache)
 }
 
-pub fn try_load(paths: &crate::paths::HotaruPaths) {
+pub fn try_load(paths: &crate::paths::NanokaPaths) {
     let path = cache_file(paths);
     let cache = load_from_disk(&path).ok();
     if let Some(cache) = cache {
@@ -114,7 +114,7 @@ pub fn try_load(paths: &crate::paths::HotaruPaths) {
     }
 }
 
-pub fn try_load_active(paths: &crate::paths::HotaruPaths, config: &crate::config::AppConfig) {
+pub fn try_load_active(paths: &crate::paths::NanokaPaths, config: &crate::config::AppConfig) {
     let path = cache_file(paths);
     let cache = load_from_disk(&path).ok();
     if let Some(mut cache) = cache {
@@ -128,7 +128,7 @@ pub fn try_load_active(paths: &crate::paths::HotaruPaths, config: &crate::config
     }
 }
 
-pub fn spawn_background_refresh(paths: crate::paths::HotaruPaths) {
+pub fn spawn_background_refresh(paths: crate::paths::NanokaPaths) {
     let path = cache_file(&paths);
     std::thread::spawn(move || {
         let _refresh = refresh_lock().lock().unwrap();
@@ -141,7 +141,7 @@ pub fn spawn_background_refresh(paths: crate::paths::HotaruPaths) {
 }
 
 pub fn spawn_background_refresh_active(
-    paths: crate::paths::HotaruPaths,
+    paths: crate::paths::NanokaPaths,
     config: crate::config::AppConfig,
 ) {
     spawn_provider_api_refresh(config.providers.clone());
@@ -159,7 +159,7 @@ pub fn spawn_background_refresh_active(
     });
 }
 
-pub fn ensure_active_metadata(paths: &crate::paths::HotaruPaths, config: &crate::config::AppConfig) {
+pub fn ensure_active_metadata(paths: &crate::paths::NanokaPaths, config: &crate::config::AppConfig) {
     if !is_loaded() {
         try_load_active(paths, config);
     }
@@ -235,7 +235,7 @@ fn retain_configured_models(
     });
 }
 
-pub fn refresh_blocking(paths: &crate::paths::HotaruPaths) -> Result<()> {
+pub fn refresh_blocking(paths: &crate::paths::NanokaPaths) -> Result<()> {
     let _refresh = refresh_lock().lock().unwrap();
     if is_loaded() {
         return Ok(());

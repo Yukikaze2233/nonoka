@@ -157,7 +157,7 @@ pub(in crate::web) async fn stream_job_wake_to_origin_tty(
         tracing::info!(job_id = %completion.job_id, reason, "job wake writeback fell back to a notification");
         if config.notifications.enabled {
             crate::notify::notify(
-                &format!("Hotaru 后台任务跟进 · {}", completion.title),
+                &format!("Nanoka 后台任务跟进 · {}", completion.title),
                 "任务已完成,跟进回复在会话里(终端不在提示符,没有直接写入)。",
             );
         }
@@ -190,7 +190,7 @@ pub(in crate::web) async fn stream_job_wake_to_origin_tty(
     let (ops_tx, ops_rx) = std::sync::mpsc::channel::<TtyWriteOp>();
     let shell_pid = origin.shell_pid;
     let writer = std::thread::Builder::new()
-        .name("hotaru-tty-writeback".to_string())
+        .name("nanoka-tty-writeback".to_string())
         .spawn(move || origin_tty_writer(tty, shell_pid, ops_rx));
     if writer.is_err() {
         notify_fallback("writer thread spawn failed");
@@ -201,7 +201,7 @@ pub(in crate::web) async fn stream_job_wake_to_origin_tty(
         crate::render::ReasoningDisplayMode::from_config(&config.display.reasoning);
     // 落笔即有反馈:头部先行,正文随事件到达逐行追加。
     let _ = ops_tx.send(TtyWriteOp::Write(format!(
-        "\r\n\x1b[1m✦ Hotaru 后台任务跟进\x1b[0m \x1b[2m· {}\x1b[0m\r\n\r\n",
+        "\r\n\x1b[1m✦ Nanoka 后台任务跟进\x1b[0m \x1b[2m· {}\x1b[0m\r\n\r\n",
         completion.title
     )));
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """受限滚动区里，kitty 会不会把图片跟着文本一起搬？
 
-Hotaru 的活动区固定在屏幕底部若干行，上面的正文区用 DECSTBM 受限滚动区
+Nanoka 的活动区固定在屏幕底部若干行，上面的正文区用 DECSTBM 受限滚动区
 (`ESC[1;Nr`) 加换行来滚。轨迹显示全程只有这一种搬动方式，没有插入/删除
 行。如果 kitty 在受限区里只搬文本、不搬图片，那正文一滚图就留在原地，
 表现出来正是「滚上去看历史后新输出把内容顶上去就错位」。
@@ -91,13 +91,13 @@ def main():
     region_bottom = max(rows - 6, IMAGE_TOP + IMAGE_ROWS + 3)
     for row in range(IMAGE_TOP + IMAGE_ROWS, region_bottom):
         at(row, f"填充行 {row}")
-    # 底部 6 行当「活动区」，不参与滚动——和 Hotaru 的布局一致。
+    # 底部 6 行当「活动区」，不参与滚动——和 Nanoka 的布局一致。
     for row in range(region_bottom, rows):
         at(row, f"【活动区】第 {row} 行，这几行不该动")
     sys.stdout.flush()
     time.sleep(2.5)
 
-    # 受限区滚动：正是 Hotaru 活动区重绘用的那一套。真实会话里这个动作要
+    # 受限区滚动：正是 Nanoka 活动区重绘用的那一套。真实会话里这个动作要
     # 发生几百次，一次只滚一行。滚一次看不出问题——残影要累积才显形，所
     # 以这里一行一行地滚，慢放让你看清每一步。
     for step in range(SCROLL_BY):

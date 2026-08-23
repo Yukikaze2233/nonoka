@@ -87,7 +87,7 @@ pub struct DeletedSkill {
 
 pub fn create_draft(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     name: &str,
     description: &str,
     scope: SkillScope,
@@ -121,7 +121,7 @@ pub fn create_draft(
 
 pub fn update_draft(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     name: &str,
     scope: SkillScope,
 ) -> Result<SkillDraft> {
@@ -157,7 +157,7 @@ pub fn update_draft(
     cleanup_failed_draft(paths, &manifest, result)
 }
 
-pub fn publish_draft(paths: &HotaruPaths, draft_id: &str) -> Result<PublishedSkill> {
+pub fn publish_draft(paths: &NanokaPaths, draft_id: &str) -> Result<PublishedSkill> {
     validate_draft_id(draft_id)?;
     let _lease = acquire_publish_lock(paths)?;
     prune_expired_drafts_unlocked(paths)?;
@@ -175,7 +175,7 @@ pub fn publish_draft(paths: &HotaruPaths, draft_id: &str) -> Result<PublishedSki
     create_private_dir(&paths.skills_dir)?;
     create_private_directory_chain(&paths.skills_dir, parent)?;
     let staged = parent.join(format!(
-        ".hotaru-skill-stage-{}-{:016x}",
+        ".nanoka-skill-stage-{}-{:016x}",
         std::process::id(),
         rand::random::<u64>()
     ));
@@ -257,7 +257,7 @@ pub fn publish_draft(paths: &HotaruPaths, draft_id: &str) -> Result<PublishedSki
 
 pub fn delete_skill(
     config: &AppConfig,
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     name: &str,
     scope: SkillScope,
 ) -> Result<DeletedSkill> {
@@ -291,7 +291,7 @@ pub fn delete_skill(
     })
 }
 
-pub fn list_drafts(paths: &HotaruPaths) -> Result<Vec<SkillDraft>> {
+pub fn list_drafts(paths: &NanokaPaths) -> Result<Vec<SkillDraft>> {
     prune_expired_drafts(paths)?;
     let root = paths.skill_drafts_dir();
     if !root.is_dir() {
@@ -322,12 +322,12 @@ pub fn list_drafts(paths: &HotaruPaths) -> Result<Vec<SkillDraft>> {
     Ok(drafts)
 }
 
-pub fn prune_expired_drafts(paths: &HotaruPaths) -> Result<usize> {
+pub fn prune_expired_drafts(paths: &NanokaPaths) -> Result<usize> {
     let _lease = acquire_publish_lock(paths)?;
     prune_expired_drafts_unlocked(paths)
 }
 
-pub(crate) fn prune_expired_drafts_unlocked(paths: &HotaruPaths) -> Result<usize> {
+pub(crate) fn prune_expired_drafts_unlocked(paths: &NanokaPaths) -> Result<usize> {
     let root = paths.skill_drafts_dir();
     if !root.is_dir() {
         return Ok(0);
@@ -400,7 +400,7 @@ pub(crate) fn new_manifest(
     }
 }
 
-pub(crate) fn create_empty_draft(paths: &HotaruPaths, manifest: &DraftManifest) -> Result<PathBuf> {
+pub(crate) fn create_empty_draft(paths: &NanokaPaths, manifest: &DraftManifest) -> Result<PathBuf> {
     let root = paths.skill_drafts_dir();
     create_private_dir(&root)?;
     let draft = root.join(&manifest.id);
@@ -418,7 +418,7 @@ pub(crate) fn create_empty_draft(paths: &HotaruPaths, manifest: &DraftManifest) 
     result
 }
 
-pub(crate) fn write_draft_manifest(paths: &HotaruPaths, manifest: &DraftManifest) -> Result<()> {
+pub(crate) fn write_draft_manifest(paths: &NanokaPaths, manifest: &DraftManifest) -> Result<()> {
     let draft = paths.skill_drafts_dir().join(&manifest.id);
     write_private_file(
         &draft.join(DRAFT_MANIFEST),
@@ -427,7 +427,7 @@ pub(crate) fn write_draft_manifest(paths: &HotaruPaths, manifest: &DraftManifest
 }
 
 pub(crate) fn cleanup_failed_draft<T>(
-    paths: &HotaruPaths,
+    paths: &NanokaPaths,
     manifest: &DraftManifest,
     result: Result<T>,
 ) -> Result<T> {
@@ -437,7 +437,7 @@ pub(crate) fn cleanup_failed_draft<T>(
     result
 }
 
-pub(crate) fn draft_public(paths: &HotaruPaths, manifest: &DraftManifest) -> Result<SkillDraft> {
+pub(crate) fn draft_public(paths: &NanokaPaths, manifest: &DraftManifest) -> Result<SkillDraft> {
     let skill_dir = paths
         .skill_drafts_dir()
         .join(&manifest.id)
@@ -461,7 +461,7 @@ pub(crate) fn draft_public(paths: &HotaruPaths, manifest: &DraftManifest) -> Res
     })
 }
 
-pub(crate) fn read_manifest(paths: &HotaruPaths, draft_id: &str) -> Result<DraftManifest> {
+pub(crate) fn read_manifest(paths: &NanokaPaths, draft_id: &str) -> Result<DraftManifest> {
     validate_draft_id(draft_id)?;
     let draft = paths.skill_drafts_dir().join(draft_id);
     let metadata = fs::symlink_metadata(&draft)?;
