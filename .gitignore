@@ -14,3 +14,5 @@
 
 # local build cache (CARGO_HOME redirected because /home may be read-only)
 /.cargo-home/
+/.smoke-home/
+/.runtime/
