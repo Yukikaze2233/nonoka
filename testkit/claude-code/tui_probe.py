@@ -5,7 +5,7 @@
 是专用表单(启用开关/binary/工具桥/看门狗),而不是含 Base URL/协议/API Key
 的通用表单。只读不保存(Esc + q 退出)。
 
-    MIYU_HOME=/tmp/miyu-cc/home python3 testkit/claude-code/tui_probe.py
+    HOTARU_HOME=/tmp/hotaru-cc/home python3 testkit/claude-code/tui_probe.py
 """
 
 import fcntl
@@ -21,8 +21,8 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MIYU_BIN = REPO / "target" / "debug" / "miyu"
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-cc/home"))
+HOTARU_BIN = REPO / "target" / "debug" / "hotaru"
+HOME = Path(os.environ.get("HOTARU_HOME", "/tmp/hotaru-cc/home"))
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]|\x1b[()][0-9A-B]|\x1b[=>]")
 
@@ -33,13 +33,13 @@ def plain(data: bytes) -> str:
 
 def main():
     env = dict(os.environ)
-    env["MIYU_HOME"] = str(HOME)
+    env["HOTARU_HOME"] = str(HOME)
     env["TERM"] = "xterm-256color"
     env.setdefault("LANG", "zh_CN.UTF-8")
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
     proc = subprocess.Popen(
-        [str(MIYU_BIN), "config"],
+        [str(HOTARU_BIN), "config"],
         stdin=slave,
         stdout=slave,
         stderr=slave,
@@ -97,7 +97,7 @@ def main():
             "启用(中转 Claude Code",
             "claude 可执行文件",
             "原生工具作用域",
-            "Miyu 工具挂给 claude",
+            "Hotaru 工具挂给 claude",
             "权限模式",
             "看门狗",
         ]:

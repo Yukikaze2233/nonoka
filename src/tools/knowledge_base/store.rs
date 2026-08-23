@@ -63,7 +63,7 @@ pub(in crate::tools::knowledge_base) fn init_semantic_db(conn: &Connection) -> R
 
 pub(in crate::tools::knowledge_base) fn kb_root(
     config: &KnowledgeBasePluginConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
 ) -> PathBuf {
     let configured = config.data_dir.trim();
     if configured.is_empty() {

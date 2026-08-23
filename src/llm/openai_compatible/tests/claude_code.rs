@@ -30,7 +30,7 @@ echo '{"type":"stream_event","event":{"type":"content_block_stop","index":0}}'
 echo '{"type":"stream_event","event":{"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}}}'
 echo '{"type":"stream_event","event":{"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"Hello from fake"}}}'
 echo '{"type":"stream_event","event":{"type":"content_block_stop","index":1}}'
-echo '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"mcp__miyu__use_meme","input":{"action":"show","id":"m1"}}]}}'
+echo '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"mcp__hotaru__use_meme","input":{"action":"show","id":"m1"}}]}}'
 echo '{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":[{"type":"text","text":"meme sent ok"}]}]}}'
 echo '{"type":"stream_event","event":{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":10,"output_tokens":5}}}'
 echo "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"session_id\":\"$sid\",\"result\":\"Hello from fake\",\"usage\":{\"input_tokens\":10,\"cache_read_input_tokens\":90,\"cache_creation_input_tokens\":20,\"output_tokens\":5,\"output_tokens_details\":{\"thinking_tokens\":2}}}"
@@ -50,7 +50,7 @@ fn claude_code_client(dir: &std::path::Path, provider_id: &str) -> OpenAiCompati
     client.claude_code = Some(Arc::new(ClaudeCodeRuntime {
         binary: fake_claude_script(dir),
         native_tools: "off".to_string(),
-        miyu_tools: "off".to_string(),
+        hotaru_tools: "off".to_string(),
         permission_mode: "bypassPermissions".to_string(),
         autocompact: HashMap::new(),
         idle_timeout: Duration::from_secs(30),
@@ -226,7 +226,7 @@ async fn missing_binary_reports_actionable_error() {
     client.claude_code = Some(Arc::new(ClaudeCodeRuntime {
         binary: dir.path().join("no-such-claude"),
         native_tools: "off".to_string(),
-        miyu_tools: "off".to_string(),
+        hotaru_tools: "off".to_string(),
         permission_mode: "bypassPermissions".to_string(),
         autocompact: HashMap::new(),
         idle_timeout: Duration::from_secs(30),
@@ -332,7 +332,7 @@ async fn native_tool_scope_shapes_the_cli_args() {
         Arc::new(ClaudeCodeRuntime {
             binary: script.clone(),
             native_tools: scope.to_string(),
-            miyu_tools: "off".to_string(),
+            hotaru_tools: "off".to_string(),
             permission_mode: "bypassPermissions".to_string(),
             autocompact: HashMap::new(),
             idle_timeout: Duration::from_secs(30),
@@ -394,21 +394,21 @@ async fn native_tool_scope_shapes_the_cli_args() {
     assert!(args.contains("--tools\n\n"), "{args}");
 }
 
-/// 两套同开时,MCP 桥的 env 里点名剔除与原生重复的 Miyu 工具。
+/// 两套同开时,MCP 桥的 env 里点名剔除与原生重复的 Hotaru 工具。
 #[tokio::test]
-async fn duplicate_miyu_tools_are_excluded_when_both_toolsets_are_on() {
+async fn duplicate_hotaru_tools_are_excluded_when_both_toolsets_are_on() {
     let dir = tempfile::tempdir().unwrap();
     let mut client = claude_code_client(dir.path(), "cc-dedupe");
     client.claude_code = Some(Arc::new(ClaudeCodeRuntime {
         binary: fake_claude_script(dir.path()),
         native_tools: "all".to_string(),
-        miyu_tools: "all".to_string(),
+        hotaru_tools: "all".to_string(),
         permission_mode: "bypassPermissions".to_string(),
         autocompact: HashMap::new(),
         idle_timeout: Duration::from_secs(30),
         prefer_subscription: true,
     }));
-    // MCP 桥要求会话作用域(env 里带 MIYU_SESSION)。
+    // MCP 桥要求会话作用域(env 里带 HOTARU_SESSION)。
     crate::tools::workspace::with_session(std::sync::Arc::from("sess-dedupe"), async {
         client
             .chat_claude_code_stream(
@@ -424,7 +424,7 @@ async fn duplicate_miyu_tools_are_excluded_when_both_toolsets_are_on() {
     let args = read(dir.path(), "args.txt");
     assert!(args.contains("--mcp-config"), "{args}");
     assert!(
-        args.contains("MIYU_MCP_EXCLUDE") && args.contains("run_command"),
+        args.contains("HOTARU_MCP_EXCLUDE") && args.contains("run_command"),
         "两套同开应点名剔除重复工具: {args}"
     );
     assert!(
@@ -433,7 +433,7 @@ async fn duplicate_miyu_tools_are_excluded_when_both_toolsets_are_on() {
     );
 }
 
-/// --autocompact 跟随 Miyu 有效窗口(runtime 装配期夹到 100k–1M)。
+/// --autocompact 跟随 Hotaru 有效窗口(runtime 装配期夹到 100k–1M)。
 #[tokio::test]
 async fn autocompact_follows_the_effective_window() {
     let dir = tempfile::tempdir().unwrap();
@@ -441,7 +441,7 @@ async fn autocompact_follows_the_effective_window() {
     let mut runtime = ClaudeCodeRuntime {
         binary: fake_claude_script(dir.path()),
         native_tools: "off".to_string(),
-        miyu_tools: "off".to_string(),
+        hotaru_tools: "off".to_string(),
         permission_mode: "bypassPermissions".to_string(),
         autocompact: HashMap::new(),
         idle_timeout: Duration::from_secs(30),

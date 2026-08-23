@@ -1,6 +1,6 @@
 //! 导出与导入。
 //!
-//! 整个 Miyu 状态的搬家：配置、会话库、记忆、知识库、技能、素材。导出要能在
+//! 整个 Hotaru 状态的搬家：配置、会话库、记忆、知识库、技能、素材。导出要能在
 //! 另一台机器上还原出等价的环境，所以路径必须相对化、密钥必须显式选择带不带。
 
 use crate::cli::*;
@@ -37,12 +37,12 @@ pub(in crate::cli) fn default_export_name() -> String {
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "miyu".to_string());
+        .unwrap_or_else(|| "hotaru".to_string());
     let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
-    format!("miyu-export-{host}-{stamp}.tar.gz")
+    format!("hotaru-export-{host}-{stamp}.tar.gz")
 }
 
-pub(in crate::cli) fn run_export(paths: &MiyuPaths, args: ExportArgs) -> Result<()> {
+pub(in crate::cli) fn run_export(paths: &HotaruPaths, args: ExportArgs) -> Result<()> {
     let output = args
         .output
         .unwrap_or_else(|| PathBuf::from(default_export_name()));
@@ -96,23 +96,23 @@ pub(in crate::cli) fn run_export(paths: &MiyuPaths, args: ExportArgs) -> Result<
         println!(
             "{}",
             t(
-                "The knowledge-base vector index was left out; run `miyu kb embed` after importing (or re-export with --index).",
-                "未包含知识库向量索引；导入后请运行 miyu kb embed（或改用 --index 重新导出）。",
+                "The knowledge-base vector index was left out; run `hotaru kb embed` after importing (or re-export with --index).",
+                "未包含知识库向量索引；导入后请运行 hotaru kb embed（或改用 --index 重新导出）。",
             )
         );
     }
     Ok(())
 }
 
-pub(in crate::cli) async fn run_import(paths: &MiyuPaths, args: ImportArgs) -> Result<()> {
+pub(in crate::cli) async fn run_import(paths: &HotaruPaths, args: ImportArgs) -> Result<()> {
     // The daemon holds conversation.db's WAL open; replacing the file under it
     // would leave both the old process and the new database inconsistent.
     if crate::ipc::daemon_info(paths).await.is_some() {
         anyhow::bail!(
             "{}",
             t(
-                "the Miyu daemon is running and holds the database open; stop it first with `miyu daemon stop`",
-                "Miyu daemon 正在运行并占用数据库；请先执行 miyu daemon stop",
+                "the Hotaru daemon is running and holds the database open; stop it first with `hotaru daemon stop`",
+                "Hotaru daemon 正在运行并占用数据库；请先执行 hotaru daemon stop",
             )
         );
     }
@@ -139,7 +139,7 @@ pub(in crate::cli) async fn run_import(paths: &MiyuPaths, args: ImportArgs) -> R
         )
     );
     if !report.unknown_units.is_empty() {
-        // A newer Miyu wrote data this build has no name for. It is on disk;
+        // A newer Hotaru wrote data this build has no name for. It is on disk;
         // say so rather than let it look like it vanished.
         let units = report
             .unknown_units
@@ -152,9 +152,9 @@ pub(in crate::cli) async fn run_import(paths: &MiyuPaths, args: ImportArgs) -> R
             owned(
                 format!(
                     "Restored data this version does not recognise \
-                     (written by a newer Miyu): {units}"
+                     (written by a newer Hotaru): {units}"
                 ),
-                format!("恢复了本版本不认识的数据（由更新版本的 Miyu 写入）：{units}"),
+                format!("恢复了本版本不认识的数据（由更新版本的 Hotaru 写入）：{units}"),
             )
         );
     }
@@ -176,23 +176,23 @@ pub(in crate::cli) async fn run_import(paths: &MiyuPaths, args: ImportArgs) -> R
     println!(
         "  {}",
         t(
-            "reinstall the shell integration: `miyu fish-init` / `bash-init` / `zsh-init`",
-            "重装 shell 集成：miyu fish-init / bash-init / zsh-init",
+            "reinstall the shell integration: `hotaru fish-init` / `bash-init` / `zsh-init`",
+            "重装 shell 集成：hotaru fish-init / bash-init / zsh-init",
         )
     );
     println!(
         "  {}",
         t(
-            "`miyu kb reindex` — the knowledge base records absolute paths from the old machine",
-            "miyu kb reindex —— 知识库记录的是旧机器上的绝对路径",
+            "`hotaru kb reindex` — the knowledge base records absolute paths from the old machine",
+            "hotaru kb reindex —— 知识库记录的是旧机器上的绝对路径",
         )
     );
     if !report.index_included {
         println!(
             "  {}",
             t(
-                "`miyu kb embed` — the vector index was not in the archive",
-                "miyu kb embed —— 归档中不含向量索引",
+                "`hotaru kb embed` — the vector index was not in the archive",
+                "hotaru kb embed —— 归档中不含向量索引",
             )
         );
     }
@@ -200,8 +200,8 @@ pub(in crate::cli) async fn run_import(paths: &MiyuPaths, args: ImportArgs) -> R
         println!(
             "  {}",
             t(
-                "refill API keys and access tokens: `miyu config`",
-                "补填 API key 与访问令牌：miyu config",
+                "refill API keys and access tokens: `hotaru config`",
+                "补填 API key 与访问令牌：hotaru config",
             )
         );
     }

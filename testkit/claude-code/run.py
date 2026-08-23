@@ -4,9 +4,9 @@
 同一个直连 REPL 会话里连发两轮,断言第二轮请求带 --resume(前缀链命中,
 只发增量)。会花两次真实订阅调用(haiku),不进 CI;验收手跑:
 
-    MIYU_HOME=/tmp/miyu-cc/home python3 testkit/claude-code/run.py
+    HOTARU_HOME=/tmp/hotaru-cc/home python3 testkit/claude-code/run.py
 
-前提:MIYU_HOME 下 config.jsonc 的 active_provider 是 claude-code 协议供应商,
+前提:HOTARU_HOME 下 config.jsonc 的 active_provider 是 claude-code 协议供应商,
 本机 claude 已订阅登录,daemon 未运行(直连互斥)。
 """
 
@@ -25,8 +25,8 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MIYU_BIN = REPO / "target" / "debug" / "miyu"
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-cc/home"))
+HOTARU_BIN = REPO / "target" / "debug" / "hotaru"
+HOME = Path(os.environ.get("HOTARU_HOME", "/tmp/hotaru-cc/home"))
 
 
 class Repl:
@@ -36,15 +36,15 @@ class Repl:
         log.parent.mkdir(parents=True, exist_ok=True)
         self.log = open(log, "wb")
         env = dict(os.environ)
-        env["MIYU_HOME"] = str(home)
-        env["MIYU_DIRECT"] = "1"
-        env["MIYU_LOG_REQUESTS"] = "1"
+        env["HOTARU_HOME"] = str(home)
+        env["HOTARU_DIRECT"] = "1"
+        env["HOTARU_LOG_REQUESTS"] = "1"
         env["TERM"] = "xterm-256color"
         env.setdefault("LANG", "zh_CN.UTF-8")
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
         self.proc = subprocess.Popen(
-            [str(MIYU_BIN), "normal"],
+            [str(HOTARU_BIN), "normal"],
             stdin=slave,
             stdout=slave,
             stderr=slave,

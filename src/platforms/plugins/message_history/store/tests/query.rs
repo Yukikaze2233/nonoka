@@ -15,7 +15,7 @@ async fn activity_ranking_is_scoped_stable_and_counts_recalled_messages() {
         key.clone(),
         "bot-1",
         "bot-alias-1",
-        "Miyu old",
+        "Hotaru old",
         "bot",
         second_day + 20,
     );
@@ -24,7 +24,7 @@ async fn activity_ranking_is_scoped_stable_and_counts_recalled_messages() {
         key.clone(),
         "bot-2",
         "bot-alias-2",
-        "Miyu",
+        "Hotaru",
         "bot",
         second_day + 30,
     );
@@ -92,7 +92,7 @@ async fn activity_ranking_is_scoped_stable_and_counts_recalled_messages() {
     assert_eq!(ranking.items[0].message_count, 3);
     assert_eq!(ranking.items[0].active_days, 2);
     assert_eq!(ranking.items[1].sender_id, "bot-a");
-    assert_eq!(ranking.items[1].sender_name, "Miyu");
+    assert_eq!(ranking.items[1].sender_name, "Hotaru");
     assert_eq!(ranking.items[1].rank, 2);
 
     let without_bot = store

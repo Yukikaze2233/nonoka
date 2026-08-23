@@ -80,12 +80,12 @@ pub(crate) fn marker_exists_at(path: &Path, label: &str) -> Result<bool> {
     match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.file_type().is_symlink() => {
             bail!(
-                "Miyu {label} must not be a symbolic link: {}",
+                "Hotaru {label} must not be a symbolic link: {}",
                 path.display()
             )
         }
         Ok(metadata) if !metadata.is_file() => {
-            bail!("Miyu {label} is not a regular file: {}", path.display())
+            bail!("Hotaru {label} is not a regular file: {}", path.display())
         }
         Ok(_) => Ok(true),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
@@ -155,7 +155,7 @@ pub(crate) fn legacy_daemon_is_running_at(legacy: &LegacyLayout, xdg_runtime_dir
     }
     runtime_dirs
         .into_iter()
-        .map(|runtime_dir| runtime_dir.join("miyu"))
+        .map(|runtime_dir| runtime_dir.join("hotaru"))
         .any(|runtime_dir| {
             std::os::unix::net::UnixStream::connect(runtime_dir.join("core.sock")).is_ok()
                 || runtime_lock_is_held(&runtime_dir.join("core.lock"))
@@ -202,8 +202,8 @@ pub(crate) fn migrate_legacy_layout(legacy: &LegacyLayout, next: &Layout) -> Res
         return Ok(());
     }
     // Repeat the full preflight while holding the layout lock. The first pass
-    // guarantees a known conflict does not even create ~/.miyu; this pass
-    // closes the race with another new Miyu process before any data moves.
+    // guarantees a known conflict does not even create ~/.hotaru; this pass
+    // closes the race with another new Hotaru process before any data moves.
     let active = preflight_with_disposable_cache(&mappings, &legacy.cache_dir)?;
     let next_bash_hook = next.config_dir.join("shell/bash-hook.sh");
     let next_zsh_hook = next.config_dir.join("shell/zsh-hook.zsh");
@@ -214,7 +214,7 @@ pub(crate) fn migrate_legacy_layout(legacy: &LegacyLayout, next: &Layout) -> Res
     for mapping in &active {
         migrate_entry_unchecked(&mapping.source, &mapping.destination).with_context(|| {
             format!(
-                "migrating Miyu user files from {} to {}",
+                "migrating Hotaru user files from {} to {}",
                 mapping.source.display(),
                 mapping.destination.display()
             )
@@ -225,7 +225,7 @@ pub(crate) fn migrate_legacy_layout(legacy: &LegacyLayout, next: &Layout) -> Res
         let home = next
             .root_dir
             .parent()
-            .context("the Miyu home directory has no parent")?;
+            .context("the Hotaru home directory has no parent")?;
         let bash_hook = had_bash_hook.then_some(next_bash_hook);
         let zsh_hook = had_zsh_hook.then_some(next_zsh_hook);
         crate::shell::refresh_migrated_hook_sources(
@@ -233,7 +233,7 @@ pub(crate) fn migrate_legacy_layout(legacy: &LegacyLayout, next: &Layout) -> Res
             bash_hook.as_deref(),
             zsh_hook.as_deref(),
         )
-        .context("refreshing shell hook paths after Miyu directory migration")?;
+        .context("refreshing shell hook paths after Hotaru directory migration")?;
     }
 
     write_marker(&next.marker())?;
@@ -273,7 +273,7 @@ pub(crate) fn existing_mappings(mappings: &[MigrationMapping]) -> Result<Vec<Mig
             || mapping.source.starts_with(&mapping.destination)
         {
             bail!(
-                "Miyu directory migration cannot move overlapping paths: {} and {}",
+                "Hotaru directory migration cannot move overlapping paths: {} and {}",
                 mapping.source.display(),
                 mapping.destination.display()
             );
@@ -287,7 +287,7 @@ pub(crate) fn existing_mappings(mappings: &[MigrationMapping]) -> Result<Vec<Mig
                 || right.source.starts_with(&left.source)
             {
                 bail!(
-                    "Miyu directory migration has overlapping legacy sources: {} and {}",
+                    "Hotaru directory migration has overlapping legacy sources: {} and {}",
                     left.source.display(),
                     right.source.display()
                 );
@@ -312,7 +312,7 @@ pub(crate) fn acquire_migration_lock(root: &Path) -> Result<MigrationLease> {
         .with_context(|| format!("opening migration lock directory {}", root.display()))?;
     let result = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX) };
     if result != 0 {
-        return Err(std::io::Error::last_os_error()).context("locking Miyu directory migration");
+        return Err(std::io::Error::last_os_error()).context("locking Hotaru directory migration");
     }
     Ok(MigrationLease(file))
 }
@@ -335,11 +335,11 @@ pub(crate) fn ensure_private_dir(path: &Path) -> Result<()> {
 pub(crate) fn ensure_existing_directory(path: &Path) -> Result<()> {
     match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.file_type().is_symlink() => bail!(
-            "Miyu refuses to use a symbolic-link directory: {}",
+            "Hotaru refuses to use a symbolic-link directory: {}",
             path.display()
         ),
         Ok(metadata) if !metadata.is_dir() => bail!(
-            "Miyu expected a directory but found another file: {}",
+            "Hotaru expected a directory but found another file: {}",
             path.display()
         ),
         Ok(_) => Ok(()),
@@ -352,11 +352,11 @@ pub(crate) fn layout_marker_exists(layout: &Layout) -> Result<bool> {
     let marker = layout.marker();
     match fs::symlink_metadata(&marker) {
         Ok(metadata) if metadata.file_type().is_symlink() => bail!(
-            "Miyu layout marker must not be a symbolic link: {}",
+            "Hotaru layout marker must not be a symbolic link: {}",
             marker.display()
         ),
         Ok(metadata) if !metadata.is_file() => bail!(
-            "Miyu layout marker is not a regular file: {}",
+            "Hotaru layout marker is not a regular file: {}",
             marker.display()
         ),
         Ok(_) => Ok(true),
@@ -397,7 +397,7 @@ pub(crate) fn migrate_entry(source: &Path, destination: &Path) -> Result<()> {
 /// Runs `existing_mappings` + `preflight_mappings`, except that the cache is
 /// treated as disposable: caches routinely contain relative symlinks (for
 /// example HuggingFace-style blob layouts), and refusing to move one would
-/// otherwise brick startup forever over data Miyu can rebuild. When the cache
+/// otherwise brick startup forever over data Hotaru can rebuild. When the cache
 /// tree alone fails preflight it is discarded and dropped from the migration
 /// instead of failing it.
 pub(crate) fn preflight_with_disposable_cache(
@@ -421,8 +421,8 @@ pub(crate) fn preflight_with_disposable_cache(
             eprintln!(
                 "{}: {reason:#}",
                 t(
-                    "discarding the legacy Miyu cache instead of migrating it",
-                    "旧版 Miyu 缓存无法迁移，已直接丢弃"
+                    "discarding the legacy Hotaru cache instead of migrating it",
+                    "旧版 Hotaru 缓存无法迁移，已直接丢弃"
                 )
             );
             discard_legacy_cache(&cache.source);
@@ -471,7 +471,7 @@ pub(crate) fn ensure_supported_entry_tree(path: &Path) -> Result<()> {
         let target = fs::read_link(path)?;
         if target.is_relative() {
             bail!(
-                "Miyu directory migration refuses relative symbolic link {}; its target would change after moving",
+                "Hotaru directory migration refuses relative symbolic link {}; its target would change after moving",
                 path.display()
             );
         }
@@ -500,7 +500,7 @@ pub(crate) fn ensure_absolute_symlink_targets_stable(
             for (source, destination) in projections {
                 if let Ok(relative) = target.strip_prefix(source) {
                     bail!(
-                        "Miyu directory migration refuses symbolic link {} because its absolute target moves from {} to {}",
+                        "Hotaru directory migration refuses symbolic link {} because its absolute target moves from {} to {}",
                         path.display(),
                         target.display(),
                         destination.join(relative).display()
@@ -552,7 +552,7 @@ pub(crate) fn projected_source_entry(source_root: &Path, relative: &Path) -> Res
         let metadata = fs::symlink_metadata(&current)?;
         if !metadata.is_dir() {
             bail!(
-                "Miyu directory migration found a projected path conflict at {}",
+                "Hotaru directory migration found a projected path conflict at {}",
                 current.display()
             );
         }
@@ -593,7 +593,7 @@ pub(crate) fn ensure_projected_entries_compatible(
         return Ok(());
     }
     bail!(
-        "Miyu directory migration found conflicting legacy entries {} and {} projected to {}",
+        "Hotaru directory migration found conflicting legacy entries {} and {} projected to {}",
         left.display(),
         right.display(),
         projected_destination.display()
@@ -615,7 +615,7 @@ pub(crate) fn ensure_no_conflicts(source: &Path, destination: &Path) -> Result<(
                 return Ok(());
             }
             bail!(
-                "Miyu directory migration found conflicting entries: {} and {}; move or rename one of them and retry",
+                "Hotaru directory migration found conflicting entries: {} and {}; move or rename one of them and retry",
                 source.display(),
                 destination.display()
             );
@@ -643,7 +643,7 @@ pub(crate) fn migrate_entry_unchecked(source: &Path, destination: &Path) -> Resu
                 return Ok(());
             }
             bail!(
-                "Miyu directory migration found a conflict that appeared after preflight: {} and {}",
+                "Hotaru directory migration found a conflict that appeared after preflight: {} and {}",
                 source.display(),
                 destination.display()
             );
@@ -698,7 +698,7 @@ pub(crate) fn copy_entry(source: &Path, metadata: &fs::Metadata, destination: &P
         bail!("unsupported file type while migrating {}", source.display());
     }
     let temporary = destination.with_extension(format!(
-        "miyu-migrate-{}-{}",
+        "hotaru-migrate-{}-{}",
         std::process::id(),
         rand::random::<u64>()
     ));

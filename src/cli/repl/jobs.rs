@@ -84,7 +84,7 @@ pub(in crate::cli) fn job_wake_headline(headline: &str) -> String {
 
 /// Fires a desktop notification unless the REPL window has focus.
 ///
-/// `focused` is `None` when there is no live tail — a one-shot `miyu ask` has
+/// `focused` is `None` when there is no live tail — a one-shot `hotaru ask` has
 /// no window to be away from, so it stays quiet.
 pub(in crate::cli) fn notify_if_unfocused(
     config: &AppConfig,
@@ -213,7 +213,7 @@ impl JobsFeed {
 /// Poll the daemon for background commands while the remote REPL idles:
 /// 1s when commands are live, 3s when quiet — a unix-socket roundtrip
 /// costs microseconds either way.
-pub(in crate::cli) fn spawn_jobs_poll_thread(paths: MiyuPaths) -> std::sync::Arc<SharedJobsFeed> {
+pub(in crate::cli) fn spawn_jobs_poll_thread(paths: HotaruPaths) -> std::sync::Arc<SharedJobsFeed> {
     let shared = std::sync::Arc::new(SharedJobsFeed::default());
     let feed = shared.clone();
     std::thread::spawn(move || {
@@ -287,7 +287,7 @@ pub(in crate::cli) type JobsOverviewSnapshot = (
     Vec<(String, String, String)>,
 );
 
-pub(in crate::cli) async fn fetch_jobs_overview(paths: &MiyuPaths) -> Result<JobsOverviewSnapshot> {
+pub(in crate::cli) async fn fetch_jobs_overview(paths: &HotaruPaths) -> Result<JobsOverviewSnapshot> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
     ipc::send(&mut stream, &IpcRequest::new(IpcCommand::JobsOverview)).await?;
     match ipc::receive::<IpcFrame>(&mut stream).await? {

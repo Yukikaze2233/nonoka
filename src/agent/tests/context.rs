@@ -694,7 +694,7 @@ async fn compaction_resets_the_byte_prefix_at_most_once_each() {
     config.context.compact_cache_reuse = false;
     config.context.prune_stale_tool_reports = false;
     // Pin the persona. This test is about compaction's effect on the byte
-    // prefix, not about whatever `prompts/miyu.md` currently weighs —
+    // prefix, not about whatever `prompts/hotaru.md` currently weighs —
     // editing the persona used to move the overflow point and flip the
     // outcome.
     config.system_prompt = Some("prefix cache guard fixture persona".to_string());

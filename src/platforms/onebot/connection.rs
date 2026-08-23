@@ -1,6 +1,6 @@
 //! 反向 WebSocket 连接的接入、鉴权与 API 往返。
 //!
-//! OneBot 是**反向连接**：客户端主动连过来，Miyu 是服务端。所以要有注册表管理
+//! OneBot 是**反向连接**：客户端主动连过来，Hotaru 是服务端。所以要有注册表管理
 //! 「当前有哪些连接活着」，还要有 `ConnectionHandle` 让业务侧不必知道自己在跟
 //! 哪条连接说话。
 //!
@@ -295,7 +295,7 @@ impl PreparedQqListener {
                         )
                         .await
                         {
-                            tracing::error!(target: "miyu::qq", error = %error, "{}", t("Tencent QQ listener stopped", "腾讯 QQ 监听器已停止"));
+                            tracing::error!(target: "hotaru::qq", error = %error, "{}", t("Tencent QQ listener stopped", "腾讯 QQ 监听器已停止"));
                         }
                     })
                 });
@@ -311,10 +311,10 @@ impl PreparedQqListener {
         if previous_port != self.desired_port {
             match self.desired_port {
                 Some(port) => {
-                    tracing::info!(target: "miyu::qq", port, path = "/ws", "{}", t("Tencent QQ listener ready", "腾讯 QQ 监听器已就绪"))
+                    tracing::info!(target: "hotaru::qq", port, path = "/ws", "{}", t("Tencent QQ listener ready", "腾讯 QQ 监听器已就绪"))
                 }
                 None => {
-                    tracing::info!(target: "miyu::qq", "{}", t("Tencent QQ listener disabled", "腾讯 QQ 监听器已禁用"))
+                    tracing::info!(target: "hotaru::qq", "{}", t("Tencent QQ listener disabled", "腾讯 QQ 监听器已禁用"))
                 }
             }
         }
@@ -345,9 +345,9 @@ pub(crate) async fn onebot_ws(
     }
     if !connection_authorized(&headers, &config.access_token, peer) {
         if config.access_token.trim().is_empty() {
-            tracing::warn!(target: "miyu::qq", %peer, reason = "non_loopback_without_token", "{}", t("OneBot client rejected", "OneBot 客户端已拒绝"));
+            tracing::warn!(target: "hotaru::qq", %peer, reason = "non_loopback_without_token", "{}", t("OneBot client rejected", "OneBot 客户端已拒绝"));
         } else {
-            tracing::warn!(target: "miyu::qq", %peer, reason = "bad_token", "{}", t("OneBot client rejected", "OneBot 客户端已拒绝"));
+            tracing::warn!(target: "hotaru::qq", %peer, reason = "bad_token", "{}", t("OneBot client rejected", "OneBot 客户端已拒绝"));
         }
         return StatusCode::UNAUTHORIZED.into_response();
     }
@@ -451,7 +451,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
         .lock()
         .unwrap()
         .register(self_id, handle.clone());
-    tracing::info!(target: "miyu::qq", self_id, generation, "{}", t("OneBot client connected", "OneBot 客户端已连接"));
+    tracing::info!(target: "hotaru::qq", self_id, generation, "{}", t("OneBot client connected", "OneBot 客户端已连接"));
 
     let (mut sink, mut stream) = socket.split();
     let writer = tokio::spawn(async move {
@@ -489,7 +489,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
                 .unwrap()
                 .is_current(bound_self_id, generation)
         {
-            tracing::info!(target: "miyu::qq",
+            tracing::info!(target: "hotaru::qq",
                 self_id,
                 generation,
                 "{}",
@@ -518,7 +518,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
                     handle.clone(),
                 );
                 if !bound {
-                    tracing::info!(target: "miyu::qq",
+                    tracing::info!(target: "hotaru::qq",
                     self_id = bound_self_id,
                     generation,
                     "{}",
@@ -534,14 +534,14 @@ pub(in crate::platforms::onebot) async fn connection_loop(
                     .lock()
                     .unwrap()
                     .remove_account(bound_self_id);
-                tracing::info!(target: "miyu::qq",
+                tracing::info!(target: "hotaru::qq",
                     self_id = bound_self_id,
                     generation,
                     "{}",
                     t("OneBot connection identity bound from event", "已从事件绑定 OneBot 连接身份")
                 );
             } else if bound_self_id != event_self_id {
-                tracing::warn!(target: "miyu::qq",
+                tracing::warn!(target: "hotaru::qq",
                     expected = bound_self_id,
                     received = event_self_id,
                     "{}",
@@ -572,7 +572,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
                                 .await;
                         }
                         Err(error) => tracing::warn!(
-                            target: "miyu::qq",
+                            target: "hotaru::qq",
                             error = %error,
                             "{}",
                             t(
@@ -586,7 +586,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
             let connection_permit = match permits.clone().try_acquire_owned() {
                 Ok(permit) => permit,
                 Err(_) => {
-                    tracing::warn!(target: "miyu::qq",
+                    tracing::warn!(target: "hotaru::qq",
                         self_id = bound_self_id,
                         "{}",
                         t("OneBot connection event queue is full; dropping a message", "OneBot 连接事件队列已满，丢弃消息")
@@ -604,7 +604,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
             let connection_permit = match permits.clone().try_acquire_owned() {
                 Ok(permit) => permit,
                 Err(_) => {
-                    tracing::warn!(target: "miyu::qq",
+                    tracing::warn!(target: "hotaru::qq",
                         self_id = bound_self_id,
                         "{}",
                         t("OneBot connection concurrency is full; dropping a group upload notice", "OneBot 连接并发已满，丢弃群文件上传通知")
@@ -622,7 +622,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
             let connection_permit = match permits.clone().try_acquire_owned() {
                 Ok(permit) => permit,
                 Err(_) => {
-                    tracing::warn!(target: "miyu::qq",
+                    tracing::warn!(target: "hotaru::qq",
                         self_id = bound_self_id,
                         "{}",
                         t("OneBot connection concurrency is full; dropping a recall notice", "OneBot 连接并发已满，丢弃撤回通知")
@@ -647,7 +647,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
                 Ok(permit) => permit,
                 Err(_) => {
                     tracing::warn!(
-                        target: "miyu::qq",
+                        target: "hotaru::qq",
                         self_id = bound_self_id,
                         "{}",
                         t(
@@ -666,7 +666,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
             });
         } else if is_group_invite_request(&frame) {
             tracing::info!(
-                target: "miyu::qq",
+                target: "hotaru::qq",
                 self_id = frame.get("self_id").and_then(value_i64).unwrap_or(0),
                 group_id = frame.get("group_id").and_then(value_i64).unwrap_or(0),
                 "{}",
@@ -712,7 +712,7 @@ pub(in crate::platforms::onebot) async fn connection_loop(
     // 而不是各等满超时（附件发送最长 180s）。
     handle.pending.lock().unwrap().clear();
     writer.abort();
-    tracing::info!(target: "miyu::qq",
+    tracing::info!(target: "hotaru::qq",
         self_id = bound_self_id,
         generation,
         "{}",

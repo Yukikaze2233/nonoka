@@ -2,7 +2,7 @@ use super::subagent_runner::{ProgressMode, SubagentProgress, SubagentRunner, Sub
 use super::{ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, ModelTier};
 use crate::llm::OpenAiCompatibleClient;
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
@@ -37,14 +37,14 @@ const SUBAGENT_TOOL_TIMEOUT: u64 = 120;
 #[derive(Clone)]
 struct TaskContext {
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     tools: ToolRegistry,
 }
 
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     tools: ToolRegistry,
 ) {
     let config_for_status = config.clone();

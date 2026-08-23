@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Kitty 图片占位诊断：在真实 kitty 里跑，回答两个问题。
 
-  1. 终端上报的单元格像素尺寸是多少？Miyu 用它算网格，取不到就退回
+  1. 终端上报的单元格像素尺寸是多少？Hotaru 用它算网格，取不到就退回
      (10, 20)——退错了整张图的宽高比就是错的。
-  2. 图片实际画出来占几行？Miyu 声明 r=N，如果 kitty 画得比 N 行高，
+  2. 图片实际画出来占几行？Hotaru 声明 r=N，如果 kitty 画得比 N 行高，
      后面的文本就会被压在图上（截图里看到的正是这个）。
 
 用法（必须在真实 kitty 窗口里，不要在 tmux 里）：
@@ -43,7 +43,7 @@ def solid_rgba(width, height, rgb):
 
 
 def emit(image_id, cols, rows, cell_w, cell_h):
-    """照 Miyu src/tools/kitty_image.rs::write_image 的写法逐字节复刻。"""
+    """照 Hotaru src/tools/kitty_image.rs::write_image 的写法逐字节复刻。"""
     width, height = cols * cell_w, rows * cell_h
     raw = solid_rgba(width, height, (220, 60, 60))
     encoded = base64.standard_b64encode(raw)
@@ -87,7 +87,7 @@ def main():
         rows, cols, xpixel, ypixel = size
         print(f"  {cols} 列 × {rows} 行，像素 {xpixel} × {ypixel}")
         if xpixel == 0 or ypixel == 0:
-            print("  ⚠ 像素为 0 → Miyu 会退回假定的 (10, 20)，宽高比必然算错")
+            print("  ⚠ 像素为 0 → Hotaru 会退回假定的 (10, 20)，宽高比必然算错")
             cell_w, cell_h = 10, 20
         else:
             cell_w, cell_h = max(xpixel // cols, 1), max(ypixel // rows, 1)

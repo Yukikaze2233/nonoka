@@ -19,7 +19,7 @@ use crate::default_models::{
     OPENCODE_DEFAULT_CHAT_MODEL, OPENCODE_DEFAULT_VISION_MODEL, OPENCODE_PROVIDER_ID,
     OPENCODE_ZEN_BASE_URL,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use crate::prompts::default_system_prompt;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -83,8 +83,8 @@ pub struct AppConfig {
     pub memory: MemoryConfig,
     #[serde(default)]
     pub system_prompt_file: Option<String>,
-    /// 裸 `miyu` 的默认模式:"normal" | "dev";空(默认)=打印带模式说明的
-    /// 帮助,逼一次显式选择。`miyu normal` / `miyu dev` 子命令始终可用。
+    /// 裸 `hotaru` 的默认模式:"normal" | "dev";空(默认)=打印带模式说明的
+    /// 帮助,逼一次显式选择。`hotaru normal` / `hotaru dev` 子命令始终可用。
     #[serde(default)]
     pub default_mode: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -174,7 +174,7 @@ pub struct DisplayConfig {
 pub struct NotificationsConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Notify when a reply finishes and Miyu is waiting on you again.
+    /// Notify when a reply finishes and Hotaru is waiting on you again.
     #[serde(default = "default_true")]
     pub on_turn_complete: bool,
     /// shellhook/单次 CLI 触发的后台任务完成后,把跟进回复写回触发它的那个

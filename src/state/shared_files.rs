@@ -205,7 +205,7 @@ mod tests {
     use super::*;
 
     fn test_store(temp: &tempfile::TempDir) -> StateStore {
-        StateStore::new(&crate::paths::MiyuPaths {
+        StateStore::new(&crate::paths::HotaruPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
@@ -214,7 +214,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("fish/miyu.fish"),
+            fish_hook_file: temp.path().join("fish/hotaru.fish"),
             bash_hook_file: temp.path().join("shell/bash-hook.sh"),
             zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
             scripts_dir: temp.path().join("config/scripts"),

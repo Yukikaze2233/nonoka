@@ -220,9 +220,9 @@ fn local_session_resolution_rejects_platform_ids_and_prefers_local_names() {
 fn startup_repairs_a_platform_owned_current_session() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("hotaru").unwrap();
     let qq_session = store
-        .create_session("miyu", "QQ group 20000", "user", None)
+        .create_session("hotaru", "QQ group 20000", "user", None)
         .unwrap();
     store
         .bind_platform_session(
@@ -232,21 +232,21 @@ fn startup_repairs_a_platform_owned_current_session() {
                 conversation_kind: "group".to_string(),
                 conversation_id: "20000".to_string(),
                 participant_id: None,
-                persona: "miyu".to_string(),
+                persona: "hotaru".to_string(),
             },
             &qq_session.session_id,
         )
         .unwrap();
     store.switch_session(&qq_session.session_id).unwrap();
 
-    ensure_local_current_session(&store, "miyu").unwrap();
+    ensure_local_current_session(&store, "hotaru").unwrap();
 
     let repaired = store.session_id();
     assert_ne!(&*repaired, qq_session.session_id);
     assert!(!store.is_platform_session(&repaired).unwrap());
     assert_eq!(
         store.session_record(&repaired).unwrap().unwrap().persona,
-        "miyu"
+        "hotaru"
     );
 }
 
@@ -286,8 +286,8 @@ fn persona_identity_uses_default_and_custom_values() {
     let mut config = AppConfig::default();
     let prompts = PromptDocuments::default();
     let default = persona_identity(&config, &prompts);
-    assert_eq!(default.name, "Miyu");
-    assert_eq!(default.avatar_url.as_deref(), Some("/assets/miyu-logo.png"));
+    assert_eq!(default.name, "Hotaru");
+    assert_eq!(default.avatar_url.as_deref(), Some("/assets/hotaru-logo.png"));
 
     config.prompt.active_persona = "Alice.md".to_string();
     let prompts = PromptDocuments {

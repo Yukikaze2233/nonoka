@@ -16,11 +16,11 @@ pub(crate) struct LedgerEntry {
     pub(crate) started_unix: u64,
 }
 
-pub(crate) fn logs_dir(paths: &MiyuPaths) -> PathBuf {
+pub(crate) fn logs_dir(paths: &HotaruPaths) -> PathBuf {
     paths.cache_dir.join("jobs")
 }
 
-pub(crate) fn ledger_path(paths: &MiyuPaths) -> PathBuf {
+pub(crate) fn ledger_path(paths: &HotaruPaths) -> PathBuf {
     paths.runtime_dir().join("background-jobs.json")
 }
 
@@ -46,8 +46,8 @@ pub(crate) fn process_alive(pid: u32) -> bool {
 }
 
 /// Kill process groups recorded by predecessors that are no longer alive.
-/// Entries owned by other live Miyu processes are left untouched.
-pub fn sweep_stale_jobs(paths: &MiyuPaths) {
+/// Entries owned by other live Hotaru processes are left untouched.
+pub fn sweep_stale_jobs(paths: &HotaruPaths) {
     let path = ledger_path(paths);
     let Ok(bytes) = std::fs::read(&path) else {
         return;
@@ -71,8 +71,8 @@ pub fn sweep_stale_jobs(paths: &MiyuPaths) {
                 pid = entry.pid,
                 "{}",
                 crate::i18n::text(
-                    "killing a background job leaked by a dead Miyu process",
-                    "清理已死亡 Miyu 进程遗留的后台任务"
+                    "killing a background job leaked by a dead Hotaru process",
+                    "清理已死亡 Hotaru 进程遗留的后台任务"
                 )
             );
             signal_process_group(entry.pid, libc::SIGKILL);
@@ -81,7 +81,7 @@ pub fn sweep_stale_jobs(paths: &MiyuPaths) {
     let _ = write_ledger(paths, &kept);
 }
 
-pub(crate) fn cleanup_old_logs(paths: &MiyuPaths) {
+pub(crate) fn cleanup_old_logs(paths: &HotaruPaths) {
     let dir = logs_dir(paths);
     let Ok(entries) = std::fs::read_dir(&dir) else {
         return;
@@ -99,7 +99,7 @@ pub(crate) fn cleanup_old_logs(paths: &MiyuPaths) {
     }
 }
 
-pub(crate) fn write_ledger(paths: &MiyuPaths, entries: &[LedgerEntry]) -> Result<()> {
+pub(crate) fn write_ledger(paths: &HotaruPaths, entries: &[LedgerEntry]) -> Result<()> {
     let path = ledger_path(paths);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
@@ -108,7 +108,7 @@ pub(crate) fn write_ledger(paths: &MiyuPaths, entries: &[LedgerEntry]) -> Result
     Ok(())
 }
 
-pub(crate) fn sync_ledger(paths: &MiyuPaths) {
+pub(crate) fn sync_ledger(paths: &HotaruPaths) {
     let owner_pid = std::process::id();
     let entries = jobs()
         .lock()

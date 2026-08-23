@@ -37,7 +37,7 @@ pub(in crate::agent) fn with_runtime_system_context(
 /// 极简原则);Normal=人格提示词(按 audience 附用户档案)。
 pub(in crate::agent) fn mode_system_prompt(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     mode: AgentMode,
     audience: PromptAudience,
 ) -> Result<String> {
@@ -70,7 +70,7 @@ pub(in crate::agent) fn with_memory_preamble(
 pub(in crate::agent) fn with_host_environment(
     mut system_prompt: String,
     audience: PromptAudience,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     mode: AgentMode,
 ) -> String {
     if audience != PromptAudience::Owner {

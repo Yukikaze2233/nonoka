@@ -90,7 +90,7 @@ pub(in crate::platforms::onebot) fn partial_send_error(error: anyhow::Error, rec
 /// Sends carrying base64 images need far longer than a plain text call: a
 /// 2 MiB picture is ~2.9 MB of JSON that NapCat has to receive, decode and
 /// upload to QQ. Timing out early is worse than waiting — the message is
-/// still delivered, but Miyu treats the send as failed and posts the plain
+/// still delivered, but Hotaru treats the send as failed and posts the plain
 /// text fallback, so the group gets the picture *and* the text.
 ///
 /// Size-scaling the budget only moved the cliff, and it moved it unevenly: the
@@ -166,7 +166,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
             context.after_turn_aborted().await;
             if context.conversation.kind == ConversationKind::Group {
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     error = %message,
                     "{}",
                     t("suppressed an internal OneBot group error", "已抑制 OneBot 群聊内部错误")
@@ -202,7 +202,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                                 matched_delivered_image = true;
                             }
                             tracing::debug!(
-                                target: "miyu::qq",
+                                target: "hotaru::qq",
                                 asset_id,
                                 "{}",
                                 if already_delivered {
@@ -229,7 +229,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                     Ok(None) => {
                         unresolved_image_count += 1;
                         tracing::warn!(
-                            target: "miyu::qq",
+                            target: "hotaru::qq",
                             asset_id,
                             "{}",
                             t(
@@ -254,11 +254,11 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
             }
             if segments.is_empty() {
                 if outcome.final_reply_already_sent {
-                    tracing::info!(target: "miyu::qq", "\n{readable}");
+                    tracing::info!(target: "hotaru::qq", "\n{readable}");
                     return Ok(true);
                 }
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     "{}",
                     t("suppressed an empty OneBot model reply", "已抑制空的 OneBot 模型回复")
                 );
@@ -270,7 +270,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                     segments,
                 ))
                 .await?;
-            tracing::info!(target: "miyu::qq", "\n{readable}");
+            tracing::info!(target: "hotaru::qq", "\n{readable}");
         }
     }
     Ok(true)

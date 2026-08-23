@@ -261,7 +261,7 @@ pub(crate) fn default_web_images_timeout() -> u64 {
 }
 
 pub(crate) fn default_deep_research_dir() -> String {
-    default_miyu_home()
+    default_hotaru_home()
         .join("data/documents/deep-thinking")
         .display()
         .to_string()
@@ -308,17 +308,17 @@ pub(crate) fn default_image_generation_resolution() -> String {
 }
 
 pub(crate) fn default_image_generation_output_dir() -> String {
-    default_miyu_home()
+    default_hotaru_home()
         .join("data/pictures/generated-images")
         .display()
         .to_string()
 }
 
-pub(crate) fn default_miyu_home() -> PathBuf {
-    std::env::var_os("MIYU_HOME")
+pub(crate) fn default_hotaru_home() -> PathBuf {
+    std::env::var_os("HOTARU_HOME")
         .map(PathBuf::from)
-        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".miyu")))
-        .unwrap_or_else(|| PathBuf::from("~/.miyu"))
+        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".hotaru")))
+        .unwrap_or_else(|| PathBuf::from("~/.hotaru"))
 }
 
 pub(crate) fn default_image_generation_timeout() -> u64 {
@@ -435,7 +435,7 @@ pub(crate) fn default_claude_code_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_claude_code_miyu_tools() -> String {
+pub(crate) fn default_claude_code_hotaru_tools() -> String {
     "all".to_string()
 }
 

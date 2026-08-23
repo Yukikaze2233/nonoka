@@ -40,7 +40,7 @@ use crate::i18n::{is_zh, text as t};
 use crate::llm::{
     thinking_variant_options_for_model, ThinkingVariantOptions, ThinkingVariantPreferences,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use crate::platforms::commands::{self, PlatformCommandDescriptor};
 use crate::platforms::plugins::{
     active_judgement_skip_ids, apply_active_judgement_skip_editor_changes,
@@ -60,7 +60,7 @@ use std::process::Command;
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-pub fn run(paths: &MiyuPaths) -> Result<bool> {
+pub fn run(paths: &HotaruPaths) -> Result<bool> {
     AppConfig::init_files(paths)?;
     crate::models_cache::try_load(paths);
     crate::models_cache::spawn_background_refresh(paths.clone());
@@ -76,7 +76,7 @@ struct TerminalSession {
 impl TerminalSession {
     fn start() -> Result<Self> {
         terminal::enable_raw_mode()?;
-        // 独立 `miyu config` 没有 REPL 的挂断看门狗;不发 SIGHUP 的断开
+        // 独立 `hotaru config` 没有 REPL 的挂断看门狗;不发 SIGHUP 的断开
         // (tmux kill-pane、SSH 掉线)会让 crossterm 对 HUP fd 全速自旋。
         crate::cli::spawn_hangup_watchdog();
         let mut stdout = io::stdout();
@@ -86,7 +86,7 @@ impl TerminalSession {
 
     fn run(
         mut self,
-        paths: &MiyuPaths,
+        paths: &HotaruPaths,
         mut config: AppConfig,
         mut thinking_variants: ThinkingVariantPreferences,
     ) -> Result<bool> {
@@ -106,7 +106,7 @@ impl Drop for TerminalSession {
 
 fn run_main_menu(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
     thinking_variants: &mut ThinkingVariantPreferences,
 ) -> Result<bool> {
@@ -152,7 +152,7 @@ fn run_main_menu(
         ];
         draw_menu(
             stdout,
-            t(" MIYU CONFIG ", " MIYU 配置 "),
+            t(" HOTARU CONFIG ", " HOTARU 配置 "),
             &options,
             selected,
             "",
@@ -216,7 +216,7 @@ fn run_main_menu(
 
 impl<'a> ProviderBrowser<'a> {
     fn new(
-        paths: &'a MiyuPaths,
+        paths: &'a HotaruPaths,
         config: &'a mut AppConfig,
         thinking_variants: &'a mut ThinkingVariantPreferences,
     ) -> Self {

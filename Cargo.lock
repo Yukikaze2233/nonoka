@@ -2070,7 +2070,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "miyu"
+name = "hotaru"
 version = "0.4.5"
 dependencies = [
  "anyhow",

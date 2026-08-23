@@ -1,7 +1,7 @@
 ---
 name: linux-input-method-diagnose
 description: 深度诊断 Linux 输入法问题（fcitx5/ibus，Wayland/X11，GTK/Qt/SDL/Electron 等框架路径）。Use when the user reports an input method not working, cannot type Chinese, or IME issues in a specific app on Linux.
-compatibility: Miyu built-in diagnosis workflow
+compatibility: Hotaru built-in diagnosis workflow
 ---
 
 # 使用方式

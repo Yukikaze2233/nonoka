@@ -287,7 +287,7 @@ async fn running_platform_turn_does_not_block_an_independent_dispatch() {
     let state = DaemonState::for_test(test_paths(daemon_temp.path()), 8300).unwrap();
     let session = state
         .state_store
-        .create_session("miyu", "queued platform test", "user", None)
+        .create_session("hotaru", "queued platform test", "user", None)
         .unwrap();
     state
         .state_store

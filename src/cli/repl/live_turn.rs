@@ -134,7 +134,7 @@ pub(in crate::cli) fn handle_live_agent_event(
 
 pub(in crate::cli) async fn run_live_agent_turn(
     live: &mut LiveReplTail,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     state: &StateStore,
     agent: &mut Agent,
     input: LiveAgentInput<'_>,

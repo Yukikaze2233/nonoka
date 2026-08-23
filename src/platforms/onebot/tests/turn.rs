@@ -124,7 +124,7 @@ async fn reset_command_uses_configured_admins_and_clears_the_bound_session() {
     let persona = state.manager.lock().unwrap().config.active_persona_scope();
     let sessions_before = state.state_store.list_sessions(&persona).unwrap().len();
 
-    // QQ group roles never grant Miyu command administration.
+    // QQ group roles never grant Hotaru command administration.
     let denied = tokio::spawn(handle_message(
         state.clone(),
         connection.clone(),
@@ -239,7 +239,7 @@ async fn wipe_clears_every_local_session_of_the_active_persona() {
     std::fs::create_dir_all(&generated_skill).unwrap();
     std::fs::write(
         generated_skill.join("SKILL.md"),
-        "---\ngenerated_by: miyu\n---\n",
+        "---\ngenerated_by: hotaru\n---\n",
     )
     .unwrap();
 
@@ -388,7 +388,7 @@ fn private_message_info_uses_target_peer_and_sender_fallbacks() {
             "message_type": "private",
             "message_id": 1,
             "target_id": 20000,
-            "sender": { "user_id": 10000, "nickname": "Miyu" },
+            "sender": { "user_id": 10000, "nickname": "Hotaru" },
             "message": [{ "type": "text", "data": { "text": "hello" } }],
         }),
         10000,

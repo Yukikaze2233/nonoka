@@ -156,7 +156,7 @@ pub(in crate::web) async fn upload_user_attachment(
         ));
     }
     let encoded_name = headers
-        .get("x-miyu-filename")
+        .get("x-hotaru-filename")
         .and_then(|value| value.to_str().ok())
         .ok_or_else(|| ApiError::new(StatusCode::BAD_REQUEST, "attachment filename is required"))?;
     let decoded_name = urlencoding::decode(encoded_name)

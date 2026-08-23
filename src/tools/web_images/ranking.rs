@@ -319,7 +319,7 @@ pub(in crate::tools::web_images) fn stored_json(item: StoredImage) -> Value {
 
 pub(in crate::tools::web_images) async fn screen_images_with_vision(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     query: &str,
     items: &mut [StoredImage],
 ) {

@@ -834,8 +834,8 @@ mod reclaim_probe {
     /// 路径跑一遍，看能还回去多少磁盘。
     ///
     /// ```
-    /// cp ~/.miyu/state/conversation.db /tmp/probe/
-    /// MIYU_RECLAIM_PROBE_DIR=/tmp/probe \
+    /// cp ~/.hotaru/state/conversation.db /tmp/probe/
+    /// HOTARU_RECLAIM_PROBE_DIR=/tmp/probe \
     ///   cargo test --lib reclaim_probe -- --ignored --nocapture
     /// ```
     ///
@@ -843,8 +843,8 @@ mod reclaim_probe {
     #[test]
     #[ignore]
     fn reclaim_on_a_real_database() {
-        let Some(dir) = std::env::var_os("MIYU_RECLAIM_PROBE_DIR") else {
-            println!("\n  跳过：没给 MIYU_RECLAIM_PROBE_DIR");
+        let Some(dir) = std::env::var_os("HOTARU_RECLAIM_PROBE_DIR") else {
+            println!("\n  跳过：没给 HOTARU_RECLAIM_PROBE_DIR");
             return;
         };
         let dir = std::path::PathBuf::from(dir);

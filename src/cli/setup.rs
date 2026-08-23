@@ -11,14 +11,14 @@ pub(in crate::cli) enum InitKind {
     Explicit,
 }
 
-pub(in crate::cli) fn run_init(paths: &MiyuPaths, kind: InitKind) -> Result<()> {
+pub(in crate::cli) fn run_init(paths: &HotaruPaths, kind: InitKind) -> Result<()> {
     let interactive = io::stdin().is_terminal() && io::stdout().is_terminal();
     if interactive {
         println!(
             "{}\n",
             match kind {
-                InitKind::FirstRun => t("Miyu first start", "Miyu 首次启动"),
-                InitKind::Explicit => t("Miyu initialization", "Miyu 初始化"),
+                InitKind::FirstRun => t("Hotaru first start", "Hotaru 首次启动"),
+                InitKind::Explicit => t("Hotaru initialization", "Hotaru 初始化"),
             }
         );
     }
@@ -68,7 +68,7 @@ pub(in crate::cli) fn run_init(paths: &MiyuPaths, kind: InitKind) -> Result<()> 
     } else {
         println!(
             "{} {}",
-            t("initialized Miyu at", "Miyu 已初始化于"),
+            t("initialized Hotaru at", "Hotaru 已初始化于"),
             paths.config_dir.display()
         );
     }
@@ -92,11 +92,11 @@ pub(in crate::cli) fn terminal_bell_fallback() {
     }
 }
 
-pub(in crate::cli) const DEFAULT_PERSONA_LABEL_ZH: &str = "Miyu（内置默认）";
+pub(in crate::cli) const DEFAULT_PERSONA_LABEL_ZH: &str = "Hotaru（内置默认）";
 
-pub(in crate::cli) const DEFAULT_PERSONA_LABEL_EN: &str = "Miyu (built-in default)";
+pub(in crate::cli) const DEFAULT_PERSONA_LABEL_EN: &str = "Hotaru (built-in default)";
 
-pub(in crate::cli) fn list_persona_files(paths: &MiyuPaths, config: &AppConfig) -> Result<Vec<String>> {
+pub(in crate::cli) fn list_persona_files(paths: &HotaruPaths, config: &AppConfig) -> Result<Vec<String>> {
     let dir = config.prompts_dir_path(paths);
     let mut names = Vec::new();
     if dir.exists() {
@@ -116,14 +116,14 @@ pub(in crate::cli) fn list_persona_files(paths: &MiyuPaths, config: &AppConfig) 
 
 /// Interactive persona picker (single-select). Returns true when the active
 /// persona changed and the config was saved.
-pub(in crate::cli) fn run_persona_picker(paths: &MiyuPaths, argument: &str) -> Result<bool> {
+pub(in crate::cli) fn run_persona_picker(paths: &HotaruPaths, argument: &str) -> Result<bool> {
     let mut config = AppConfig::load(paths)?;
     let personas = list_persona_files(paths, &config)?;
     let current = config.prompt.active_persona.trim().to_string();
     let argument = argument.trim();
     let chosen: Option<String> = if !argument.is_empty() {
         if argument.eq_ignore_ascii_case("default")
-            || argument.eq_ignore_ascii_case("miyu")
+            || argument.eq_ignore_ascii_case("hotaru")
             || argument == "内置"
         {
             Some(String::new())
@@ -199,7 +199,7 @@ pub(in crate::cli) fn run_persona_picker(paths: &MiyuPaths, argument: &str) -> R
     Ok(true)
 }
 
-pub(in crate::cli) async fn run_config(paths: &MiyuPaths, args: ConfigArgs) -> Result<bool> {
+pub(in crate::cli) async fn run_config(paths: &HotaruPaths, args: ConfigArgs) -> Result<bool> {
     match args.command {
         Some(ConfigCommand::Validate) => {
             AppConfig::load(paths)?;

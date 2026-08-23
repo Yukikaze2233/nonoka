@@ -9,7 +9,7 @@ use super::{vision, ToolProgress, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, ProviderConfig, VisionPluginConfig};
 use crate::i18n::{text as t};
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use anyhow::{bail, Context, Result};
 use futures_util::{future::join_all, StreamExt};
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Rgb, RgbImage};
@@ -37,7 +37,7 @@ static CACHE_PUBLISH_LOCK: AsyncMutex<()> = AsyncMutex::const_new(());
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     allow_download: bool,
 ) {
     registry.register(ToolSpec::new_with_progress(
@@ -66,7 +66,7 @@ pub fn register(
 async fn search_web_images(
     args: Value,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     allow_download: bool,
     progress: ToolProgress,
 ) -> Result<String> {

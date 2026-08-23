@@ -10,7 +10,7 @@ use crate::config::*;
 impl AppConfig {
     /// Dev 模式系统提示词:读 `config/dev-prompt.md`,缺失或清空回退内置
     /// 默认一行(极简原则 + 贴近训练分布的措辞,见 08-15 实验记录)。
-    pub fn dev_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn dev_system_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         let path = paths.config_dir.join(DEV_PROMPT_FILE);
         match std::fs::read_to_string(&path) {
             Ok(content) if !content.trim().is_empty() => Ok(content.trim().to_string()),
@@ -18,11 +18,11 @@ impl AppConfig {
         }
     }
 
-    pub fn system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn system_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         self.system_prompt_for(paths, PromptAudience::Owner)
     }
 
-    pub fn system_prompt_for(&self, paths: &MiyuPaths, audience: PromptAudience) -> Result<String> {
+    pub fn system_prompt_for(&self, paths: &HotaruPaths, audience: PromptAudience) -> Result<String> {
         let mut prompt = self.base_system_prompt(paths)?;
         if audience.includes_user_identity() {
             let user_identity = self.user_identity_prompt(paths)?;
@@ -38,7 +38,7 @@ impl AppConfig {
         Ok(prompt)
     }
 
-    pub fn base_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn base_system_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         let persona = self.active_persona_prompt(paths)?;
         if persona.trim().is_empty() {
             Ok(default_system_prompt())
@@ -47,7 +47,7 @@ impl AppConfig {
         }
     }
 
-    pub fn custom_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn custom_system_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         if let Some(prompt) = self
             .system_prompt
             .as_deref()
@@ -62,12 +62,12 @@ impl AppConfig {
         Ok(String::new())
     }
 
-    pub fn prompts_dir_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn prompts_dir_path(&self, paths: &HotaruPaths) -> PathBuf {
         migrated_resource_path(paths, &self.prompt.prompts_dir)
             .unwrap_or_else(|| config_relative_path(paths, &self.prompt.prompts_dir))
     }
 
-    pub fn user_identity_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn user_identity_path(&self, paths: &HotaruPaths) -> PathBuf {
         if relative_path_equals(&self.prompt.user_identity_file, "user-identity.md") {
             fallback_resource_file(paths, "identities", "user-identity.md")
         } else if let Some(path) = migrated_fallback_file(
@@ -84,16 +84,16 @@ impl AppConfig {
         }
     }
 
-    pub fn identities_dir_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn identities_dir_path(&self, paths: &HotaruPaths) -> PathBuf {
         migrated_resource_path(paths, &self.prompt.identities_dir)
             .unwrap_or_else(|| config_relative_path(paths, &self.prompt.identities_dir))
     }
 
-    pub fn persona_path(&self, paths: &MiyuPaths, name: &str) -> PathBuf {
+    pub fn persona_path(&self, paths: &HotaruPaths, name: &str) -> PathBuf {
         self.prompts_dir_path(paths).join(name)
     }
 
-    pub fn validate_persona_files(&self, paths: &MiyuPaths) -> Result<()> {
+    pub fn validate_persona_files(&self, paths: &HotaruPaths) -> Result<()> {
         if self
             .prompt
             .active_persona
@@ -129,25 +129,25 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn identity_path(&self, paths: &MiyuPaths, name: &str) -> PathBuf {
+    pub fn identity_path(&self, paths: &HotaruPaths, name: &str) -> PathBuf {
         self.identities_dir_path(paths).join(name)
     }
 
-    pub fn persona_memory_data_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_memory_data_dir(&self, paths: &HotaruPaths, persona: &str) -> PathBuf {
         paths
             .data_dir
             .join("personas")
             .join(persona_scope_name(persona))
     }
 
-    pub fn persona_memory_state_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_memory_state_dir(&self, paths: &HotaruPaths, persona: &str) -> PathBuf {
         paths
             .state_dir
             .join("personas")
             .join(persona_scope_name(persona))
     }
 
-    pub fn persona_skills_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_skills_dir(&self, paths: &HotaruPaths, persona: &str) -> PathBuf {
         paths
             .skills_dir
             .join("personas")
@@ -169,19 +169,19 @@ impl AppConfig {
         config
     }
 
-    pub fn active_persona_memory_data_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_memory_data_dir(&self, paths: &HotaruPaths) -> PathBuf {
         self.persona_memory_data_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_memory_state_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_memory_state_dir(&self, paths: &HotaruPaths) -> PathBuf {
         self.persona_memory_state_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_skills_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_skills_dir(&self, paths: &HotaruPaths) -> PathBuf {
         self.persona_skills_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn active_persona_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         if !self.prompt.active_persona.trim().is_empty() {
             let path = self.persona_path(paths, self.prompt.active_persona.trim());
             if path.exists() {
@@ -204,7 +204,7 @@ impl AppConfig {
         }
     }
 
-    pub fn user_identity_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn user_identity_prompt(&self, paths: &HotaruPaths) -> Result<String> {
         if !self.prompt.active_identity.trim().is_empty() {
             let path = self.identity_path(paths, self.prompt.active_identity.trim());
             if path.exists() {
@@ -220,7 +220,7 @@ impl AppConfig {
         Ok(String::new())
     }
 
-    pub fn system_prompt_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn system_prompt_path(&self, paths: &HotaruPaths) -> PathBuf {
         let value = self
             .system_prompt_file
             .as_deref()

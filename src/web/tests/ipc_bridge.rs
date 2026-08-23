@@ -88,7 +88,7 @@ async fn one_shot_sessions_are_mintable_runnable_and_deletable_but_nothing_else(
 /// 终端集成、普通 REPL、开发 REPL 是三条并行车道。
 ///
 /// normal 以前在指针缺失时退到 `session_id()`——也就是终端集成那条——于是第一
-/// 次 `miyu normal` 就把两边焊在同一个会话上，shellhook 的对话和 REPL 的对话
+/// 次 `hotaru normal` 就把两边焊在同一个会话上，shellhook 的对话和 REPL 的对话
 /// 混进同一段历史。dev 早就是自举的，normal 没跟上。
 #[test]
 fn the_three_repl_lanes_never_share_a_session() {

@@ -4,8 +4,8 @@ use crate::question::QuestionRequest;
 use crate::question::{QuestionOption, QuestionPrompt};
 use crate::web::*;
 
-pub(super) fn test_paths(root: &FilePath) -> MiyuPaths {
-    MiyuPaths {
+pub(super) fn test_paths(root: &FilePath) -> HotaruPaths {
+    HotaruPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),

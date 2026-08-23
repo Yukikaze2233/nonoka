@@ -66,7 +66,7 @@ impl RealContextPlugin {
                 Ok(skip) => skip,
                 Err(error) => {
                     tracing::warn!(
-                        target: "miyu::qq",
+                        target: "hotaru::qq",
                         error = %error,
                         sender_id = %event.sender_id,
                         "{}",
@@ -299,7 +299,7 @@ impl RealContextPlugin {
                     "读取真实群聊历史失败",
                 );
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     error = %error,
                     group_id = %event.conversation.conversation_id,
                     sender_id = %event.sender_id,
@@ -337,7 +337,7 @@ impl RealContextPlugin {
             Ok(value) => value,
             Err(error) => {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     error = %error,
                     sender_id = %event.sender_id,
                     "{}",
@@ -410,7 +410,7 @@ impl RealContextPlugin {
                     "主动回复判断模型调用失败",
                 );
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     error = %error,
                     group_id = %event.conversation.conversation_id,
                     sender_id = %event.sender_id,
@@ -450,7 +450,7 @@ impl RealContextPlugin {
                 moderation: &judged.moderation,
                 reason: &judged.reasoning,
             });
-            tracing::info!(target: "miyu::qq", "\n{readable}");
+            tracing::info!(target: "hotaru::qq", "\n{readable}");
         }
         if system_triggered && !active_judgement_allowed {
             if judged.moderation.violation {
@@ -531,7 +531,7 @@ impl RealContextPlugin {
             trigger,
             reason,
         );
-        tracing::info!(target: "miyu::qq", "\n{readable}");
+        tracing::info!(target: "hotaru::qq", "\n{readable}");
     }
 
     pub(in crate::platforms::plugins::real_context) async fn inject_context(
@@ -573,7 +573,7 @@ impl RealContextPlugin {
         // More arrived since the last turn than one block carries, and the
         // watermark is about to move past the remainder. Skipping them is the
         // intended behaviour — nobody scrolling a busy group reads every line —
-        // but the replayed history reads as continuous, so Miyu is told it
+        // but the replayed history reads as continuous, so Hotaru is told it
         // skimmed rather than left to assume it saw everything.
         let truncated_backlog = watermark.is_some() && page.next_cursor.is_some();
         let mut history = page.messages;
@@ -592,7 +592,7 @@ impl RealContextPlugin {
         );
         let injected_messages = formatted.message_count;
         tracing::debug!(
-            target: "miyu::qq",
+            target: "hotaru::qq",
             conversation_id = %context.conversation.conversation_id,
             sender_id = %context.sender_id,
             requested_messages = count,

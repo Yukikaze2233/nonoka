@@ -22,7 +22,7 @@ pub(in crate::llm::openai_compatible) struct ResponsesContinuationHealth {
 }
 
 impl ResponsesContinuationHealth {
-    pub(in crate::llm::openai_compatible) fn for_provider(paths: &MiyuPaths, provider: &ProviderConfig) -> Self {
+    pub(in crate::llm::openai_compatible) fn for_provider(paths: &HotaruPaths, provider: &ProviderConfig) -> Self {
         let store = crate::llm::provider_capabilities::store_path(&paths.cache_dir);
         let unsupported = crate::llm::provider_capabilities::continuation_unsupported(
             &store,
@@ -231,7 +231,7 @@ pub(in crate::llm::openai_compatible) fn endpoint_client(provider: &ProviderConf
     Ok(client)
 }
 
-pub(in crate::llm::openai_compatible) fn llm_endpoints(config: &AppConfig, paths: &MiyuPaths) -> Result<Vec<LlmEndpoint>> {
+pub(in crate::llm::openai_compatible) fn llm_endpoints(config: &AppConfig, paths: &HotaruPaths) -> Result<Vec<LlmEndpoint>> {
     let mut endpoints = Vec::new();
     let mut errors = Vec::new();
     for choice in config.active_provider_model_choices() {

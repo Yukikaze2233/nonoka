@@ -13,7 +13,7 @@ use tokio::process::Command;
 
 use super::super::default_tools::CommandProcessGroup;
 use crate::config::ClaudeCodePluginConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 
 pub(super) struct ClaudeCodeRequest {
     pub prompt: String,
@@ -64,7 +64,7 @@ fn claim_session_slot() -> Result<RunningSlot> {
 pub(super) async fn run(
     request: ClaudeCodeRequest,
     plugin: &ClaudeCodePluginConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
 ) -> Result<String> {
     let _slot = claim_session_slot()?;
     let binary = plugin.binary.trim();
@@ -334,7 +334,7 @@ fn describe_status(status: std::process::ExitStatus) -> String {
 
 /// 追加写 JSONL 审计(§3.4 的施工取向:不进 DB,不碰 Usage 口径)。
 /// 尽力而为:审计写失败只记日志,不吞掉一次成功的委托结果。
-fn append_audit(paths: &MiyuPaths, record: Value) {
+fn append_audit(paths: &HotaruPaths, record: Value) {
     let logs_dir = paths.logs_dir();
     let write = || -> std::io::Result<()> {
         std::fs::create_dir_all(&logs_dir)?;

@@ -10,7 +10,7 @@ use super::{ToolProgress, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, DeepResearchPluginConfig};
 use crate::i18n::{is_zh, text as t};
 use crate::llm::{ChatMessage, ChatStreamChunk, ChatStreamKind, OpenAiCompatibleClient, Usage};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use anyhow::{bail, Result};
 use chrono::Local;
 use serde_json::{json, Value};
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Clone)]
 struct DeepResearchContext {
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     tools: ToolRegistry,
 }
 
@@ -35,7 +35,7 @@ struct ResearchState {
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     tools: ToolRegistry,
 ) {
     let context = DeepResearchContext {
@@ -625,7 +625,7 @@ fn strip_leading_weekday(value: &str) -> String {
     title.to_string()
 }
 
-fn expand_output_dir(value: &str, paths: &MiyuPaths) -> PathBuf {
+fn expand_output_dir(value: &str, paths: &HotaruPaths) -> PathBuf {
     let value = value.trim();
     if let Some(rest) = value.strip_prefix("~/") {
         if let Some(home) = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf()) {

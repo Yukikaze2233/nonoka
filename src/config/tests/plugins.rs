@@ -301,7 +301,7 @@ fn real_context_plugin_rejects_invalid_types_ranges_and_models() {
 #[test]
 fn meme_library_defaults_follow_persona() {
     let memes = MemesPluginConfig::default();
-    assert_eq!(memes.library_for_persona(""), "miyu");
+    assert_eq!(memes.library_for_persona(""), "hotaru");
     assert_eq!(
         memes.library_for_persona("Custom Persona"),
         "custom-persona"

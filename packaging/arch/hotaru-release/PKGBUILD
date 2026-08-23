@@ -1,13 +1,23 @@
 # Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# 发布资产构建器：从 v${pkgver} 标签源码构建预编译包
+# hotaru-${pkgver}-${pkgrel}-x86_64.pkg.tar.zst，上传到 GitHub Release 作为资产。
+# AUR 的 `hotaru` 包装包（packaging/arch/hotaru）下载该资产并补上字体后重新打包。
+#
+# 用法（在干净目录中）：
+#   PACKAGER='Hotaru Release <noreply@example.com>' makepkg -Cf
+# 字体(Noto CJK / Noto Emoji / JetBrains Mono)自 0.4.4 起 vendor 在源码树
+# assets/fonts 下并随资产打包；另含 MIT LICENSE、内置表情、系统脚本与
+# 默认知识库（本仓库 kb/ + Shorin Wiki）。
 
-pkgname=miyu-git
-pkgver=0.4.4.r640.ga608c08f
+pkgname=hotaru
+pkgver=0.4.5
 pkgrel=1
 pkgdesc='一个活在终端里的二次元少女。开箱即用的开源 AI 助手，支持接入通讯平台。'
 arch=('x86_64')
 url='https://github.com/SHORiN-KiWATA/Miyu'
 license=('MIT' 'OFL-1.1')
-options=('!lto' '!strip' '!debug')
+options=('!lto' '!debug')
 export LC_ALL=C.UTF-8
 depends=('alsa-lib' 'chafa' 'gcc-libs' 'glibc' 'ripgrep')
 makedepends=('cargo' 'git' 'pkgconf')
@@ -17,12 +27,8 @@ optdepends=(
   'bash: bash shell integration support'
   'zsh: zsh shell integration support'
 )
-provides=('miyu')
-conflicts=('miyu')
-# 字体(Noto CJK / Noto Emoji / JetBrains Mono)自 0.4.4 起 vendor 在源码树
-# assets/fonts 下,不再从上游单独拉取。
 source=(
-  'miyu::git+https://github.com/SHORiN-KiWATA/Miyu.git'
+  "hotaru::git+${url}.git#tag=v${pkgver}"
   'shorinwiki::git+https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide.git'
 )
 sha256sums=(
@@ -30,32 +36,23 @@ sha256sums=(
   'SKIP'
 )
 
-pkgver() {
-  cd miyu
-  local version revision commit
-  version="$(grep '^version = ' Cargo.toml | head -n1 | cut -d '"' -f2)"
-  revision="$(git rev-list --count HEAD)"
-  commit="$(git rev-parse --short HEAD)"
-  printf '%s.r%s.g%s' "${version}" "${revision}" "${commit}"
-}
-
 prepare() {
-  cd miyu
+  cd hotaru
   cargo fetch --locked --target "${CARCH}-unknown-linux-gnu"
 }
 
 build() {
-  cd miyu
+  cd hotaru
   cargo build --release --locked
 }
 
 package() {
-  cd miyu
-  install -Dm755 "target/release/miyu" "${pkgdir}/usr/bin/miyu"
+  cd hotaru
+  install -Dm755 "target/release/hotaru" "${pkgdir}/usr/bin/hotaru"
   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
-  install -Dm644 "assets/fonts/NotoSansCJK-Regular.ttc" "${pkgdir}/usr/share/miyu/fonts/NotoSansCJK-Regular.ttc"
-  install -Dm644 "assets/fonts/NotoColorEmoji.ttf" "${pkgdir}/usr/share/miyu/fonts/NotoColorEmoji.ttf"
-  install -Dm644 "assets/fonts/JetBrainsMono-Regular.ttf" "${pkgdir}/usr/share/miyu/fonts/JetBrainsMono-Regular.ttf"
+  install -Dm644 "assets/fonts/NotoSansCJK-Regular.ttc" "${pkgdir}/usr/share/hotaru/fonts/NotoSansCJK-Regular.ttc"
+  install -Dm644 "assets/fonts/NotoColorEmoji.ttf" "${pkgdir}/usr/share/hotaru/fonts/NotoColorEmoji.ttf"
+  install -Dm644 "assets/fonts/JetBrainsMono-Regular.ttf" "${pkgdir}/usr/share/hotaru/fonts/JetBrainsMono-Regular.ttf"
   install -Dm644 "assets/fonts/NotoSansCJK.LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/NotoSansCJK.LICENSE"
   install -Dm644 "assets/fonts/NotoColorEmoji.LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/NotoColorEmoji.LICENSE"
   install -Dm644 "assets/fonts/JetBrainsMono.LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/JetBrainsMono.LICENSE"
@@ -63,26 +60,26 @@ package() {
   if [[ -d src/memes ]]; then
     while IFS= read -r -d '' file; do
       local rel="${file#src/memes/}"
-      install -Dm644 "${file}" "${pkgdir}/usr/share/miyu/memes/${rel}"
+      install -Dm644 "${file}" "${pkgdir}/usr/share/hotaru/memes/${rel}"
     done < <(find src/memes -type f \( -name '*.json' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.gif' -o -name '*.webp' \) -print0 | sort -z)
   fi
 
   if [[ -d src/scripts ]]; then
     while IFS= read -r -d '' file; do
       local rel="${file#src/scripts/}"
-      install -Dm755 "${file}" "${pkgdir}/usr/share/miyu/scripts/${rel}"
+      install -Dm755 "${file}" "${pkgdir}/usr/share/hotaru/scripts/${rel}"
     done < <(find src/scripts -type f -print0 | sort -z)
   fi
 
-  # Default knowledge base: kb (from miyu repo)
-  local kb_dir="${srcdir}/miyu/kb"
+  # Default knowledge base: kb (from hotaru repo)
+  local kb_dir="${srcdir}/hotaru/kb"
   if [[ -d "${kb_dir}" ]]; then
     while IFS= read -r -d '' file; do
       local rel="${file#${kb_dir}/}"
       case "/${rel}" in
         */.git/*|*/pictures/*|*/legacy/*|*/Legacy/*|*/lagacy/*|*/Lagacy/*|*/Wikis/*) continue ;;
       esac
-      install -Dm644 "${file}" "${pkgdir}/usr/share/miyu/default-kb/kb/${rel}"
+      install -Dm644 "${file}" "${pkgdir}/usr/share/hotaru/default-kb/kb/${rel}"
     done < <(find "${kb_dir}" -type f -name '*.md' -print0 | sort -z)
   fi
 
@@ -94,19 +91,19 @@ package() {
       case "/${rel}" in
         */.git/*|*/pictures/*|*/legacy/*|*/Legacy/*|*/lagacy/*|*/Lagacy/*|*/Wikis/*) continue ;;
       esac
-      install -Dm644 "${file}" "${pkgdir}/usr/share/miyu/default-kb/shorinwiki/${rel}"
+      install -Dm644 "${file}" "${pkgdir}/usr/share/hotaru/default-kb/shorinwiki/${rel}"
     done < <(find "${wiki_dir}" -type f -name '*.md' -print0 | sort -z)
   fi
 
   # Default knowledge base: manifest
-  install -d "${pkgdir}/usr/share/miyu/default-kb/manifest"
-  cat > "${pkgdir}/usr/share/miyu/default-kb/manifest/manifest.json" <<EOF
+  install -d "${pkgdir}/usr/share/hotaru/default-kb/manifest"
+  cat > "${pkgdir}/usr/share/hotaru/default-kb/manifest/manifest.json" <<EOF
 {
-  "name": "miyu-default-kb",
-  "generated_by": "miyu-git PKGBUILD"
+  "name": "hotaru-default-kb",
+  "generated_by": "hotaru-release PKGBUILD"
 }
 EOF
   local sw_commit
   sw_commit="$(git -C "${srcdir}/shorinwiki" rev-parse HEAD 2>/dev/null || echo '')"
-  printf '%s\n' "${sw_commit}" > "${pkgdir}/usr/share/miyu/default-kb/manifest/shorinwiki.commit"
+  printf '%s\n' "${sw_commit}" > "${pkgdir}/usr/share/hotaru/default-kb/manifest/shorinwiki.commit"
 }

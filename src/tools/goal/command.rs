@@ -4,7 +4,7 @@
 //! 「armed 只在 daemon 内存里」这条，两个界面必须是同一份实现。
 
 use super::runtime::{is_armed, set_armed};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use crate::state::{GoalPhase, GoalRecord};
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
@@ -19,7 +19,7 @@ const GOAL_USAGE: &str = concat!(
 ///
 /// 和喂给模型的 `goal_value` 分开：那份带 CAS 凭证（id/revision），界面不需要
 /// 也不该拿——它做操作走 `/goal` 命令，凭证在 daemon 侧解析。
-pub fn session_goal_json(paths: &MiyuPaths, session_id: &str) -> Value {
+pub fn session_goal_json(paths: &HotaruPaths, session_id: &str) -> Value {
     let Ok(store) = super::store(paths) else {
         return json!({ "goal": null });
     };
@@ -83,7 +83,7 @@ fn render_goal_human(title: &str, goal: &GoalRecord, session_id: &str) -> String
 /// 对话，模型该看到的是目标本身（它自己调 `get_goal`）。返回 `Result` 是给
 /// web 层的：它要靠成败决定后续动作（比如 edit 成功后给正在跑的续轮排变更
 /// 通知），拒绝文案和成功回执混成一个字符串就判不了。
-pub fn try_execute_goal_command(paths: &MiyuPaths, session_id: &str, raw: &str) -> Result<String> {
+pub fn try_execute_goal_command(paths: &HotaruPaths, session_id: &str, raw: &str) -> Result<String> {
     let store = super::store(paths)?;
     let raw = raw.trim();
     let (verb, rest) = match raw.split_once(char::is_whitespace) {

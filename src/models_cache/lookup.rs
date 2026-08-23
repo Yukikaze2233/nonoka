@@ -20,7 +20,7 @@ pub fn input_modalities(provider_id: &str, model_id: &str) -> Option<Vec<String>
 }
 
 pub fn input_modalities_blocking(
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::HotaruPaths,
     provider_id: &str,
     model_id: &str,
 ) -> Option<Vec<String>> {
@@ -200,7 +200,7 @@ pub(crate) fn lookup_context_window(
     matches.into_iter().min()
 }
 
-/// 模型单价查询,供计费估算。供应商对齐两步走:① Miyu 供应商 id 恰好是
+/// 模型单价查询,供计费估算。供应商对齐两步走:① Hotaru 供应商 id 恰好是
 /// models.dev 键(deepseek、openrouter 等官方模板);② 按 base_url 对齐
 /// (自定义 id,如 opencodego → opencode-go)。都对不上就不猜——同名
 /// 模型在不同渠道价格不同,跨供应商模糊匹配会算错钱。

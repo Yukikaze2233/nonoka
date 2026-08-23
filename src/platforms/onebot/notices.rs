@@ -208,7 +208,7 @@ pub(in crate::platforms::onebot) async fn handle_group_file_upload(state: Daemon
     ) {
         Ok(context) => context,
         Err(error) => {
-            tracing::warn!(target: "miyu::qq", error = %error, "{}", t("OneBot group-file observer initialization failed", "OneBot 群文件观察器初始化失败"));
+            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot group-file observer initialization failed", "OneBot 群文件观察器初始化失败"));
             return;
         }
     };
@@ -289,7 +289,7 @@ pub(in crate::platforms::onebot) async fn handle_group_management_notice(state: 
     match platform_turn_context(&state, conn, target, &event, config, Some(inbound.clone())) {
         Ok(context) => context.observe_inbound(&inbound).await,
         Err(error) => {
-            tracing::warn!(target: "miyu::qq", error = %error, "{}", t("OneBot group notice observer initialization failed", "OneBot 群通知观察器初始化失败"))
+            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot group notice observer initialization failed", "OneBot 群通知观察器初始化失败"))
         }
     }
 }
@@ -329,7 +329,7 @@ pub(in crate::platforms::onebot) async fn handle_message_recall(state: DaemonSta
     ) {
         Ok(context) => context,
         Err(error) => {
-            tracing::warn!(target: "miyu::qq", error = %error, "{}", t("OneBot recall observer initialization failed", "OneBot 撤回观察器初始化失败"));
+            tracing::warn!(target: "hotaru::qq", error = %error, "{}", t("OneBot recall observer initialization failed", "OneBot 撤回观察器初始化失败"));
             return;
         }
     };

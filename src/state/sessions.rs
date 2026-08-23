@@ -194,7 +194,7 @@ impl StateStore {
     ///
     /// 终端集成（shellhook）、普通 REPL、开发 REPL 是**三条并行车道**，各自
     /// 记一个指针。normal 以前在指针缺失时退到 `session_id()`——那是终端集成
-    /// 那条车道，于是第一次 `miyu normal` 就把两边焊在同一个会话上，对话混成
+    /// 那条车道，于是第一次 `hotaru normal` 就把两边焊在同一个会话上，对话混成
     /// 一摊。dev 早就是自举的，normal 没跟上。
     ///
     /// 远端（`GetReplSession`）与直连（`run_direct_repl`）两条入口共用这里：

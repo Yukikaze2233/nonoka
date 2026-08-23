@@ -41,7 +41,7 @@ pub(in crate::web) fn into_pasted_images(
 #[allow(clippy::too_many_arguments)]
 pub(in crate::web) async fn run_turn_task(
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     store: StateStore,
     base_store: StateStore,
     manager: Arc<Mutex<ManagerState>>,
@@ -94,7 +94,7 @@ pub(in crate::web) async fn run_turn_task(
 
 async fn run_turn_task_inner(
     mut config: AppConfig,
-    paths: MiyuPaths,
+    paths: HotaruPaths,
     store: StateStore,
     base_store: StateStore,
     manager: Arc<Mutex<ManagerState>>,
@@ -292,11 +292,11 @@ async fn run_turn_task_inner(
             // it rides the turn tail; only the static policy stays in the
             // system prompt.
             turn_system_context.push(format!(
-                "<artifact-workspace>\n{manifest}\nUse read_artifact and apply_artifact_patch with bare artifact file names to work on existing artifacts; do not glob the managed directory or guess ~/.miyu paths.\n</artifact-workspace>"
+                "<artifact-workspace>\n{manifest}\nUse read_artifact and apply_artifact_patch with bare artifact file names to work on existing artifacts; do not glob the managed directory or guess ~/.hotaru paths.\n</artifact-workspace>"
             ));
             runtime_system_context.push(
                 "<artifact-policy>\n\
-                You are working in the Miyu WebUI and have artifact presentation tools.\n\
+                You are working in the Hotaru WebUI and have artifact presentation tools.\n\
                 - When the user explicitly asks for a report, document, web page, table, data file, standalone code file, or another downloadable deliverable, you must create or present an artifact.\n\
                 - For text deliverables you write yourself, prefer create_artifact; filename must carry the correct extension.\n\
                 - For files already produced by commands or other tools, call present_artifact.\n\
@@ -628,7 +628,7 @@ async fn run_turn_task_inner(
 /// session-scoped operations hit the turn's own session.
 pub(in crate::web) fn finish_turn_task(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     store: &StateStore,
     title_seed: &str,
     events: &EventHub,

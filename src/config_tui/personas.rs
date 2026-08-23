@@ -10,7 +10,7 @@ use crate::config_tui::*;
 
 pub(in crate::config_tui) fn edit_custom_prompts(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;
@@ -71,13 +71,13 @@ pub(in crate::config_tui) fn edit_custom_prompts(
 /// 普通模式的提示词面:AI 人格与用户身份(原顶层两项下沉至此)。
 pub(in crate::config_tui) fn edit_normal_mode_prompts(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;
     loop {
         let persona = if config.prompt.active_persona.trim().is_empty() {
-            "Miyu".to_string()
+            "Hotaru".to_string()
         } else {
             persona_display_name(&config.prompt.active_persona).to_string()
         };
@@ -112,7 +112,7 @@ pub(in crate::config_tui) fn edit_normal_mode_prompts(
 /// 与这份提示词的内容完全解耦——怎么改都不会切库。
 pub(in crate::config_tui) fn edit_dev_prompt(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
 ) -> Result<()> {
     let path = paths.config_dir.join(crate::config::DEV_PROMPT_FILE);
     let current = std::fs::read_to_string(&path).unwrap_or_default();
@@ -147,7 +147,7 @@ pub(in crate::config_tui) fn edit_dev_prompt(
 
 pub(in crate::config_tui) fn edit_personas(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     manage_personas(stdout, paths, config, PersonaMenuTarget::Global)?;
@@ -167,10 +167,10 @@ impl PersonaMenuTarget {
         }
     }
 
-    pub(in crate::config_tui) fn is_miyu(&self, config: &AppConfig) -> bool {
+    pub(in crate::config_tui) fn is_hotaru(&self, config: &AppConfig) -> bool {
         match self {
             Self::Global => config.prompt.active_persona.trim().is_empty(),
-            Self::Platform(persona) => matches!(persona, PlatformPersonaOverride::Miyu),
+            Self::Platform(persona) => matches!(persona, PlatformPersonaOverride::Hotaru),
         }
     }
 
@@ -191,10 +191,10 @@ impl PersonaMenuTarget {
         }
     }
 
-    pub(in crate::config_tui) fn activate_miyu(&mut self, config: &mut AppConfig) {
+    pub(in crate::config_tui) fn activate_hotaru(&mut self, config: &mut AppConfig) {
         match self {
             Self::Global => config.prompt.active_persona.clear(),
-            Self::Platform(persona) => *persona = PlatformPersonaOverride::Miyu,
+            Self::Platform(persona) => *persona = PlatformPersonaOverride::Hotaru,
         }
     }
 
@@ -232,7 +232,7 @@ impl PersonaMenuTarget {
 
 pub(in crate::config_tui) fn manage_personas(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
     mut target: PersonaMenuTarget,
 ) -> Result<Option<PlatformPersonaOverride>> {
@@ -250,8 +250,8 @@ pub(in crate::config_tui) fn manage_personas(
             ));
         }
         options.push(format!(
-            "{}Miyu",
-            if target.is_miyu(config) { "* " } else { "  " }
+            "{}Hotaru",
+            if target.is_hotaru(config) { "* " } else { "  " }
         ));
         options.extend(personas.iter().map(|name| {
             let display = persona_display_name(name);
@@ -285,7 +285,7 @@ pub(in crate::config_tui) fn manage_personas(
                 if matches!(&target, PersonaMenuTarget::Platform(_)) && selected == 0 {
                     target.activate_inherit();
                 } else if selected + 1 == custom_offset {
-                    target.activate_miyu(config);
+                    target.activate_hotaru(config);
                 } else if let Some(name) = personas.get(selected.saturating_sub(custom_offset)) {
                     target.activate_custom(config, name.clone());
                 }
@@ -310,10 +310,10 @@ pub(in crate::config_tui) fn manage_personas(
                     }
                 }
             }
-            // 默认 Miyu 人格本体只读,但防失忆提示与预设对话是独立文件
+            // 默认 Hotaru 人格本体只读,但防失忆提示与预设对话是独立文件
             // (hints/default.md、dialogs/default.md),回车打开精简表单。
             KeyCode::Enter if selected + 1 == custom_offset => {
-                edit_miyu_persona_extras(stdout, paths, config)?;
+                edit_hotaru_persona_extras(stdout, paths, config)?;
             }
             KeyCode::Char('d') if selected >= custom_offset => {
                 if let Some(name) = personas.get(selected - custom_offset) {
@@ -348,7 +348,7 @@ pub(in crate::config_tui) fn manage_personas(
 }
 
 pub(in crate::config_tui) fn apply_persona_edit(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
     old_name: &str,
     new_name: &str,
@@ -408,7 +408,7 @@ pub(in crate::config_tui) fn apply_persona_edit(
 }
 
 pub(in crate::config_tui) fn apply_persona_delete(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
     mut persisted: AppConfig,
     name: &str,
@@ -440,7 +440,7 @@ pub(in crate::config_tui) struct PersonaFormValues {
 /// 人格附属文件现值:防失忆提示(hints/<scope>.md)与预设对话
 /// (dialogs/<scope>.md)。
 pub(in crate::config_tui) fn persona_aux_values(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     scope: &str,
 ) -> (String, String) {
@@ -454,7 +454,7 @@ pub(in crate::config_tui) fn persona_aux_values(
 /// 附属文件落盘:非空写入,空则删除(清空提示=回到自动蒸馏,清空
 /// 对话=不注入)。
 pub(in crate::config_tui) fn write_persona_aux(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     scope: &str,
     hint: &str,
@@ -489,9 +489,9 @@ pub(in crate::config_tui) fn write_persona_aux(
 pub(in crate::config_tui) fn persona_aux_fields(
     hint: String,
     dialogs: String,
-    miyu: bool,
+    hotaru: bool,
 ) -> Vec<Field> {
-    let (hint_label, dialogs_label) = if miyu {
+    let (hint_label, dialogs_label) = if hotaru {
         (
             t(
                 "Anti-amnesia reminder (empty = built-in default)",
@@ -522,7 +522,7 @@ pub(in crate::config_tui) fn persona_aux_fields(
 
 pub(in crate::config_tui) fn new_persona(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
 ) -> Result<Option<String>> {
     let mut fields = vec![
@@ -548,7 +548,7 @@ pub(in crate::config_tui) fn new_persona(
 
 pub(in crate::config_tui) fn edit_persona(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     current_name: &str,
 ) -> Result<Option<PersonaFormValues>> {
@@ -578,23 +578,23 @@ pub(in crate::config_tui) fn edit_persona(
     }))
 }
 
-/// 默认 Miyu 人格:本体只读,回车只编辑附属的防失忆提示与预设对话
+/// 默认 Hotaru 人格:本体只读,回车只编辑附属的防失忆提示与预设对话
 /// (scope 固定为 default)。
-pub(in crate::config_tui) fn edit_miyu_persona_extras(
+pub(in crate::config_tui) fn edit_hotaru_persona_extras(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
 ) -> Result<()> {
-    let (hint, dialogs) = crate::persona_hint::miyu_aux_prefill(config, paths);
+    let (hint, dialogs) = crate::persona_hint::hotaru_aux_prefill(config, paths);
     let mut fields = persona_aux_fields(hint, dialogs, true);
-    if !run_form(stdout, t(" MIYU EXTRAS ", " Miyu 人格附加 "), &mut fields)? {
+    if !run_form(stdout, t(" HOTARU EXTRAS ", " Hotaru 人格附加 "), &mut fields)? {
         return Ok(());
     }
     write_persona_aux(paths, config, "default", &fields[0].value, &fields[1].value)
 }
 
 pub(in crate::config_tui) fn ensure_persona_name_available(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     candidate: &str,
     current: Option<&str>,
@@ -627,7 +627,7 @@ pub(in crate::config_tui) fn ensure_persona_name_available(
 }
 
 pub(in crate::config_tui) fn move_persona_scope(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     old_name: &str,
     new_name: &str,
@@ -694,7 +694,7 @@ pub(in crate::config_tui) fn move_persona_scope(
 }
 
 pub(in crate::config_tui) fn remove_persona_scope(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     name: &str,
 ) -> Result<()> {
@@ -733,7 +733,7 @@ pub(in crate::config_tui) fn remove_dir_if_exists(path: PathBuf) -> Result<()> {
 
 pub(in crate::config_tui) fn edit_identities(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     std::fs::create_dir_all(config.identities_dir_path(paths))?;
@@ -813,7 +813,7 @@ pub(in crate::config_tui) fn edit_identities(
 
 pub(in crate::config_tui) fn new_identity(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
 ) -> Result<Option<String>> {
     edit_prompt_file_form(
@@ -827,7 +827,7 @@ pub(in crate::config_tui) fn new_identity(
 
 pub(in crate::config_tui) fn edit_identity(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     current_name: &str,
 ) -> Result<Option<String>> {
@@ -850,14 +850,14 @@ pub(in crate::config_tui) fn edit_identity(
 }
 
 pub(in crate::config_tui) fn list_identities(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
 ) -> Result<Vec<String>> {
     list_markdown_files(&config.identities_dir_path(paths))
 }
 
 pub(in crate::config_tui) fn read_identity(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     name: &str,
 ) -> Result<String> {
@@ -870,7 +870,7 @@ pub(in crate::config_tui) fn read_identity(
 }
 
 pub(in crate::config_tui) fn write_identity(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     name: &str,
     content: &str,
@@ -925,7 +925,7 @@ pub(in crate::config_tui) fn edit_prompt_file_values(
 }
 
 pub(in crate::config_tui) fn list_personas(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
 ) -> Result<Vec<String>> {
     let mut names = list_markdown_files(&config.prompts_dir_path(paths))?;
@@ -952,7 +952,7 @@ pub(in crate::config_tui) fn list_markdown_files(dir: &std::path::Path) -> Resul
 }
 
 pub(in crate::config_tui) fn read_persona(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     name: &str,
 ) -> Result<String> {
@@ -965,7 +965,7 @@ pub(in crate::config_tui) fn read_persona(
 }
 
 pub(in crate::config_tui) fn write_persona(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     config: &AppConfig,
     name: &str,
     content: &str,

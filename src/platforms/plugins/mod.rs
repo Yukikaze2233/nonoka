@@ -1,6 +1,6 @@
 use super::PlatformTurnContext;
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use crate::platform_types::{
     OutboundMessage, OutboundOrigin, PlatformContextFileRef, PlatformContextImageRef,
     PlatformConversation, PlatformInboundEvent, SendReceipt, TriggerDecision,
@@ -75,7 +75,7 @@ pub(crate) struct PlatformTurnInput {
 
 pub(crate) struct PlatformPersonaResetContext<'a> {
     pub(crate) config: &'a AppConfig,
-    pub(crate) paths: &'a MiyuPaths,
+    pub(crate) paths: &'a HotaruPaths,
     pub(crate) bindings: &'a [PlatformSessionBinding],
 }
 
@@ -135,7 +135,7 @@ pub(super) async fn require_ai_confirmation(
             "confirmation_token": token,
             // 声明式+先说"不是拒绝":旧文案以否定句开头,模型会读成权限
             // 拒绝直接放弃(非管理员触发"群管用不了"的实际根因,08-20)。
-            "message": "This is an automatic double-check, not a permission denial. The requester is not a Miyu admin or a QQ group owner/admin, so the platform asks you to confirm the action yourself before it runs. If you judge the action appropriate, call the same tool again in this turn with this confirmation_token and every other parameter unchanged; the repeated call executes normally.",
+            "message": "This is an automatic double-check, not a permission denial. The requester is not a Hotaru admin or a QQ group owner/admin, so the platform asks you to confirm the action yourself before it runs. If you judge the action appropriate, call the same tool again in this turn with this confirmation_token and every other parameter unchanged; the repeated call executes normally.",
             "action": action,
         })
         .to_string(),
@@ -263,7 +263,7 @@ pub(crate) trait PlatformPlugin: Send + Sync {
     /// reply-queue limits. Implementations must keep this hook lightweight.
     fn observe_ingress<'a>(
         &'a self,
-        _paths: &'a MiyuPaths,
+        _paths: &'a HotaruPaths,
         _config: &'a AppConfig,
         _event: &'a PlatformInboundEvent,
     ) -> BoxFuture<'a, Result<()>> {
@@ -461,7 +461,7 @@ impl PlatformPluginRegistry {
 
     pub(crate) async fn observe_ingress(
         &self,
-        paths: &MiyuPaths,
+        paths: &HotaruPaths,
         config: &AppConfig,
         event: &PlatformInboundEvent,
     ) {
@@ -678,7 +678,7 @@ impl PlatformPluginRegistry {
         for plugin in self.enabled_plugins(context) {
             if let Err(error) = plugin.before_turn(context, input).await {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     plugin = plugin.descriptor().id,
                     error = %error,
                     "{}",

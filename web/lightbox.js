@@ -10,7 +10,7 @@
  * 单独成文件而不是塞进 app.js —— 那边已经将近一万行,不该再长。
  * 依赖只有一个 `makeIconSlot`,由 app.js 注入(图标的实际绘制在那边)。
  */
-window.MiyuLightbox = (() => {
+window.HotaruLightbox = (() => {
   let makeIconSlot = null;
   let root = null;
   let image = null;

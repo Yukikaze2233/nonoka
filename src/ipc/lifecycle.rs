@@ -59,12 +59,12 @@ impl Drop for StarterLease {
     }
 }
 
-pub fn acquire_direct_core(paths: &MiyuPaths) -> Result<DirectCoreLease> {
+pub fn acquire_direct_core(paths: &HotaruPaths) -> Result<DirectCoreLease> {
     prepare_runtime_dir(paths)?;
     acquire_direct_core_at(paths.ipc_lock())
 }
 
-pub fn acquire_web_core(paths: &MiyuPaths) -> Result<WebCoreLease> {
+pub fn acquire_web_core(paths: &HotaruPaths) -> Result<WebCoreLease> {
     prepare_runtime_dir(paths)?;
     let lock_file = acquire_lock(paths.ipc_lock())?;
     let socket_path = paths.ipc_socket();
@@ -77,7 +77,7 @@ pub fn acquire_web_core(paths: &MiyuPaths) -> Result<WebCoreLease> {
     })
 }
 
-pub(crate) fn prepare_runtime_dir(paths: &MiyuPaths) -> Result<()> {
+pub(crate) fn prepare_runtime_dir(paths: &HotaruPaths) -> Result<()> {
     let runtime_dir = paths.runtime_dir();
     std::fs::create_dir_all(&runtime_dir)?;
     std::fs::set_permissions(&runtime_dir, std::fs::Permissions::from_mode(0o700))?;
@@ -102,8 +102,8 @@ pub(crate) fn acquire_lock(lock_path: PathBuf) -> Result<File> {
         bail!(
             "{}",
             crate::i18n::text(
-                "another Miyu core (the daemon or another direct REPL) holds this home; stop it (miyu daemon stop) or drop MIYU_DIRECT to attach to the daemon",
-                "另一个 Miyu 核心(daemon 或另一个直连 REPL)正占用本机身份;直连模式与它互斥——先 miyu daemon stop,或去掉 MIYU_DIRECT 改为连接 daemon"
+                "another Hotaru core (the daemon or another direct REPL) holds this home; stop it (hotaru daemon stop) or drop HOTARU_DIRECT to attach to the daemon",
+                "另一个 Hotaru 核心(daemon 或另一个直连 REPL)正占用本机身份;直连模式与它互斥——先 hotaru daemon stop,或去掉 HOTARU_DIRECT 改为连接 daemon"
             )
         );
     }
@@ -119,10 +119,10 @@ pub(crate) fn unlock(lock_file: &File) {
 pub async fn connect(path: &Path) -> Result<UnixStream> {
     UnixStream::connect(path)
         .await
-        .with_context(|| format!("connecting to Miyu core at {}", path.display()))
+        .with_context(|| format!("connecting to Hotaru core at {}", path.display()))
 }
 
-pub async fn daemon_info(paths: &MiyuPaths) -> Option<DaemonInfo> {
+pub async fn daemon_info(paths: &HotaruPaths) -> Option<DaemonInfo> {
     let socket = paths.ipc_socket();
     let frame = ping_daemon(&socket, PROTOCOL_VERSION).await?;
     match frame {
@@ -186,7 +186,7 @@ pub(crate) async fn ping_daemon(path: &Path, protocol_version: u16) -> Option<Fr
 }
 
 pub async fn ensure_daemon(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     requested: Option<&DaemonLaunchConfig>,
 ) -> Result<DaemonInfo> {
     let mut active_paths = paths.clone();
@@ -194,7 +194,7 @@ pub async fn ensure_daemon(
     let mut current = daemon_info(&active_paths).await;
     if current.is_none() {
         let previous_paths = active_paths.clone();
-        active_paths = match MiyuPaths::new().context("refreshing Miyu paths before daemon startup")
+        active_paths = match HotaruPaths::new().context("refreshing Hotaru paths before daemon startup")
         {
             Ok(paths) => paths,
             Err(error) => {
@@ -226,7 +226,7 @@ pub async fn ensure_daemon(
             }
             return Err(error);
         }
-        active_paths = match MiyuPaths::new().context("refreshing Miyu paths after daemon shutdown")
+        active_paths = match HotaruPaths::new().context("refreshing Hotaru paths after daemon shutdown")
         {
             Ok(paths) => paths,
             Err(error) => {
@@ -262,7 +262,7 @@ pub async fn ensure_daemon(
             return Err(error);
         }
         drop(starter);
-        active_paths = match MiyuPaths::new().context("refreshing Miyu paths after daemon shutdown")
+        active_paths = match HotaruPaths::new().context("refreshing Hotaru paths after daemon shutdown")
         {
             Ok(paths) => paths,
             Err(error) => {
@@ -298,10 +298,10 @@ pub async fn ensure_daemon(
             spawn_daemon_reaper(child);
             return Ok(info);
         }
-        match child.try_wait().context("checking Miyu daemon process") {
+        match child.try_wait().context("checking Hotaru daemon process") {
             Ok(Some(status)) => {
                 abandon_daemon_launch_candidate(&active_paths, &launch);
-                bail!("Miyu daemon exited before becoming ready ({status})");
+                bail!("Hotaru daemon exited before becoming ready ({status})");
             }
             Ok(None) => {}
             Err(error) => {
@@ -315,7 +315,7 @@ pub async fn ensure_daemon(
             let _ = child.kill();
             let _ = child.wait();
             abandon_daemon_launch_candidate(&active_paths, &launch);
-            bail!("Miyu daemon did not become ready within 8 seconds");
+            bail!("Hotaru daemon did not become ready within 8 seconds");
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
@@ -323,13 +323,13 @@ pub async fn ensure_daemon(
 
 /// Shuts down a daemon left over from an older build so the caller can spawn
 /// one matching the current binary.
-pub(crate) async fn restart_stale_daemon(paths: &MiyuPaths, info: &DaemonInfo) -> Result<()> {
+pub(crate) async fn restart_stale_daemon(paths: &HotaruPaths, info: &DaemonInfo) -> Result<()> {
     shutdown_daemon(paths, info)
         .await
-        .context("waiting for the outdated Miyu daemon to stop")
+        .context("waiting for the outdated Hotaru daemon to stop")
 }
 
-pub async fn shutdown_daemon(paths: &MiyuPaths, info: &DaemonInfo) -> Result<()> {
+pub async fn shutdown_daemon(paths: &HotaruPaths, info: &DaemonInfo) -> Result<()> {
     let process = daemon_process_identity(info.pid);
     let mut stream = connect(&paths.ipc_socket()).await?;
     send(
@@ -360,7 +360,7 @@ pub async fn wait_for_daemon_exit(process: DaemonProcessIdentity, timeout: Durat
         }
         if tokio::time::Instant::now() >= deadline {
             bail!(
-                "Miyu daemon PID {} did not stop within {} seconds",
+                "Hotaru daemon PID {} did not stop within {} seconds",
                 process.pid,
                 timeout.as_secs()
             );
@@ -411,7 +411,7 @@ pub(crate) fn linux_process_state(pid: u32) -> Option<(char, u64)> {
     Some((state, start_time))
 }
 
-pub(crate) fn acquire_starter(paths: &MiyuPaths) -> Result<StarterLease> {
+pub(crate) fn acquire_starter(paths: &HotaruPaths) -> Result<StarterLease> {
     prepare_runtime_dir(paths)?;
     let lock_file = OpenOptions::new()
         .create(true)
@@ -427,7 +427,7 @@ pub(crate) fn acquire_starter(paths: &MiyuPaths) -> Result<StarterLease> {
 }
 
 pub(crate) fn start_daemon_process(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     launch: &DaemonLaunchConfig,
 ) -> Result<std::process::Child> {
     std::fs::create_dir_all(paths.logs_dir())?;
@@ -437,8 +437,8 @@ pub(crate) fn start_daemon_process(
         .open(paths.logs_dir().join("daemon.log"))?;
     // The daemon is this very binary re-executed with a hidden subcommand,
     // so a single installed file is always sufficient.
-    let executable = crate::paths::miyu_executable()
-        .context("resolving the Miyu executable to spawn the daemon")?;
+    let executable = crate::paths::hotaru_executable()
+        .context("resolving the Hotaru executable to spawn the daemon")?;
     let mut command = std::process::Command::new(executable);
     command.arg("__daemon");
     append_daemon_process_args(&mut command, launch);
@@ -454,7 +454,7 @@ pub(crate) fn start_daemon_process(
             Ok(())
         });
     }
-    command.spawn().context("starting Miyu daemon")
+    command.spawn().context("starting Hotaru daemon")
 }
 
 pub(crate) fn spawn_daemon_reaper(mut child: std::process::Child) {

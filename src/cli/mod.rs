@@ -8,7 +8,7 @@ use crate::llm::{
     ChatResult, ChatStreamChunk, OpenAiCompatibleClient, ThinkingVariantOptions, TurnTokens, Usage,
 };
 use crate::memory::{MemoryOrganizer, MemoryStore};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 mod args;
 mod daemon_cmds;
 mod inline_picker;
@@ -109,7 +109,7 @@ pub fn parse() -> Cli {
     parse_args(std::env::args_os().collect()).unwrap_or_else(|err| err.exit())
 }
 
-pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
+pub async fn run(cli: Cli, paths: HotaruPaths) -> Result<()> {
     if cli.shell_classify {
         let shell_name = cli.shell.as_deref().unwrap_or("fish");
         let message = shell_message_from_input(cli.stdin, cli.message)?;
@@ -181,12 +181,12 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
             // daemon 的 stdout/stderr 被重定向进 daemon.log，而 tracing 写的是
             // 另一个按天滚动的文件。出了事翻错文件是常态——排查一次长回复不转
             // 图片，我在 daemon.log 里绕了很久，真正的 warning 一直躺在
-            // miyu.YYYY-MM-DD.log 里。所以在这条日志的开头指一次路。
+            // hotaru.YYYY-MM-DD.log 里。所以在这条日志的开头指一次路。
             println!(
                 "{}",
                 crate::i18n::text(
-                    "Detailed logs (warnings, tool failures) go to miyu.YYYY-MM-DD.log in the same directory; this file only carries startup output.",
-                    "详细日志（警告、工具失败）在同目录的 miyu.YYYY-MM-DD.log；本文件只有启动输出。"
+                    "Detailed logs (warnings, tool failures) go to hotaru.YYYY-MM-DD.log in the same directory; this file only carries startup output.",
+                    "详细日志（警告、工具失败）在同目录的 hotaru.YYYY-MM-DD.log；本文件只有启动输出。"
                 )
             );
             crate::daemon::run(paths, args).await
@@ -221,8 +221,8 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                         println!(
                             "{}",
                             t(
-                                "Tencent QQ is enabled; run `miyu daemon start` to begin listening.",
-                                "腾讯 QQ 已启用；执行 `miyu daemon start` 后开始监听。",
+                                "Tencent QQ is enabled; run `hotaru daemon start` to begin listening.",
+                                "腾讯 QQ 已启用；执行 `hotaru daemon start` 后开始监听。",
                             )
                         );
                     }
@@ -297,8 +297,8 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                         )
                     );
                 }
-                // 裸 miyu:按 default_mode 配置分流;未配置则打印模式说明,
-                // 逼一次显式选择(miyu normal / miyu dev)。
+                // 裸 hotaru:按 default_mode 配置分流;未配置则打印模式说明,
+                // 逼一次显式选择(hotaru normal / hotaru dev)。
                 let default_mode = AppConfig::load_or_default(&paths)
                     .map(|config| config.default_mode.trim().to_ascii_lowercase())
                     .unwrap_or_default();
@@ -326,7 +326,7 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
     }
 }
 
-async fn run_repl(paths: &MiyuPaths, initial_mode: AgentMode) -> Result<()> {
+async fn run_repl(paths: &HotaruPaths, initial_mode: AgentMode) -> Result<()> {
     if direct_mode_requested() {
         run_direct_repl(paths, initial_mode).await
     } else {
@@ -335,11 +335,11 @@ async fn run_repl(paths: &MiyuPaths, initial_mode: AgentMode) -> Result<()> {
 }
 
 fn direct_mode_requested() -> bool {
-    std::env::var_os("MIYU_DIRECT").is_some_and(|value| value != "0")
+    std::env::var_os("HOTARU_DIRECT").is_some_and(|value| value != "0")
 }
 
 fn reload_repl_config(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     state: &StateStore,
     config: &mut AppConfig,
     client: &mut OpenAiCompatibleClient,
@@ -358,7 +358,7 @@ const REPL_HISTORY_CAP: usize = 200;
 /// 别的会话里敲的东西。会话 id 形如 `sess_1787036807476_a188fc33`，本来就是
 /// 安全的文件名，但它来自库里的字符串，还是过一遍白名单：一个 `../` 就能把
 /// 写入指到 state 目录外面去。
-fn repl_history_file(paths: &MiyuPaths, session_id: &str) -> PathBuf {
+fn repl_history_file(paths: &HotaruPaths, session_id: &str) -> PathBuf {
     let safe = session_id
         .chars()
         .map(|ch| {
@@ -377,7 +377,7 @@ fn repl_history_file(paths: &MiyuPaths, session_id: &str) -> PathBuf {
 
 /// 分会话之前的那个全局文件。**只读不写**：老记录都在里面，直接丢掉用户会
 /// 觉得「历史没了」。新条目一律写进会话文件。
-fn legacy_repl_history_file(paths: &MiyuPaths) -> PathBuf {
+fn legacy_repl_history_file(paths: &HotaruPaths) -> PathBuf {
     paths.state_dir.join("repl-history.jsonl")
 }
 
@@ -396,7 +396,7 @@ fn read_repl_history_file(path: &std::path::Path) -> Vec<String> {
 /// append-only file, capped on load. Conversation resets delete turns, so the
 /// file is the durable source; the turns-derived list only seeds sessions that
 /// predate it.
-fn load_persistent_repl_history(paths: &MiyuPaths, session_id: &str) -> Vec<String> {
+fn load_persistent_repl_history(paths: &HotaruPaths, session_id: &str) -> Vec<String> {
     let path = repl_history_file(paths, session_id);
     let mut entries = read_repl_history_file(&path);
     if entries.len() > REPL_HISTORY_CAP {
@@ -423,7 +423,7 @@ fn push_history_capped(history: &mut Vec<String>, content: &str) {
     }
 }
 
-fn persist_repl_history_entry(paths: &MiyuPaths, session_id: &str, entry: &str) {
+fn persist_repl_history_entry(paths: &HotaruPaths, session_id: &str, entry: &str) {
     let entry = entry.trim();
     if entry.is_empty() {
         return;
@@ -637,7 +637,7 @@ fn persist_queued_submission(
 /// Queues a submission for the turn currently running in the daemon, using
 /// the cross-process queue target so the daemon consumes it mid-turn.
 async fn persist_remote_queued_submission(
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     run_id: &str,
     turn_id: &str,
     submission: &LiveSubmission,
@@ -671,8 +671,8 @@ async fn persist_remote_queued_submission(
             submitted_at,
         }),
         Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-        Some(_) => bail!("Miyu core returned an invalid queue response"),
-        None => bail!("Miyu core closed the queue connection"),
+        Some(_) => bail!("Hotaru core returned an invalid queue response"),
+        None => bail!("Hotaru core closed the queue connection"),
     }
 }
 
@@ -784,7 +784,7 @@ fn repl_should_browse_history(
     input.is_empty() || repl_history_is_clean(input, history, history_clean_index)
 }
 
-fn run_history(paths: &MiyuPaths, args: HistoryArgs) -> Result<()> {
+fn run_history(paths: &HotaruPaths, args: HistoryArgs) -> Result<()> {
     let state = StateStore::new(paths)?;
     run_history_with_state(&state, args)
 }

@@ -79,7 +79,7 @@ pub(in crate::tools::web_images) struct DownloadResult {
 
 pub(in crate::tools::web_images) async fn download_and_store_images(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     cache_dir: &Path,
     query: &str,
     candidates: Vec<ImageCandidate>,

@@ -35,7 +35,7 @@ impl KnowledgeBase {
                         lock_path.display()
                     );
                     println!(
-                        "if no miyu reindex process is running, remove the stale lock file and retry"
+                        "if no hotaru reindex process is running, remove the stale lock file and retry"
                     );
                 }
                 return Ok(0);
@@ -286,7 +286,7 @@ impl KnowledgeBase {
         {
             return Ok(());
         }
-        let exe = crate::paths::miyu_executable()?;
+        let exe = crate::paths::hotaru_executable()?;
         Command::new(exe)
             .args(["kb", "embed", "reindex", "--quiet"])
             .stdin(Stdio::null())

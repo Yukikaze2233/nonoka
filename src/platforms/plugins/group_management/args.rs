@@ -18,7 +18,7 @@ pub(in crate::platforms::plugins::group_management) async fn validate_target(
     protect_managers: bool,
 ) -> Result<PlatformGroupMember> {
     if user_id == context.conversation.account_id {
-        bail!("不能对 Miyu 自身执行该操作");
+        bail!("不能对 Hotaru 自身执行该操作");
     }
     // Fresh lookup on purpose: this gate exists to stop kicks/mutes aimed at
     // members who already left, and a cached roster cannot answer that.
@@ -189,7 +189,7 @@ pub(in crate::platforms::plugins::group_management) fn history_query_schema() ->
             "sort_by": { "type": "string", "enum": ["time", "ban_count", "kick_count", "total_duration", "last_action_at"], "description": "events 视图按时间排；stats 视图默认按 ban_count。" },
             "sort_order": { "type": "string", "enum": ["asc", "desc"], "default": "desc" },
             "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
-            "group_id": { "type": "string", "description": "跨群查询的目标群号；仅 Miyu 管理员可用，群聊之外调用时必填。" }
+            "group_id": { "type": "string", "description": "跨群查询的目标群号；仅 Hotaru 管理员可用，群聊之外调用时必填。" }
         },
         "additionalProperties": false
     })

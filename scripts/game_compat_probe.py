@@ -25,7 +25,7 @@
   * Algolia 认中文名（"黑神话悟空" 可直接查到），但非 Steam 游戏（如 Valorant）
     查不到；此时脚本会警告搜索结果可能不是同一个游戏，并继续返回其余两源。
   * AWACY 未收录 != 该游戏没有反作弊，输出里会显式区分。
-  * AWACY 全表与 caniplayonlinux 的 sitemap 会缓存到 ~/.cache/miyu-game-compat/，
+  * AWACY 全表与 caniplayonlinux 的 sitemap 会缓存到 ~/.cache/hotaru-game-compat/，
     默认 24 小时过期。
 """
 
@@ -44,7 +44,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
-UA = {"User-Agent": "miyu-game-compat-probe/0.1"}
+UA = {"User-Agent": "hotaru-game-compat-probe/0.1"}
 TIMEOUT = 25
 
 ALGOLIA_URL = "https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query"
@@ -57,7 +57,7 @@ AWACY_JSON = (
     "/HEAD/games.json"
 )
 
-CACHE_DIR = Path.home() / ".cache" / "miyu-game-compat"
+CACHE_DIR = Path.home() / ".cache" / "hotaru-game-compat"
 CACHE_TTL = 24 * 3600
 
 # ProtonDB 的 fault 字段 → 简称。只有取值为 "yes" 的才会进输出。

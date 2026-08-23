@@ -7,7 +7,7 @@ fn default_runtime_directory_keeps_the_legacy_name() {
     let runtime_root = Path::new("/run/user/1000");
     assert_eq!(
         runtime_dir_for(runtime_root, None),
-        runtime_root.join("miyu")
+        runtime_root.join("hotaru")
     );
 }
 
@@ -27,7 +27,7 @@ fn explicit_homes_get_stable_isolated_runtime_directories() {
         .file_name()
         .unwrap()
         .to_string_lossy()
-        .starts_with("miyu-"));
+        .starts_with("hotaru-"));
 }
 
 #[test]

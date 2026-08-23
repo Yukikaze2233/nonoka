@@ -17,7 +17,7 @@
   /*
    * 夜阑 (dusk) —— 默认暗色主题。
    * MD3 system tokens;matugen 生成的 /theme.css 可整套覆盖。
-   * 种子色取自 miyu-logo:primary=瞳色减淡的雾蓝,secondary=发色暖金,
+   * 种子色取自 hotaru-logo:primary=瞳色减淡的雾蓝,secondary=发色暖金,
    * tertiary=丝带酒红,surface=傍晚蓝紫。
    */
   --md-sys-color-primary: #aebde8;
@@ -554,7 +554,7 @@ textarea:disabled {
 /* 运行中:转圈。动效表达「正在发生」——静态点和「有未读」看不出区别。 */
 /* 盲文点阵转圈,和 REPL 里工具运行时那个同款(`wait_spinner.rs` 的
    BRAILLE_FRAMES)。同一件事在两个界面用同一个形状;圆环那种到处都是,
-   这个一眼就认得出是 Miyu 在干活。
+   这个一眼就认得出是 Hotaru 在干活。
 
    换帧交给 JS(`startBrailleTicker`)。CSS 那两种做法都不可靠:动画
    `content` 只有 Chrome 认;十帧竖排靠 `steps()` 平移则要求行高和字形
@@ -7465,11 +7465,11 @@ body[data-theme="linen"] .u-type-pill.t-aux { color: var(--md-sys-color-on-secon
 }
 
 /* ── G2:不可见即暂停 ──
-   页面隐藏(切标签/最小化)时由 app.js 挂 miyu-paused。所有无限动画
+   页面隐藏(切标签/最小化)时由 app.js 挂 hotaru-paused。所有无限动画
    (status-pulse/shimmer/typing-bounce/spin 等)暂停,恢复可见时原地续播,
    视觉零变化。实测隐藏窗口不暂停时合成负载与可见时相同。 */
-body.miyu-paused *,
-body.miyu-paused *::before,
-body.miyu-paused *::after {
+body.hotaru-paused *,
+body.hotaru-paused *::before,
+body.hotaru-paused *::after {
   animation-play-state: paused !important;
 }

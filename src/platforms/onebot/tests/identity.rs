@@ -168,10 +168,10 @@ fn qq_sender_and_group_metadata_stay_out_of_user_text() {
 #[test]
 fn named_mention_survives_after_the_qq_wake_prefix_is_removed() {
     let config = config_with(|config| {
-        config.group_chats.trigger_keywords = vec!["miyu".to_string()];
+        config.group_chats.trigger_keywords = vec!["hotaru".to_string()];
     });
     let message = json!([
-        { "type": "text", "data": { "text": "miyu，他是谁 " } },
+        { "type": "text", "data": { "text": "hotaru，他是谁 " } },
         { "type": "at", "data": { "qq": "8" } }
     ]);
     let parsed = parse_message(Some(&message), None, 10_000);
@@ -377,11 +377,11 @@ async fn qq_conversation_persona_drives_context_and_session_binding() {
         custom.config.active_persona_scope()
     );
 
-    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::Miyu;
-    let miyu = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
-    assert!(miyu.config.prompt.active_persona.is_empty());
-    let miyu_session = resolve_onebot_session(&state, &miyu, target, &event).unwrap();
-    assert_ne!(custom_session, miyu_session);
+    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::Hotaru;
+    let hotaru = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
+    assert!(hotaru.config.prompt.active_persona.is_empty());
+    let hotaru_session = resolve_onebot_session(&state, &hotaru, target, &event).unwrap();
+    assert_ne!(custom_session, hotaru_session);
 }
 
 #[tokio::test]

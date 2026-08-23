@@ -36,7 +36,7 @@ fn platforms_config_roundtrip_and_default_omission() {
                     },
                     "group_chats": {
                         "whitelist": [54321],
-                        "trigger_keywords": ["Miyu"],
+                        "trigger_keywords": ["Hotaru"],
                         "whitelist_rate_per_minute": 30,
                         "allow_non_whitelist": true,
                         "non_whitelist_rate_per_minute": 10
@@ -74,7 +74,7 @@ fn platforms_config_roundtrip_and_default_omission() {
         }
     );
     assert_eq!(qq.group_chats.whitelist, vec![54321]);
-    assert_eq!(qq.group_chats.trigger_keywords, vec!["Miyu"]);
+    assert_eq!(qq.group_chats.trigger_keywords, vec!["Hotaru"]);
     assert_eq!(qq.group_chats.whitelist_rate_limit.max_messages, 30);
     assert_eq!(qq.group_chats.non_whitelist_rate_limit.max_messages, 10);
     assert_eq!(qq.max_reply_chars, 3000);
@@ -460,7 +460,7 @@ fn qq_conversation_persona_override_is_explicit_and_tracks_renames() {
     );
     assert!(config.validate().is_ok());
 
-    config.platforms.qq.conversations[0].persona = PlatformPersonaOverride::Miyu;
+    config.platforms.qq.conversations[0].persona = PlatformPersonaOverride::Hotaru;
     config.apply_qq_conversation_persona(PlatformConversationKind::Group, "20002");
     assert!(config.prompt.active_persona.is_empty());
 }

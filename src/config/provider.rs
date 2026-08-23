@@ -412,7 +412,7 @@ impl ProviderConfig {
         crate::models_cache::input_modalities(&self.id, model)
     }
 
-    pub fn resolved_api_keys(&self, _paths: &MiyuPaths) -> Result<Vec<ResolvedProviderKey>> {
+    pub fn resolved_api_keys(&self, _paths: &HotaruPaths) -> Result<Vec<ResolvedProviderKey>> {
         let mut keys = Vec::new();
         if let Some(api_key) = self.api_key.as_deref() {
             append_resolved_api_keys(&mut keys, api_key)?;

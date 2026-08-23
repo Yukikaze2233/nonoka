@@ -402,7 +402,7 @@ mod tests {
         assert!(search_provider_order("exa", &config).is_ok());
     }
 
-    /// 真实网络实测：cargo test --bin miyu -- --ignored exa_free_quota
+    /// 真实网络实测：cargo test --bin hotaru -- --ignored exa_free_quota
     #[tokio::test]
     #[ignore = "hits the real Exa MCP endpoint"]
     async fn exa_free_quota_live_search() {

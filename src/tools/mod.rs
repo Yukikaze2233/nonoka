@@ -56,7 +56,7 @@ mod xuanxue;
 use crate::agent::AgentMode;
 use crate::config::AppConfig;
 use crate::i18n::{is_zh, text as t};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -333,7 +333,7 @@ fn builtin_readable_group_name(group: &str) -> Option<&'static str> {
     })
 }
 
-pub fn clear_aur_review_state(paths: &MiyuPaths) -> anyhow::Result<()> {
+pub fn clear_aur_review_state(paths: &HotaruPaths) -> anyhow::Result<()> {
     package_advisor::clear_aur_review_state(paths)
 }
 
@@ -377,7 +377,7 @@ fn install_builtin_guards(registry: &mut ToolRegistry, config: &AppConfig) {
     registry.add_guard(command_deny_guard(config.tools.command_deny.clone()));
 }
 
-pub fn builtin_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn builtin_registry(config: &AppConfig, paths: &HotaruPaths) -> ToolRegistry {
     let mut registry = ToolRegistry::new();
     registry.set_default_timeout_secs(config.tools.default_timeout_secs);
     install_builtin_guards(&mut registry, config);
@@ -469,7 +469,7 @@ pub fn builtin_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
 
 pub fn register_webui_artifact_tools(
     registry: &mut ToolRegistry,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     session_id: &str,
 ) {
     artifact::register_webui(registry, paths, session_id);
@@ -484,14 +484,14 @@ pub fn register_webui_share_tools(
     share_file::register_webui(registry, config, store);
 }
 
-pub fn webui_artifact_manifest(paths: &MiyuPaths, session_id: &str) -> anyhow::Result<String> {
+pub fn webui_artifact_manifest(paths: &HotaruPaths, session_id: &str) -> anyhow::Result<String> {
     artifact::managed_manifest(paths, session_id)
 }
 
 pub(crate) fn rescope_platform_memory_tools(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     context: &dyn crate::platform_types::PlatformToolContext,
     readonly: bool,
 ) {
@@ -554,7 +554,7 @@ pub fn uses_load_tools(mode: &str) -> bool {
 /// (验收三轮裁剪)。人格/娱乐/平台类一概不存在。记忆工具**注册**,
 /// 但作用域切到保留人格 "dev" 的独立命名空间(`dev_scoped`)。
 /// ask_question 等界面胶水与 normal 同路,由 daemon/CLI 按 surface 追加。
-pub fn dev_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn dev_registry(config: &AppConfig, paths: &HotaruPaths) -> ToolRegistry {
     let mut registry = ToolRegistry::new();
     registry.set_default_timeout_secs(config.tools.default_timeout_secs);
     install_builtin_guards(&mut registry, config);
@@ -601,7 +601,7 @@ pub fn dev_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
 /// knowledge-base, MCP, scripts, and tools that persist arbitrary downloads.
 /// `generate_image` is the one Writes exception: it only saves its own API
 /// output under the plugin's output directory, never an arbitrary host path.
-pub fn restricted_platform_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn restricted_platform_registry(config: &AppConfig, paths: &HotaruPaths) -> ToolRegistry {
     let mut registry = ToolRegistry::new();
     registry.set_default_timeout_secs(config.tools.default_timeout_secs);
     web::register_fetch(&mut registry);
@@ -651,7 +651,7 @@ pub fn restricted_platform_registry(config: &AppConfig, paths: &MiyuPaths) -> To
 /// 2. 技能只在工具开着时注册；技能创作工具（`manage_skill`）只在 normal 模式
 ///    出现，dev 模式下模型该写代码不该写技能。
 /// 3. `ask_question` 单独由调用方决定：daemon 与 WebUI 能弹面板，一次性
-///    `miyu ask` 不能，所以它是参数而不是模式的函数。
+///    `hotaru ask` 不能，所以它是参数而不是模式的函数。
 /// 4. 最后登记脚本工具的显示名——这一步要在所有注册之后，否则新注册的脚本
 ///    在渲染层会显示成原始工具名。
 ///
@@ -661,7 +661,7 @@ pub fn restricted_platform_registry(config: &AppConfig, paths: &MiyuPaths) -> To
 /// 两条边（`web→cli`、`tools→cli`）一次都断掉。
 pub(crate) fn build_tool_registry(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     mode: AgentMode,
     interactive_questions: bool,
 ) -> anyhow::Result<ToolRegistry> {
@@ -719,7 +719,7 @@ mod tests {
     /// 回归:dev 模式要有看图(vision_analyze),且随 vision 插件开关走。
     #[test]
     fn dev_registry_vision_follows_plugin_switch() {
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::HotaruPaths::new().unwrap();
         let mut config = crate::config::AppConfig::default();
         let names = |registry: &ToolRegistry| -> Vec<String> {
             registry
@@ -733,8 +733,8 @@ mod tests {
         assert!(!names(&dev_registry(&config, &paths)).contains(&"vision_analyze".to_string()));
     }
 
-    pub(super) fn test_paths(root: &std::path::Path) -> MiyuPaths {
-        MiyuPaths {
+    pub(super) fn test_paths(root: &std::path::Path) -> HotaruPaths {
+        HotaruPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -743,7 +743,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/hotaru.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -1031,7 +1031,7 @@ mod tier_schema_probe {
     #[test]
     fn task_definition_includes_tier() {
         let config = crate::config::AppConfig::default();
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::HotaruPaths::new().unwrap();
         let registry = super::builtin_registry(&config, &paths);
         let defs = registry.definitions();
         let task = defs
@@ -1065,7 +1065,7 @@ mod tier_schema_probe {
         config
             .toggle_subagent_tier_model(crate::config::ModelTier::Balanced, &provider_id, "mini-b")
             .unwrap();
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::HotaruPaths::new().unwrap();
         let registry = super::builtin_registry(&config, &paths);
         let defs = registry.definitions();
         let task = defs.iter().find(|d| d.function.name == "task").unwrap();

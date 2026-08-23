@@ -244,7 +244,7 @@ impl McpSession {
             json!({
                 "protocolVersion": "2025-03-26",
                 "capabilities": {},
-                "clientInfo": {"name": "miyu", "version": env!("CARGO_PKG_VERSION")},
+                "clientInfo": {"name": "hotaru", "version": env!("CARGO_PKG_VERSION")},
             }),
         )?;
         self.notify("notifications/initialized", json!({}))?;

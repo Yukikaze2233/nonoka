@@ -9,16 +9,16 @@ fn a_stale_xdg_output_dir_is_healed_and_its_files_follow() {
     // XDG root, so the old root has to be a legacy root too.
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path();
-    let legacy = home.join(".local/share/miyu/pictures/generated-images");
+    let legacy = home.join(".local/share/hotaru/pictures/generated-images");
     std::fs::create_dir_all(&legacy).unwrap();
     std::fs::write(legacy.join("one.png"), "a").unwrap();
     std::fs::write(legacy.join("two.png"), "b").unwrap();
 
-    let destination_root = home.join(".miyu/data/pictures");
+    let destination_root = home.join(".hotaru/data/pictures");
     let mut value = legacy.display().to_string();
     let moved = remap_managed_output_dir(
         &mut value,
-        &[home.join(".local/share/miyu/pictures")],
+        &[home.join(".local/share/hotaru/pictures")],
         &destination_root,
         home,
     );
@@ -43,8 +43,8 @@ fn a_path_outside_every_legacy_root_is_left_alone() {
     let before = value.clone();
     let moved = remap_managed_output_dir(
         &mut value,
-        &[home.join(".local/share/miyu/pictures")],
-        &home.join(".miyu/data/pictures"),
+        &[home.join(".local/share/hotaru/pictures")],
+        &home.join(".hotaru/data/pictures"),
         home,
     );
     assert!(moved.is_none());
@@ -54,7 +54,7 @@ fn a_path_outside_every_legacy_root_is_left_alone() {
 #[test]
 fn default_prompt_resources_follow_the_data_resource_layout() {
     let temp = tempfile::tempdir().unwrap();
-    let paths = MiyuPaths {
+    let paths = HotaruPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().join("config"),
         config_file: temp.path().join("config/config.jsonc"),
@@ -63,7 +63,7 @@ fn default_prompt_resources_follow_the_data_resource_layout() {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("data/pictures"),
-        fish_hook_file: temp.path().join("fish/miyu.fish"),
+        fish_hook_file: temp.path().join("fish/hotaru.fish"),
         bash_hook_file: temp.path().join("config/shell/bash-hook.sh"),
         zsh_hook_file: temp.path().join("config/shell/zsh-hook.zsh"),
         scripts_dir: temp.path().join("data/scripts"),
@@ -190,7 +190,7 @@ fn default_prompt_resources_follow_the_data_resource_layout() {
     );
 
     let base = directories::BaseDirs::new().unwrap();
-    let root = base.home_dir().join(".miyu");
+    let root = base.home_dir().join(".hotaru");
     let mut legacy_paths = paths.clone();
     legacy_paths.config_dir = root.join("config");
     legacy_paths.config_file = root.join("config/config.jsonc");
@@ -200,12 +200,12 @@ fn default_prompt_resources_follow_the_data_resource_layout() {
     let mut legacy_absolute = AppConfig::default();
     legacy_absolute.prompt.user_identity_file = base
         .config_dir()
-        .join("miyu/user-identity.md")
+        .join("hotaru/user-identity.md")
         .display()
         .to_string();
     legacy_absolute.system_prompt_file = Some(
         base.config_dir()
-            .join("miyu/system-prompt.md")
+            .join("hotaru/system-prompt.md")
             .display()
             .to_string(),
     );
@@ -222,7 +222,7 @@ fn default_prompt_resources_follow_the_data_resource_layout() {
 #[test]
 fn reserved_system_prompt_file_is_not_a_persona() {
     let temp = tempfile::tempdir().unwrap();
-    let paths = MiyuPaths {
+    let paths = HotaruPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().join("config"),
         config_file: temp.path().join("config/config.jsonc"),
@@ -231,7 +231,7 @@ fn reserved_system_prompt_file_is_not_a_persona() {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("data/pictures"),
-        fish_hook_file: temp.path().join("fish/miyu.fish"),
+        fish_hook_file: temp.path().join("fish/hotaru.fish"),
         bash_hook_file: temp.path().join("config/shell/bash-hook.sh"),
         zsh_hook_file: temp.path().join("config/shell/zsh-hook.zsh"),
         scripts_dir: temp.path().join("data/scripts"),

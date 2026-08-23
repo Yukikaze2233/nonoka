@@ -1,19 +1,19 @@
 [package]
-name = "miyu"
+name = "hotaru"
 version = "0.4.5"
 edition = "2021"
 rust-version = "1.89"
 license = "MIT"
-repository = "https://github.com/SHORiN-KiWATA/Miyu"
+repository = "https://github.com/SHORiN-KiWATA/Miyu" # TODO: fork 自上游；发布后改成 hotaru 自己的仓库地址
 description = "Command-line AI assistant"
 autobins = false
 
 [lib]
-name = "miyu"
+name = "hotaru"
 path = "src/lib.rs"
 
 [[bin]]
-name = "miyu"
+name = "hotaru"
 path = "src/main.rs"
 
 [dependencies]

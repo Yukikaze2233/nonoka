@@ -1,5 +1,5 @@
 use crate::config::{AppConfig, KnowledgeBasePluginConfig, MemoryConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::HotaruPaths;
 // 只要主体身份这一个纯数据类型，不需要整个平台运行时。
 use crate::platform_types::PlatformPrincipal;
 use anyhow::{bail, Context, Result};
@@ -257,7 +257,7 @@ pub(crate) struct LongDiaryDraft {
 }
 
 impl MemoryStore {
-    pub fn new(config: &AppConfig, paths: &MiyuPaths) -> Self {
+    pub fn new(config: &AppConfig, paths: &HotaruPaths) -> Self {
         let data_dir = config.active_persona_memory_data_dir(paths).join("memory");
         let state_dir = config.active_persona_memory_state_dir(paths).join("memory");
         Self {

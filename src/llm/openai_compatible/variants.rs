@@ -67,7 +67,7 @@ impl OpenAiCompatibleClient {
         }
     }
 
-    pub(crate) fn restore_saved_thinking_variants(&mut self, paths: &MiyuPaths) {
+    pub(crate) fn restore_saved_thinking_variants(&mut self, paths: &HotaruPaths) {
         crate::llm::request_log::install_dir(paths.logs_dir());
         let preferences = load_thinking_variant_preferences(paths);
         let selections = self
@@ -83,7 +83,7 @@ impl OpenAiCompatibleClient {
         self.restore_thinking_variants(&selections);
     }
 
-    pub fn save_thinking_variants(&self, paths: &MiyuPaths) -> Result<()> {
+    pub fn save_thinking_variants(&self, paths: &HotaruPaths) -> Result<()> {
         let mut preferences = load_thinking_variant_preferences(paths);
         for (provider_id, model) in self.endpoint_model_preferences() {
             let key = thinking_variant_key(&provider_id, &model);

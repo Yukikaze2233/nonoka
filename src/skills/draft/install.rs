@@ -311,7 +311,7 @@ pub(crate) struct PublishLease {
     pub(crate) _file: File,
 }
 
-pub(crate) fn acquire_publish_lock(paths: &MiyuPaths) -> Result<PublishLease> {
+pub(crate) fn acquire_publish_lock(paths: &HotaruPaths) -> Result<PublishLease> {
     let root = paths.skill_drafts_dir();
     create_private_dir(&root)?;
     let lock_path = root.join(PUBLISH_LOCK_FILE);

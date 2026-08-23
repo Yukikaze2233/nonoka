@@ -50,7 +50,7 @@ pub(crate) struct RiskGates {
     pub(crate) unsafe_or_abusive: bool,
 }
 
-pub(crate) async fn add_meme(args: Value, config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+pub(crate) async fn add_meme(args: Value, config: &AppConfig, paths: &HotaruPaths) -> Result<String> {
     let library = selected_library(&args, config);
     let library_lock = library_lock(&library);
     let _guard = library_lock.lock().await;
@@ -179,7 +179,7 @@ pub(crate) async fn add_meme(args: Value, config: &AppConfig, paths: &MiyuPaths)
     .to_string())
 }
 
-pub(crate) async fn update_meme(args: Value, config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+pub(crate) async fn update_meme(args: Value, config: &AppConfig, paths: &HotaruPaths) -> Result<String> {
     let library = selected_library(&args, config);
     let library_lock = library_lock(&library);
     let _guard = library_lock.lock().await;
@@ -236,7 +236,7 @@ pub(crate) async fn update_meme(args: Value, config: &AppConfig, paths: &MiyuPat
     Ok(json!({ "success": true, "library": library, "id": id, "metadata": item }).to_string())
 }
 
-pub(crate) async fn delete_meme(args: Value, config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+pub(crate) async fn delete_meme(args: Value, config: &AppConfig, paths: &HotaruPaths) -> Result<String> {
     let library = selected_library(&args, config);
     let library_lock = library_lock(&library);
     let _guard = library_lock.lock().await;
@@ -290,7 +290,7 @@ pub(crate) async fn delete_meme(args: Value, config: &AppConfig, paths: &MiyuPat
 
 pub(crate) async fn classify_meme_image(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     image: &Path,
 ) -> Result<MemeClassification> {
     let persona = config.active_persona_prompt(paths).unwrap_or_default();
@@ -312,7 +312,7 @@ pub(crate) async fn classify_meme_image(
 pub(crate) async fn collect_meme_from_local_image(
     image: &Path,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &HotaruPaths,
     origin: Option<MemeOrigin>,
 ) -> Result<MemeCollectionOutcome> {
     let library = current_persona_library(config);

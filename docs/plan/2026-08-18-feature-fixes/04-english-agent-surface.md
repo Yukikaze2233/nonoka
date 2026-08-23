@@ -12,7 +12,7 @@
 1. 所有进入模型上下文/工具结果的工程性提示为英文。
 2. 用户自己配置的 persona、dev-prompt、user identity、skill/script 描述**原样保留**。
 3. UI 显示语言仍跟随 locale/配置。
-4. 默认 Miyu 人格 `src/prompts/miyu.md` 是否英文化，见 D7（推荐：保留中文人格，但把其中工程指令拆成英文注入；若用户更在意中文思维链影响，则连人格一起英文化）。
+4. 默认 Hotaru 人格 `src/prompts/hotaru.md` 是否英文化，见 D7（推荐：保留中文人格，但把其中工程指令拆成英文注入；若用户更在意中文思维链影响，则连人格一起英文化）。
 
 ## 3. 方案
 
@@ -63,7 +63,7 @@ pub fn agent_text(en: &'static str, _zh: &'static str) -> &'static str { en }
 ### 3.5 与缓存/历史重置的关系
 
 - 工具描述改变 = tools 数组冷启动一次，不触发 `reset_history`。
-- 若翻译默认 `miyu.md`，`prompt_fingerprint` 变化会触发历史重置。**这是用户可见破坏**，必须作为 D7 的一部分确认，或使用 `reset_if_prompt_changed_with_compatible` 的白名单语义避免删历史。
+- 若翻译默认 `hotaru.md`，`prompt_fingerprint` 变化会触发历史重置。**这是用户可见破坏**，必须作为 D7 的一部分确认，或使用 `reset_if_prompt_changed_with_compatible` 的白名单语义避免删历史。
 
 ## 4. 修改文件清单
 
@@ -74,7 +74,7 @@ pub fn agent_text(en: &'static str, _zh: &'static str) -> &'static str { en }
 
 ## 5. 验收
 
-1. `MIYU_LANG=zh_CN` 启动，mock 抓取真实 provider 请求：tools description、system 注入、tool error 回灌均为英文；UI footer 仍是中文。
+1. `HOTARU_LANG=zh_CN` 启动，mock 抓取真实 provider 请求：tools description、system 注入、tool error 回灌均为英文；UI footer 仍是中文。
 2. 61 个 description JSON 通过“模型面无 CJK”门禁；`display_name` 允许中文。
 3. 用户自建 persona 中文内容逐字不变；`config/prompts/` 下用户文件不被脚本重写。
 4. `bash scripts/refactor-check.sh` 全绿；两轮请求 cache log 无异常。

@@ -32,20 +32,20 @@ fn models_argument_parses_the_global_switch() {
 
 #[test]
 fn variant_is_a_cli_subcommand_with_an_optional_name() {
-    let cli = parse_args(["miyu", "variant"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "variant"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Variant(VariantArgs { name: None }))
     ));
 
-    let cli = parse_args(["miyu", "variant", "high"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "variant", "high"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Variant(VariantArgs { name })) if name.as_deref() == Some("high")
     ));
 
     assert!(parse_args(
-        ["miyu", "variant", "high", "extra"]
+        ["hotaru", "variant", "high", "extra"]
             .map(OsString::from)
             .to_vec()
     )
@@ -54,12 +54,12 @@ fn variant_is_a_cli_subcommand_with_an_optional_name() {
 
 #[test]
 fn continue_and_session_flags_are_mutually_exclusive() {
-    let cli = parse_args(["miyu", "-c", "hello"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "-c", "hello"].map(OsString::from).to_vec()).unwrap();
     assert!(cli.continue_session);
     assert_eq!(cli.message, vec!["hello".to_string()]);
 
     let cli = parse_args(
-        ["miyu", "--session", "2", "hello"]
+        ["hotaru", "--session", "2", "hello"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -68,7 +68,7 @@ fn continue_and_session_flags_are_mutually_exclusive() {
     assert_eq!(cli.session.as_deref(), Some("2"));
 
     assert!(parse_args(
-        ["miyu", "-c", "--session", "2", "hello"]
+        ["hotaru", "-c", "--session", "2", "hello"]
             .map(OsString::from)
             .to_vec()
     )
@@ -131,7 +131,7 @@ fn picker_keys_reach_delete_only_through_a_modifier() {
 #[test]
 fn web_is_a_cli_subcommand_with_local_server_options() {
     let cli = parse_args(
-        ["miyu", "web", "--port", "4100"]
+        ["hotaru", "web", "--port", "4100"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -148,10 +148,10 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
     ));
 
     for arg in ["stop", "status", "restart", "--status", "--stop"] {
-        assert!(parse_args(["miyu", "web", arg].map(OsString::from).to_vec()).is_err());
+        assert!(parse_args(["hotaru", "web", arg].map(OsString::from).to_vec()).is_err());
     }
 
-    let cli = parse_args(["miyu", "web"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "web"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Web(WebArgs {
@@ -163,7 +163,7 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
         }))
     ));
 
-    let cli = parse_args(["miyu", "web", "-p"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "web", "-p"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Web(WebArgs {
@@ -172,15 +172,15 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
         })) if password.is_empty()
     ));
     for args in [
-        vec!["miyu", "web", "-p", "secret"],
-        vec!["miyu", "web", "--password=secret"],
-        vec!["miyu", "web", "-psecret"],
+        vec!["hotaru", "web", "-p", "secret"],
+        vec!["hotaru", "web", "--password=secret"],
+        vec!["hotaru", "web", "-psecret"],
     ] {
         assert!(parse_args(args.into_iter().map(OsString::from).collect()).is_err());
     }
 
     let cli = parse_args(
-        ["miyu", "web", "--password-file", "/tmp/miyu-password"]
+        ["hotaru", "web", "--password-file", "/tmp/hotaru-password"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -191,10 +191,10 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
             password: None,
             password_file: Some(path),
             ..
-        })) if path == PathBuf::from("/tmp/miyu-password")
+        })) if path == PathBuf::from("/tmp/hotaru-password")
     ));
 
-    assert!(parse_args(["miyu", "web", "--public"].map(OsString::from).to_vec(),).is_err());
+    assert!(parse_args(["hotaru", "web", "--public"].map(OsString::from).to_vec(),).is_err());
 }
 
 #[test]
@@ -245,7 +245,7 @@ fn bare_web_does_not_override_the_persisted_launch_config() {
 }
 
 #[test]
-fn explicit_password_file_is_copied_into_private_miyu_state() {
+fn explicit_password_file_is_copied_into_private_hotaru_state() {
     let temp = tempfile::tempdir().unwrap();
     let paths = pop_test_paths(temp.path());
     let external = temp.path().join("external-password");
@@ -274,7 +274,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
         ("restart", "restart"),
         ("status", "status"),
     ] {
-        let cli = parse_args(["miyu", "daemon", arg].map(OsString::from).to_vec()).unwrap();
+        let cli = parse_args(["hotaru", "daemon", arg].map(OsString::from).to_vec()).unwrap();
         let actual = match cli.command {
             Some(Command::Daemon(DaemonArgs {
                 command: Some(DaemonCommand::Start),
@@ -297,7 +297,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
         assert_eq!(actual, expected);
     }
 
-    let cli = parse_args(["miyu", "daemon", "logs"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "daemon", "logs"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Daemon(DaemonArgs {
@@ -307,7 +307,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "logs", "-n", "25"]
+        ["hotaru", "daemon", "logs", "-n", "25"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -323,15 +323,15 @@ fn daemon_owns_lifecycle_and_log_commands() {
 
 #[test]
 fn reload_is_a_top_level_command() {
-    let cli = parse_args(["miyu", "reload"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "reload"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(cli.command, Some(Command::Reload)));
-    assert!(parse_args(["miyu", "reload", "extra"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["hotaru", "reload", "extra"].map(OsString::from).to_vec()).is_err());
 }
 
 #[test]
 fn daemon_accepts_a_port_and_defaults_to_start() {
     let cli = parse_args(
-        ["miyu", "daemon", "--port", "9412"]
+        ["hotaru", "daemon", "--port", "9412"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -345,7 +345,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "--port", "9412", "restart"]
+        ["hotaru", "daemon", "--port", "9412", "restart"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -359,7 +359,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "start", "--port", "9412"]
+        ["hotaru", "daemon", "start", "--port", "9412"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -373,7 +373,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     assert!(parse_args(
-        ["miyu", "daemon", "--password"]
+        ["hotaru", "daemon", "--password"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -404,37 +404,37 @@ fn daemon_web_urls_are_rendered_on_separate_aligned_lines() {
 
 #[test]
 fn pop_is_a_cli_subcommand_with_an_optional_count() {
-    let cli = parse_args(["miyu", "pop"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "pop"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Pop(PopArgs { count: None }))
     ));
 
-    let cli = parse_args(["miyu", "pop", "3"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "pop", "3"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Pop(PopArgs { count: Some(3) }))
     ));
-    assert!(parse_args(["miyu", "pop", "0"].map(OsString::from).to_vec()).is_err());
-    assert!(parse_args(["miyu", "pop", "nope"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["hotaru", "pop", "0"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["hotaru", "pop", "nope"].map(OsString::from).to_vec()).is_err());
 }
 
 #[test]
 fn debug_is_a_global_cli_option() {
     for args in [
-        &["miyu", "--debug", "models", "1"][..],
-        &["miyu", "models", "--debug", "1"][..],
-        &["miyu", "hello", "--debug"][..],
-        &["miyu", "ask", "hello", "--debug"][..],
+        &["hotaru", "--debug", "models", "1"][..],
+        &["hotaru", "models", "--debug", "1"][..],
+        &["hotaru", "hello", "--debug"][..],
+        &["hotaru", "ask", "hello", "--debug"][..],
     ] {
         let cli = parse_args(args.iter().map(OsString::from).collect()).unwrap();
         assert!(cli.debug);
     }
 
-    let cli = parse_args(["miyu", "hello", "--debug"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "hello", "--debug"].map(OsString::from).to_vec()).unwrap();
     assert_eq!(cli.message, ["hello"]);
 
-    let cli = parse_args(["miyu", "--", "--debug"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["hotaru", "--", "--debug"].map(OsString::from).to_vec()).unwrap();
     assert!(!cli.debug);
     assert_eq!(cli.message, ["--debug"]);
 }

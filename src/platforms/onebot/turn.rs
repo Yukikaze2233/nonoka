@@ -110,7 +110,7 @@ pub(crate) async fn wake_conversation_for_job(
         // carries who said what — the protocol offers no third role and drops
         // `name`, so identity can only live in the text — but the log is
         // additive: each turn appends what arrived since the last one, and
-        // earlier turns replay verbatim. Miyu's own turns become real
+        // earlier turns replay verbatim. Hotaru's own turns become real
         // assistant messages instead of one `[你]` line in a rolling window.
         suppress_session_history: false,
         group_context: (context.conversation.kind == ConversationKind::Group)
@@ -280,7 +280,7 @@ pub(in crate::platforms::onebot) async fn enqueue_tool_followup(
     .await
     .unwrap_or_else(|error| {
         tracing::warn!(
-            target: "miyu::qq",
+            target: "hotaru::qq",
             error = %error,
             message_id = %current_message_id,
             "{}",
@@ -418,7 +418,7 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
         Ok(added) => {
             if added > 0 {
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "hotaru::qq",
                     quoted_message_id = parsed.reply_to_message_id.as_deref().unwrap_or_default(),
                     images = added,
                     "{}",
@@ -429,7 +429,7 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
         }
         Err(error) => {
             tracing::warn!(
-                target: "miyu::qq",
+                target: "hotaru::qq",
                 error = %error,
                 quoted_message_id = parsed.reply_to_message_id.as_deref().unwrap_or_default(),
                 "{}",
@@ -446,7 +446,7 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
     let images = prepared_images.attachments;
     if attempted_images > 0 {
         tracing::info!(
-            target: "miyu::qq",
+            target: "hotaru::qq",
             attempted = attempted_images,
             prepared = images.len(),
             failed = failed_images,
@@ -565,7 +565,7 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
         // carries who said what — the protocol offers no third role and drops
         // `name`, so identity can only live in the text — but the log is
         // additive: each turn appends what arrived since the last one, and
-        // earlier turns replay verbatim. Miyu's own turns become real
+        // earlier turns replay verbatim. Hotaru's own turns become real
         // assistant messages instead of one `[你]` line in a rolling window.
         suppress_session_history: false,
         group_context: (context.conversation.kind == ConversationKind::Group)

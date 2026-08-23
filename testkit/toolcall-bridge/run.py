@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """tool-call 目录同源实测(08-16 dev 实测坑回归)。
 
-坑:dev 会话里 `miyu tool-call --list` 展示普通人格全量目录(客户端按
-MIYU_TURN_MODE 环境变量本地建表,run_command 并不注入它),实测逐个调用
+坑:dev 会话里 `hotaru tool-call --list` 展示普通人格全量目录(客户端按
+HOTARU_TURN_MODE 环境变量本地建表,run_command 并不注入它),实测逐个调用
 全报 unknown tool;报错也无引导。修后 --list/--describe 走 ToolCatalog
 IPC,与 ToolCall 同一条会话→模式→registry 解析链。
 
@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MIYU = REPO / "target" / "debug" / "miyu"
+HOTARU = REPO / "target" / "debug" / "hotaru"
 BASE = Path(__file__).resolve().parent
 HOME = BASE / "home"
 RUN = BASE / "xdg-run"
@@ -54,11 +54,11 @@ def build_home():
 
 def env(extra=None):
     e = dict(os.environ)
-    e["MIYU_HOME"] = str(HOME)
+    e["HOTARU_HOME"] = str(HOME)
     e["XDG_RUNTIME_DIR"] = str(RUN)
-    e.pop("MIYU_DIRECT", None)
-    e.pop("MIYU_SESSION", None)
-    e.pop("MIYU_TURN_MODE", None)
+    e.pop("HOTARU_DIRECT", None)
+    e.pop("HOTARU_SESSION", None)
+    e.pop("HOTARU_TURN_MODE", None)
     e["LANG"] = "zh_CN.UTF-8"
     if extra:
         e.update(extra)
@@ -91,9 +91,9 @@ def ipc(command: dict):
 
 
 def cli(args, session=None):
-    extra = {"MIYU_SESSION": session} if session else None
+    extra = {"HOTARU_SESSION": session} if session else None
     proc = subprocess.run(
-        [str(MIYU), *args],
+        [str(HOTARU), *args],
         env=env(extra),
         capture_output=True,
         text=True,
@@ -113,7 +113,7 @@ def check(name, ok, detail=""):
 def main():
     build_home()
     daemon = subprocess.Popen(
-        [str(MIYU), "daemon", "--port", str(PORT)],
+        [str(HOTARU), "daemon", "--port", str(PORT)],
         env=env(),
         stdout=(BASE / "daemon.log").open("w"),
         stderr=subprocess.STDOUT,
@@ -176,9 +176,9 @@ def main():
         code, out, err = cli(["tool-call", "scientific_calculator", '{"expression":"1+1"}'])
         check("normal 调 scientific_calculator 正常", code == 0 and "2" in out, out.strip()[:80])
     finally:
-        # `miyu daemon` starter 双 fork 分离真 daemon,terminate 只能杀
+        # `hotaru daemon` starter 双 fork 分离真 daemon,terminate 只能杀
         # starter,残留进程会占死端口(实测踩坑)——用 CLI stop 走正门。
-        subprocess.run([str(MIYU), "daemon", "stop"], env=env(),
+        subprocess.run([str(HOTARU), "daemon", "stop"], env=env(),
                        capture_output=True, timeout=30)
         daemon.terminate()
         try:

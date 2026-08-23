@@ -103,9 +103,9 @@ pub(in crate::config_tui) fn edit_settings(
             ),
             config.display.repl_replay_turns.to_string(),
         ),
-        // 验收:default_mode 只能改 config.jsonc 不像话——空=裸 miyu 出帮助。
+        // 验收:default_mode 只能改 config.jsonc 不像话——空=裸 hotaru 出帮助。
         Field::new(
-            t("Bare `miyu` default mode", "裸 miyu 默认模式"),
+            t("Bare `hotaru` default mode", "裸 hotaru 默认模式"),
             config.default_mode.clone(),
         )
         .choices(&["", "normal", "dev"])

@@ -4,8 +4,8 @@
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     limit_malloc_arenas();
-    if let Err(error) = miyu::run().await {
-        eprintln!("{}: {error:#}", miyu::error_label());
+    if let Err(error) = hotaru::run().await {
+        eprintln!("{}: {error:#}", hotaru::error_label());
         std::process::exit(1);
     }
 }

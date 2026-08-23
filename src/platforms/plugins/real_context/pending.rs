@@ -37,7 +37,7 @@ impl RealContextPlugin {
             &high,
         ) {
             tracing::warn!(
-                target: "miyu::qq",
+                target: "hotaru::qq",
                 error = %error,
                 "{}",
                 crate::i18n::text(

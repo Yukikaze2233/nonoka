@@ -26,7 +26,7 @@ pub(in crate::cli) fn extract_image_placeholders(
         return (message.to_string(), Vec::new());
     }
 
-    let cache_images_dir = MiyuPaths::new()
+    let cache_images_dir = HotaruPaths::new()
         .map(|p| p.cache_dir.join("clipboard_images"))
         .ok();
 

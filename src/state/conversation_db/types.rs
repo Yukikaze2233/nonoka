@@ -48,7 +48,7 @@ pub enum ReplayEntry {
 }
 
 /// `app_state` key prefixes for the two persona-scoped session pointers. The
-/// terminal lane (shell-hook, `miyu new`/`session`) and the REPL lane move
+/// terminal lane (shell-hook, `hotaru new`/`session`) and the REPL lane move
 /// independently; one-shot `ask` turns use neither.
 pub(crate) const CURRENT_SESSION_POINTER: &str = "current_session_persona";
 
