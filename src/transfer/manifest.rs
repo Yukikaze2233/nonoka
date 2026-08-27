@@ -11,8 +11,8 @@ pub const MANIFEST_NAME: &str = "manifest.json";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Manifest {
     pub format_version: u32,
-    /// Nanoka version that wrote the archive, for the human reading an error.
-    pub nanoka_version: String,
+    /// Nonoka version that wrote the archive, for the human reading an error.
+    pub nonoka_version: String,
     pub exported_at: String,
     /// `config.jsonc` schema version; import refuses anything newer than this
     /// build supports.
@@ -38,7 +38,7 @@ pub struct Entry {
     /// `DataUnit::id` that claimed this path. Unknown ids are restored
     /// verbatim so an archive from a newer build does not lose data here.
     pub unit: String,
-    /// Path relative to `NANOKA_HOME`, always `/`-separated.
+    /// Path relative to `NONOKA_HOME`, always `/`-separated.
     pub path: String,
     pub size: u64,
     pub blake3: String,

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Nanoka: switch the default provider to DeepSeek.
+"""Nonoka: switch the default provider to DeepSeek.
 
 - text model:  deepseek-v4-flash
 - vision model: deepseek-v4-flash-vision-exp (experimental image input)
 - API key:     reads $env:DEEPSEEK_API_KEY at runtime; keep the env var set
 
 Usage:
-  python3 scripts/setup_deepseek.py            # edits ~/.nanoka/config/config.jsonc
-  NANOKA_HOME=/path python3 scripts/setup_deepseek.py
+  python3 scripts/setup_deepseek.py            # edits ~/.nonoka/config/config.jsonc
+  NONOKA_HOME=/path python3 scripts/setup_deepseek.py
 """
 import argparse
 import json
@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 
-DEFAULT_HOME = Path.home() / ".nanoka"
+DEFAULT_HOME = Path.home() / ".nonoka"
 DEEPSEEK = {
     "id": "deepseek",
     "display_name": "DeepSeek",
@@ -80,14 +80,14 @@ def strip_jsonc(text: str) -> str:
 
 def load_config(path: Path) -> dict:
     if not path.exists():
-        sys.exit(f"config not found: {path}\nrun `nanoka init` first")
+        sys.exit(f"config not found: {path}\nrun `nonoka init` first")
     with open(path, encoding="utf-8") as handle:
         return json.loads(strip_jsonc(handle.read()))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--home", default=os.environ.get("NANOKA_HOME", DEFAULT_HOME), help="NANOKA_HOME root")
+    parser.add_argument("--home", default=os.environ.get("NONOKA_HOME", DEFAULT_HOME), help="NONOKA_HOME root")
     args = parser.parse_args()
 
     root = Path(args.home).expanduser()

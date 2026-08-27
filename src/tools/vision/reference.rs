@@ -48,12 +48,12 @@ pub(crate) type ReferenceImage = (Vec<u8>, String);
 
 pub(crate) struct ReferenceResolver {
     pub(crate) config: AppConfig,
-    pub(crate) paths: NanokaPaths,
+    pub(crate) paths: NonokaPaths,
     pub(crate) state: Option<Arc<ScopedVisionState>>,
 }
 
 impl ReferenceResolver {
-    pub(crate) fn unscoped(config: AppConfig, paths: NanokaPaths) -> Self {
+    pub(crate) fn unscoped(config: AppConfig, paths: NonokaPaths) -> Self {
         Self {
             config,
             paths,
@@ -138,7 +138,7 @@ pub(crate) async fn download_reference_image(url: &str) -> Result<ReferenceImage
 }
 
 pub(crate) async fn resolve_context_image(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     state: &ScopedVisionState,
     image_id: &str,
 ) -> Result<ResolvedContextImage> {
@@ -225,7 +225,7 @@ pub(crate) async fn resolve_context_image(
         cache_path,
     };
     tracing::info!(
-        target: "nanoka::qq",
+        target: "nonoka::qq",
         image_id,
         message_id = %source.message_id,
         image_index = source.image_index,

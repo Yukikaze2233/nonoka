@@ -6,7 +6,7 @@
 //
 // 命令清单来自 `GET /api/commands`，服务端从 REPL 那张同一张表里按 `web` 标记
 // 过滤。前端**不**维护第二份——两份清单迟早分叉（加一条命令忘了改另一边）。
-window.NanokaCommands = (() => {
+window.NonokaCommands = (() => {
   "use strict";
 
   let catalog = [];

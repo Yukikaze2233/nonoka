@@ -3,7 +3,7 @@
 //! 工具输出要长期留在上下文里，但原样留会把窗口吃光。这里把它压成能长期携带的
 //! 形态：只保留后续回合真正会用到的东西。
 //!
-//! 「私有记忆」是给 Nanoka 自己看的那一份（`private_tool_memory`），头尾各留一段
+//! 「私有记忆」是给 Nonoka 自己看的那一份（`private_tool_memory`），头尾各留一段
 //! （`PRIVATE_*_HEAD/TAIL_CHARS`）——中间截掉，因为有用的信息通常在两头。
 
 use crate::agent::*;

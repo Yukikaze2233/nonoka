@@ -25,7 +25,7 @@ pub(in crate::platforms::onebot) fn platform_file_storage_root(base_dir: &std::p
 
 /// One-time best-effort move of the old eager-download cache from
 /// `<data>/platform_files/` to `<cache>/platform_files/qq/`.
-pub(in crate::platforms::onebot) async fn migrate_legacy_platform_file_cache(paths: &crate::paths::NanokaPaths) {
+pub(in crate::platforms::onebot) async fn migrate_legacy_platform_file_cache(paths: &crate::paths::NonokaPaths) {
     let legacy = paths.data_dir.join("platform_files");
     if !legacy.exists() {
         return;

@@ -2,7 +2,7 @@
 
 ## 1. 现状（已定位）
 
-Nanoka 已经有“半套”turn 持久化：
+Nonoka 已经有“半套”turn 持久化：
 
 - `start_turn` 立即写 running turn 行。
 - `TurnJournalSink` 把 stream 事件（content delta / tool_call / tool_result / image / question 等）写到 `turn_journal_events`；工具事件与 reasoning 事件会强制先 flush。

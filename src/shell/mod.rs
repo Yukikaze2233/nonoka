@@ -10,10 +10,10 @@ use std::io::Write;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::Path;
 
-const BASH_BEGIN_MARKER: &str = "# >>> nanoka bash hook >>>";
-const BASH_END_MARKER: &str = "# <<< nanoka bash hook <<<";
-const ZSH_BEGIN_MARKER: &str = "# >>> nanoka zsh hook >>>";
-const ZSH_END_MARKER: &str = "# <<< nanoka zsh hook <<<";
+const BASH_BEGIN_MARKER: &str = "# >>> nonoka bash hook >>>";
+const BASH_END_MARKER: &str = "# <<< nonoka bash hook <<<";
+const ZSH_BEGIN_MARKER: &str = "# >>> nonoka zsh hook >>>";
+const ZSH_END_MARKER: &str = "# <<< nonoka zsh hook <<<";
 
 /// 原子写用户 shell 启动文件:写回瞬间崩溃不能把 .bashrc/.zshrc 留成
 /// 截断的半个文件。保留原文件权限。
@@ -61,7 +61,7 @@ pub(super) fn upsert_source_block(
     Ok(())
 }
 
-/// Refreshes only hook blocks installed by an older Nanoka layout. It never
+/// Refreshes only hook blocks installed by an older Nonoka layout. It never
 /// enables shell integration for a user who did not already have it enabled.
 pub(crate) fn refresh_migrated_hook_sources(
     home: &Path,
@@ -117,7 +117,7 @@ fn write_text_atomically(path: &Path, contents: &str) -> Result<()> {
         .map(|metadata| metadata.permissions().mode() & 0o7777)
         .unwrap_or(0o600);
     let temporary = parent.join(format!(
-        ".nanoka-hook-{}-{}",
+        ".nonoka-hook-{}-{}",
         std::process::id(),
         rand::random::<u64>()
     ));
@@ -161,12 +161,12 @@ fn replace_marked_block(
 ) -> Result<Option<String>> {
     let Some(begin_index) = existing.find(begin) else {
         if existing.contains(end) {
-            bail!("shell startup file contains a Nanoka end marker without its begin marker");
+            bail!("shell startup file contains a Nonoka end marker without its begin marker");
         }
         return Ok(None);
     };
     let Some(end_relative) = existing[begin_index..].find(end) else {
-        bail!("shell startup file contains an incomplete Nanoka hook block");
+        bail!("shell startup file contains an incomplete Nonoka hook block");
     };
     let mut end_index = begin_index + end_relative + end.len();
     if existing.as_bytes().get(end_index) == Some(&b'\r') {
@@ -493,7 +493,7 @@ mod tests {
             "这样写可以吗？假设我们输入一个字母`x`"
         ));
         assert!(looks_like_natural_language(
-            "我好像在输入里加一个左斜杠就会导致输入不被传给nanoka/对吗？"
+            "我好像在输入里加一个左斜杠就会导致输入不被传给nonoka/对吗？"
         ));
         assert!(looks_like_natural_language(
             "软件需要适配 Wayland 的 `text-input` 协议，输入法要支持 $GTK_IM_MODULE 吗？"
@@ -502,7 +502,7 @@ mod tests {
             "GTK_IM_MODULE=fcitx 是什么意思？"
         ));
         assert!(looks_like_natural_language(
-            "./target/release/nanoka 查询为什么失败？"
+            "./target/release/nonoka 查询为什么失败？"
         ));
     }
 
@@ -519,7 +519,7 @@ mod tests {
         assert!(is_shell_command("cd /tmp", "fish"));
         assert!(is_shell_command("FOO=bar cargo check", "fish"));
         assert!(is_shell_command("# comment\nls", "fish"));
-        assert!(is_shell_command("./target/release/nanoka hi", "fish"));
+        assert!(is_shell_command("./target/release/nonoka hi", "fish"));
         assert!(is_shell_command("for item in a b", "fish"));
         assert!(is_shell_command("time cargo check", "fish"));
         assert!(is_shell_command(
@@ -529,7 +529,7 @@ mod tests {
     }
 
     #[test]
-    fn classifies_messages_as_nanoka() {
+    fn classifies_messages_as_nonoka() {
         assert!(!is_shell_command("你觉得 a;b 是什么意思", "fish"));
         assert!(!is_shell_command("解释 <tag> 是什么", "fish"));
         assert!(!is_shell_command("第一行\n第二行", "fish"));

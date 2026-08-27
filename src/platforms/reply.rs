@@ -254,7 +254,7 @@ pub(crate) async fn flush_intermediate_reply(
         .await
     {
         Ok(_) => tracing::info!(
-            target: "nanoka::qq",
+            target: "nonoka::qq",
             chars = visible.chars().count(),
             "{}",
             crate::i18n::text(
@@ -263,7 +263,7 @@ pub(crate) async fn flush_intermediate_reply(
             )
         ),
         Err(error) => tracing::warn!(
-            target: "nanoka::qq",
+            target: "nonoka::qq",
             error = %error,
             "{}",
             crate::i18n::text(

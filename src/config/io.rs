@@ -10,7 +10,7 @@
 use crate::config::*;
 
 impl AppConfig {
-    pub fn display_language_hint(paths: &NanokaPaths) -> Option<String> {
+    pub fn display_language_hint(paths: &NonokaPaths) -> Option<String> {
         let raw = std::fs::read_to_string(&paths.config_file).ok()?;
         let stripped = json_comments::StripComments::new(raw.as_bytes());
         let value: serde_json::Value = serde_json::from_reader(stripped).ok()?;
@@ -29,7 +29,7 @@ impl AppConfig {
         }
     }
 
-    pub fn load(paths: &NanokaPaths) -> Result<Self> {
+    pub fn load(paths: &NonokaPaths) -> Result<Self> {
         // Platform multimodal routes may rely on cached models.dev
         // capabilities. Load the full cache before validation; callers can
         // compact it to their active configuration afterwards.
@@ -49,7 +49,7 @@ impl AppConfig {
         Ok(config)
     }
 
-    pub fn load_or_default(paths: &NanokaPaths) -> Result<Self> {
+    pub fn load_or_default(paths: &NonokaPaths) -> Result<Self> {
         if paths.config_file.exists() {
             Self::load(paths)
         } else {
@@ -57,12 +57,12 @@ impl AppConfig {
         }
     }
 
-    pub fn init_files(paths: &NanokaPaths) -> Result<()> {
+    pub fn init_files(paths: &NonokaPaths) -> Result<()> {
         paths.create_dirs()?;
         if !paths.config_file.exists() {
             Self::default().save(paths)?;
         }
-        // Dev 模式提示词:一行、可编辑、不混淆(与 Nanoka 人格提示词的内嵌
+        // Dev 模式提示词:一行、可编辑、不混淆(与 Nonoka 人格提示词的内嵌
         // 不可编辑形成对照)。缺失时写默认;用户改成什么都以文件为准。
         let dev_prompt = paths.config_dir.join(DEV_PROMPT_FILE);
         if !dev_prompt.exists() {
@@ -71,7 +71,7 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn save(&self, paths: &NanokaPaths) -> Result<()> {
+    pub fn save(&self, paths: &NonokaPaths) -> Result<()> {
         let mut config = self.clone();
         config.migrate()?;
         config.normalize_api_quota_accounts();
@@ -227,7 +227,7 @@ impl AppConfig {
         normalize_api_quota_provider(&mut self.plugins.api_quota.openrouter);
     }
 
-    pub(crate) fn normalize_managed_output_paths(&mut self, paths: &NanokaPaths) {
+    pub(crate) fn normalize_managed_output_paths(&mut self, paths: &NonokaPaths) {
         let Some(base) = directories::BaseDirs::new() else {
             return;
         };
@@ -241,15 +241,15 @@ impl AppConfig {
             })
             .unwrap_or_else(|| base.home_dir().join("Pictures"));
         // The XDG data root is a legacy root too: an upgrade that ran while
-        // `data_dir` still pointed at `~/.local/share/nanoka` remapped these
+        // `data_dir` still pointed at `~/.local/share/nonoka` remapped these
         // fields onto it and persisted the result, so the value we now have to
         // heal is one this function itself wrote.
-        let legacy_data = base.data_dir().join("nanoka");
+        let legacy_data = base.data_dir().join("nonoka");
         if let Some((from, to)) = remap_managed_output_dir(
             &mut self.plugins.deep_research.output_dir,
             &[
-                documents.join("Nanoka"),
-                documents.join("nanoka"),
+                documents.join("Nonoka"),
+                documents.join("nonoka"),
                 legacy_data.join("documents"),
             ],
             &paths.data_dir.join("documents"),
@@ -260,8 +260,8 @@ impl AppConfig {
         if let Some((from, to)) = remap_managed_output_dir(
             &mut self.plugins.image_generation.output_dir,
             &[
-                pictures.join("nanoka"),
-                pictures.join("Nanoka"),
+                pictures.join("nonoka"),
+                pictures.join("Nonoka"),
                 legacy_data.join("pictures"),
             ],
             &paths.data_dir.join("pictures"),

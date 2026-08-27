@@ -10,7 +10,7 @@ use super::*;
 use crate::agent::AgentMode;
 use crate::config::AppConfig;
 use crate::llm::OpenAiCompatibleClient;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use crate::platforms::PlatformRuntime;
 use crate::state::StateStore;
 use crate::tools::build_tool_registry;
@@ -34,7 +34,7 @@ pub(crate) struct DaemonState {
     pub(crate) web_port: u16,
     pub(crate) web_public: bool,
     pub(crate) web_bind: IpAddr,
-    pub(crate) paths: NanokaPaths,
+    pub(crate) paths: NonokaPaths,
     pub(crate) manager: Arc<Mutex<ManagerState>>,
     pub(crate) state_store: StateStore,
     pub(crate) events: EventHub,
@@ -47,7 +47,7 @@ pub(crate) struct DaemonState {
 
 #[cfg(test)]
 impl DaemonState {
-    pub(crate) fn for_test(paths: NanokaPaths, web_port: u16) -> Result<Self> {
+    pub(crate) fn for_test(paths: NonokaPaths, web_port: u16) -> Result<Self> {
         let state_store = StateStore::new(&paths)?;
         let config = AppConfig::default();
         let context = cold_context(&config, &paths, &state_store)?;
@@ -151,7 +151,7 @@ impl TurnResourceCache {
     pub(crate) fn get_or_build(
         &mut self,
         config: &AppConfig,
-        paths: &NanokaPaths,
+        paths: &NonokaPaths,
     ) -> Result<Arc<TurnResources>> {
         let key = Self::key(config)?;
         if let Some(resources) = self.entries.get(&key).cloned() {
@@ -339,7 +339,7 @@ impl WebAuth {
 /// 累计值照常带出去，footer 少一个数字好过起不来。
 pub(crate) fn cold_context(
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     state_store: &StateStore,
 ) -> Result<ContextSnapshot> {
     let cumulative = state_store.session_cumulative_token_totals()?;
@@ -361,7 +361,7 @@ pub(crate) fn cold_context(
 /// 现算一次这个会话的上下文 token。失败返回 None，由调用方决定怎么退。
 fn cold_context_tokens(
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     state_store: &StateStore,
 ) -> Option<u64> {
     crate::models_cache::ensure_active_metadata(paths, config);

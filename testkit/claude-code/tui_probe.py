@@ -5,7 +5,7 @@
 是专用表单(启用开关/binary/工具桥/看门狗),而不是含 Base URL/协议/API Key
 的通用表单。只读不保存(Esc + q 退出)。
 
-    NANOKA_HOME=/tmp/nanoka-cc/home python3 testkit/claude-code/tui_probe.py
+    NONOKA_HOME=/tmp/nonoka-cc/home python3 testkit/claude-code/tui_probe.py
 """
 
 import fcntl
@@ -21,8 +21,8 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-NANOKA_BIN = REPO / "target" / "debug" / "nanoka"
-HOME = Path(os.environ.get("NANOKA_HOME", "/tmp/nanoka-cc/home"))
+NONOKA_BIN = REPO / "target" / "debug" / "nonoka"
+HOME = Path(os.environ.get("NONOKA_HOME", "/tmp/nonoka-cc/home"))
 
 ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]|\x1b[()][0-9A-B]|\x1b[=>]")
 
@@ -33,13 +33,13 @@ def plain(data: bytes) -> str:
 
 def main():
     env = dict(os.environ)
-    env["NANOKA_HOME"] = str(HOME)
+    env["NONOKA_HOME"] = str(HOME)
     env["TERM"] = "xterm-256color"
     env.setdefault("LANG", "zh_CN.UTF-8")
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
     proc = subprocess.Popen(
-        [str(NANOKA_BIN), "config"],
+        [str(NONOKA_BIN), "config"],
         stdin=slave,
         stdout=slave,
         stderr=slave,
@@ -97,7 +97,7 @@ def main():
             "启用(中转 Claude Code",
             "claude 可执行文件",
             "原生工具作用域",
-            "Nanoka 工具挂给 claude",
+            "Nonoka 工具挂给 claude",
             "权限模式",
             "看门狗",
         ]:

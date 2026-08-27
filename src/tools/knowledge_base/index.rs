@@ -35,7 +35,7 @@ impl KnowledgeBase {
                         lock_path.display()
                     );
                     println!(
-                        "if no nanoka reindex process is running, remove the stale lock file and retry"
+                        "if no nonoka reindex process is running, remove the stale lock file and retry"
                     );
                 }
                 return Ok(0);
@@ -286,7 +286,7 @@ impl KnowledgeBase {
         {
             return Ok(());
         }
-        let exe = crate::paths::nanoka_executable()?;
+        let exe = crate::paths::nonoka_executable()?;
         Command::new(exe)
             .args(["kb", "embed", "reindex", "--quiet"])
             .stdin(Stdio::null())

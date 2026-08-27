@@ -1,10 +1,10 @@
 use crate::i18n::text as t;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::Result;
 use std::path::Path;
 
-const BEGIN_MARKER: &str = "# >>> nanoka bash hook >>>";
-const END_MARKER: &str = "# <<< nanoka bash hook <<<";
+const BEGIN_MARKER: &str = "# >>> nonoka bash hook >>>";
+const END_MARKER: &str = "# <<< nonoka bash hook <<<";
 
 pub fn hook() -> &'static str {
     r#"command_not_found_handle() {
@@ -14,13 +14,13 @@ pub fn hook() -> &'static str {
     [[ -n "$text" ]] || return 127
     [[ "$text" != *$'\n'* && "$text" != *$'\r'* ]] || return 127
 
-    nanoka --shell-intercept --shell bash -- "$@" 2>/dev/null
+    nonoka --shell-intercept --shell bash -- "$@" 2>/dev/null
     return 127
 }
 "#
 }
 
-pub fn install(paths: &NanokaPaths) -> Result<()> {
+pub fn install(paths: &NonokaPaths) -> Result<()> {
     if let Some(parent) = paths.bash_hook_file.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -37,7 +37,7 @@ pub fn install(paths: &NanokaPaths) -> Result<()> {
     Ok(())
 }
 
-pub fn uninstall(paths: &NanokaPaths) -> Result<bool> {
+pub fn uninstall(paths: &NonokaPaths) -> Result<bool> {
     let removed_file = remove_file_if_exists(&paths.bash_hook_file)?;
     let rc_path = home_file(".bashrc");
     let removed_block = remove_source_block(&rc_path, BEGIN_MARKER, END_MARKER)?;
@@ -45,7 +45,7 @@ pub fn uninstall(paths: &NanokaPaths) -> Result<bool> {
     if removed {
         println!(
             "{}: bash",
-            t("removed Nanoka shell hook", "已移除 Nanoka shell hook")
+            t("removed Nonoka shell hook", "已移除 Nonoka shell hook")
         );
     }
     Ok(removed)
@@ -105,8 +105,8 @@ mod tests {
     fn bash_hook_does_not_filter_natural_language_symbols() {
         let hook = hook();
         assert!(!hook.contains("${#text} <= 120"));
-        assert!(!hook.contains("nanoka_shell_syntax_pattern"));
-        assert!(!hook.contains("nanoka_leading_pattern"));
+        assert!(!hook.contains("nonoka_shell_syntax_pattern"));
+        assert!(!hook.contains("nonoka_leading_pattern"));
     }
 
     #[test]
@@ -144,16 +144,16 @@ mod tests {
         let rc_path = temp.path().join(".bashrc");
         std::fs::write(
             &rc_path,
-            format!("before\n{BEGIN_MARKER}\nsource '/old/nanoka-hook.sh'\n{END_MARKER}\nafter\n"),
+            format!("before\n{BEGIN_MARKER}\nsource '/old/nonoka-hook.sh'\n{END_MARKER}\nafter\n"),
         )
         .unwrap();
-        let hook = temp.path().join("new nanoka-hook.sh");
+        let hook = temp.path().join("new nonoka-hook.sh");
 
         crate::shell::upsert_source_block(&rc_path, BEGIN_MARKER, END_MARKER, &hook).unwrap();
 
         let updated = std::fs::read_to_string(rc_path).unwrap();
-        assert!(updated.contains("new nanoka-hook.sh"));
-        assert!(!updated.contains("/old/nanoka-hook.sh"));
+        assert!(updated.contains("new nonoka-hook.sh"));
+        assert!(!updated.contains("/old/nonoka-hook.sh"));
         assert_eq!(updated.matches(BEGIN_MARKER).count(), 1);
         assert!(updated.starts_with("before\n"));
         assert!(updated.ends_with("after\n"));

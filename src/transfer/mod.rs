@@ -1,4 +1,4 @@
-//! Moving a Nanoka installation between machines: `nanoka export` / `nanoka import`.
+//! Moving a Nonoka installation between machines: `nonoka export` / `nonoka import`.
 
 pub mod export;
 pub mod fixups;
@@ -9,13 +9,13 @@ pub mod registry;
 #[cfg(test)]
 pub(crate) mod tests {
     use super::registry::{is_backup_name, unit_for, Tier, IGNORED_SUFFIXES, UNITS};
-    use crate::paths::NanokaPaths;
+    use crate::paths::NonokaPaths;
     use std::collections::BTreeSet;
     use std::path::Path;
 
-    /// A NanokaPaths rooted at `root`, mirroring the real layout.
-    pub(crate) fn test_paths(root: &Path) -> NanokaPaths {
-        NanokaPaths {
+    /// A NonokaPaths rooted at `root`, mirroring the real layout.
+    pub(crate) fn test_paths(root: &Path) -> NonokaPaths {
+        NonokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -24,7 +24,7 @@ pub(crate) mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("data/pictures"),
-            fish_hook_file: root.join("fish/nanoka.fish"),
+            fish_hook_file: root.join("fish/nonoka.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("data/scripts"),
@@ -32,7 +32,7 @@ pub(crate) mod tests {
         }
     }
 
-    /// Everything Nanoka writes under `NANOKA_HOME` must be classified.
+    /// Everything Nonoka writes under `NONOKA_HOME` must be classified.
     ///
     /// This is the guard that keeps export from rotting: add a feature that
     /// writes somewhere new, forget to register it, and this fails with a
@@ -40,7 +40,7 @@ pub(crate) mod tests {
     /// the new machine, after the old one is gone.
     /// Builds a populated home: config with a secret, a database holding a
     /// row, a user resource, and things that must not travel.
-    fn populated_home(root: &Path) -> NanokaPaths {
+    fn populated_home(root: &Path) -> NonokaPaths {
         let paths = test_paths(root);
         std::fs::create_dir_all(&paths.config_dir).unwrap();
         std::fs::create_dir_all(&paths.state_dir).unwrap();
@@ -52,7 +52,7 @@ pub(crate) mod tests {
         )
         .unwrap();
         std::fs::write(paths.data_dir.join("prompts/system-prompt.md"), "persona").unwrap();
-        std::fs::write(root.join("cache/logs/nanoka.log"), "noise").unwrap();
+        std::fs::write(root.join("cache/logs/nonoka.log"), "noise").unwrap();
         std::fs::write(paths.state_dir.join("conversation.db.bak"), "old").unwrap();
 
         let conn = rusqlite::Connection::open(paths.state_dir.join("conversation.db")).unwrap();
@@ -76,7 +76,7 @@ pub(crate) mod tests {
         let source = tempfile::tempdir().unwrap();
         let paths = populated_home(source.path());
         let out = tempfile::tempdir().unwrap();
-        let archive = out.path().join("nanoka-export.tar.gz");
+        let archive = out.path().join("nonoka-export.tar.gz");
 
         let report =
             super::export::export(&paths, &archive, &super::export::ExportOptions::default())
@@ -119,7 +119,7 @@ pub(crate) mod tests {
         assert_eq!(outcome.cleared_workspaces, 1);
 
         // Machine-specific noise stayed behind.
-        assert!(!target.path().join("cache/logs/nanoka.log").exists());
+        assert!(!target.path().join("cache/logs/nonoka.log").exists());
         assert!(!restored.state_dir.join("conversation.db.bak").exists());
         // The layout markers are stamped so the tree is not re-migrated.
         assert!(target.path().join(".layout-v1").exists());
@@ -130,7 +130,7 @@ pub(crate) mod tests {
         let source = tempfile::tempdir().unwrap();
         let paths = populated_home(source.path());
         let out = tempfile::tempdir().unwrap();
-        let archive = out.path().join("nanoka-export.tar.gz");
+        let archive = out.path().join("nonoka-export.tar.gz");
         super::export::export(&paths, &archive, &super::export::ExportOptions::default()).unwrap();
 
         // The source home is itself non-empty, so importing onto it must stop.
@@ -260,7 +260,7 @@ pub(crate) mod tests {
         let observed = [
             ".layout-v1",
             ".resource-layout-v1",
-            "cache/logs/nanoka.2026-08-08.log",
+            "cache/logs/nonoka.2026-08-08.log",
             "cache/models_cache.json",
             "cache/jobs/abc123.log",
             "cache/clipboard_images/1.png",
@@ -300,7 +300,7 @@ pub(crate) mod tests {
             "state/arch_news_last_seen.json",
             "state/daemon-launch.json",
             "state/web-passwords/password-1234-ab",
-            "state/nanoka/core.sock",
+            "state/nonoka/core.sock",
             "state/conversation.db.bak",
         ];
 
@@ -311,7 +311,7 @@ pub(crate) mod tests {
             .collect();
         assert!(
             unclassified.is_empty(),
-            "unclassified paths under NANOKA_HOME: {unclassified:?}\n\
+            "unclassified paths under NONOKA_HOME: {unclassified:?}\n\
              Register each in src/transfer/registry.rs `UNITS` — or mark it \
              Tier::Never with the reason it must not travel."
         );
@@ -377,11 +377,11 @@ pub(crate) mod tests {
     #[test]
     fn machine_specific_paths_resolve_to_never() {
         for rel in [
-            "cache/logs/nanoka.log",
+            "cache/logs/nonoka.log",
             "cache/jobs/abc.log",
             "state/daemon-launch.json",
             "state/web-passwords/password-1-a",
-            "state/nanoka/core.sock",
+            "state/nonoka/core.sock",
             "config/shell/bash-hook.sh",
             "data/artifacts/sess_1/page.html",
             "state/conversation.db.bak",

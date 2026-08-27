@@ -194,15 +194,15 @@ fn real_context_settings_use_generic_map_and_preserve_unknown_keys() {
 #[test]
 fn real_context_batch_parsers_are_line_based_and_deduplicated() {
     let mappings =
-        parse_real_context_identity_lines("# 昵称<Tab>QQ号\nNanoka\t123\n小羽 = 456").unwrap();
+        parse_real_context_identity_lines("# 昵称<Tab>QQ号\nNonoka\t123\n小羽 = 456").unwrap();
     assert_eq!(mappings.len(), 2);
-    assert_eq!(mappings[0].nickname, "Nanoka");
+    assert_eq!(mappings[0].nickname, "Nonoka");
     assert_eq!(mappings[0].user_id, 123);
-    assert!(parse_real_context_identity_lines("Nanoka\t123\nNanoka\t456").is_err());
-    assert!(parse_real_context_identity_lines("Nanoka 123").is_err());
+    assert!(parse_real_context_identity_lines("Nonoka\t123\nNonoka\t456").is_err());
+    assert!(parse_real_context_identity_lines("Nonoka 123").is_err());
 
     assert_eq!(
-        parse_real_context_string_lines("晚安\n 晚安 \nNanoka", 128).unwrap(),
-        vec!["晚安", "Nanoka"]
+        parse_real_context_string_lines("晚安\n 晚安 \nNonoka", 128).unwrap(),
+        vec!["晚安", "Nonoka"]
     );
 }

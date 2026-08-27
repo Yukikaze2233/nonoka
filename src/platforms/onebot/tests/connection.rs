@@ -169,12 +169,12 @@ async fn api_calls_wait_for_the_matching_echo() {
         json!({
             "status": "ok",
             "retcode": 0,
-            "data": { "nickname": "Nanoka" },
+            "data": { "nickname": "Nonoka" },
             "echo": echo,
         }),
     );
     let data = caller.await.unwrap().unwrap();
-    assert_eq!(data["nickname"], "Nanoka");
+    assert_eq!(data["nickname"], "Nonoka");
     assert!(handle.pending.lock().unwrap().is_empty());
 }
 
@@ -223,7 +223,7 @@ async fn api_errors_preserve_napcat_status_retcode_and_wording() {
 
 /// Regression: a picture is megabytes of base64 JSON that NapCat has to
 /// receive, decode and upload to QQ. Any budget short of the backstop made
-/// Nanoka treat a delivered image as failed and post the text fallback on top
+/// Nonoka treat a delivered image as failed and post the text fallback on top
 /// of it. Size scaling was not enough — the old `div_ceil` step handed a
 /// 0.99 MiB payload the same 30s as a 64 KiB one.
 #[test]

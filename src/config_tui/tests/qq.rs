@@ -29,8 +29,8 @@ fn route_pool_and_id_helpers_express_inheritance_and_positive_ids() {
     assert_eq!(parse_id_lines("123\n456\n123\n").unwrap(), vec![123, 456]);
     assert!(parse_id_lines("123\ninvalid\n456").is_err());
     assert_eq!(
-        parse_keyword_lines("Nanoka\n 小羽 \nNanoka").unwrap(),
-        vec!["Nanoka", "小羽"]
+        parse_keyword_lines("Nonoka\n 小羽 \nNonoka").unwrap(),
+        vec!["Nonoka", "小羽"]
     );
 }
 
@@ -42,8 +42,8 @@ fn qq_batch_inputs_are_line_based_trimmed_and_deduplicated() {
     );
     assert!(parse_id_lines("123,456").is_err());
     assert_eq!(
-        parse_keyword_lines(" Nanoka \r\n\r\n小羽\nNanoka\n").unwrap(),
-        vec!["Nanoka", "小羽"]
+        parse_keyword_lines(" Nonoka \r\n\r\n小羽\nNonoka\n").unwrap(),
+        vec!["Nonoka", "小羽"]
     );
 }
 
@@ -68,14 +68,14 @@ fn qq_conversation_labels_are_localized_and_id_label_tracks_type() {
 }
 
 #[test]
-fn qq_conversation_persona_summary_distinguishes_inheritance_and_nanoka() {
+fn qq_conversation_persona_summary_distinguishes_inheritance_and_nonoka() {
     assert_eq!(
         platform_persona_summary(&PlatformPersonaOverride::Inherit),
         t("inherit current persona", "继承当前人格")
     );
     assert_eq!(
-        platform_persona_summary(&PlatformPersonaOverride::Nanoka),
-        "Nanoka"
+        platform_persona_summary(&PlatformPersonaOverride::Nonoka),
+        "Nonoka"
     );
     assert_eq!(
         platform_persona_summary(&PlatformPersonaOverride::Custom {
@@ -102,8 +102,8 @@ fn qq_persona_menu_target_isolated_from_global_persona_and_tracks_renames() {
     assert_eq!(target.pending_reference_count("Session.md"), 0);
     assert_eq!(target.pending_reference_count("Renamed.md"), 1);
 
-    target.activate_nanoka(&mut config);
-    assert!(target.is_nanoka(&config));
+    target.activate_nonoka(&mut config);
+    assert!(target.is_nonoka(&config));
     assert_eq!(config.prompt.active_persona, "Global.md");
     target.activate_inherit();
     assert!(matches!(
@@ -118,14 +118,14 @@ fn global_persona_menu_target_preserves_activation_behavior() {
     let mut target = PersonaMenuTarget::Global;
 
     assert_eq!(target.custom_offset(), 1);
-    assert!(target.is_nanoka(&config));
+    assert!(target.is_nonoka(&config));
     target.activate_custom(&mut config, "Global.md".to_string());
     assert_eq!(target.custom_name(&config), Some("Global.md"));
     assert_eq!(target.pending_reference_count("Global.md"), 0);
 
-    target.activate_nanoka(&mut config);
+    target.activate_nonoka(&mut config);
     assert!(config.prompt.active_persona.is_empty());
-    assert!(target.is_nanoka(&config));
+    assert!(target.is_nonoka(&config));
 }
 
 #[test]

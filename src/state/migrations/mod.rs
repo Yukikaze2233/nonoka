@@ -569,7 +569,7 @@ mod tests {
         assert_eq!(user_version(&conn).unwrap(), LATEST_VERSION);
         conn.execute(
             "INSERT INTO sessions (session_id, persona, name, created_at, updated_at)
-             VALUES ('platform-session', 'nanoka', 'platform', 'now', 'now')",
+             VALUES ('platform-session', 'nonoka', 'platform', 'now', 'now')",
             [],
         )
         .unwrap();
@@ -577,7 +577,7 @@ mod tests {
             "INSERT INTO platform_session_bindings (
                 platform, account_id, conversation_kind, conversation_id,
                 persona, session_id, created_at, updated_at
-             ) VALUES ('onebot', '10000', 'private', '20000', 'nanoka',
+             ) VALUES ('onebot', '10000', 'private', '20000', 'nonoka',
                        'platform-session', 'now', 'now')",
             [],
         )
@@ -589,7 +589,7 @@ mod tests {
                 "INSERT INTO platform_session_bindings (
                     platform, account_id, conversation_kind, conversation_id,
                     persona, session_id, created_at, updated_at
-                 ) VALUES ('onebot', '10000', 'private', 'other', 'nanoka',
+                 ) VALUES ('onebot', '10000', 'private', 'other', 'nonoka',
                            'platform-session', 'now', 'now')",
                 [],
             )

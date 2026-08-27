@@ -77,7 +77,7 @@ pub(in crate::web) async fn handle_session_command(
         }
         IpcCommand::ListSessions { mode } => {
             // dev 列表以 dev REPL 指针为"当前":全局指针指向普通会话,
-            // 用它高亮永远落空。"all" 是管理面(nanoka session):普通+dev
+            // 用它高亮永远落空。"all" 是管理面(nonoka session):普通+dev
             // 合并按更新时间排,别的人格仍不可见。
             let dev = mode.as_deref() == Some("dev");
             let all = mode.as_deref() == Some("all");
@@ -214,8 +214,8 @@ pub(in crate::web) async fn handle_session_command(
                     "tool error: {:#}. {}",
                     registry.unknown_tool_error(&name),
                     t(
-                        "run `nanoka tool-call --list` to see tools callable in this session",
-                        "用 `nanoka tool-call --list` 查看本会话可调用的工具"
+                        "run `nonoka tool-call --list` to see tools callable in this session",
+                        "用 `nonoka tool-call --list` 查看本会话可调用的工具"
                     )
                 ));
             }
@@ -266,7 +266,7 @@ pub(in crate::web) async fn handle_session_command(
         } => {
             // 与 ToolCall 同一条解析链(会话→模式→registry):`--list` 列出的
             // 就是本会话真能调的集合,`--describe` 查的合同也同源。此前
-            // 客户端本地建表(按 NANOKA_TURN_MODE 环境变量,run_command 并不
+            // 客户端本地建表(按 NONOKA_TURN_MODE 环境变量,run_command 并不
             // 注入它),dev 会话里 --list 展示的是普通人格全量目录,实测
             // 逐个调用全报 unknown tool。
             let session_id = match session {

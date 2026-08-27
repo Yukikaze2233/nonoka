@@ -22,9 +22,9 @@
 3. **晋升信号**：Anchored Standard 默认 `promoteOn: either`（第一个 `assistant/message` 或 `tool/call`），请求 #2 起进入“受控目录”；并进一步证明晋升后**不要**立刻倾倒 20+ 工具全目录，否则轨迹被拉回 standard-like。
 4. **compaction 是“第二个第一步”**：Anchored Standard 在 `compaction/end` 后回退到受控目录，直到新晋升信号。
 
-## 3. 与 Nanoka 现有机制的映射
+## 3. 与 Nonoka 现有机制的映射
 
-| DSH 概念 | Nanoka 落点 |
+| DSH 概念 | Nonoka 落点 |
 |---|---|
 | agent preset / composition | `AgentMode::Dsh` + `dsh` 保留 persona（类似 `DEV_PERSONA = "dev"`） |
 | Minimal persona | 新增 `dsh_system_prompt(paths)`，默认常量 `You are a helpful software engineer assistant.`，可在 `config/dsh-prompt.md` 覆盖 |
@@ -42,7 +42,7 @@
 - system：`You are a helpful software engineer assistant.`
 - tools：只含 `bash`、`str_replace_editor`，按名排序。
 - 不注入：host environment、memory preamble、runtime/turn system context、persona reminder、preset dialogs、mode reminder、`<runtime>` 尾巴也不应破坏锚定（建议 DSH 模式第一步连 runtime tail 都禁止，全部动态信息从第二步开始追加）。
-- `bash` 工具执行实现可先退化为一次性 `bash -lc`（Nanoka 没有 PTY 持久 shell 基建），但**模型可见 schema 与 description 必须一致**；持久 shell 是后续增强，不属于第一步锚定条件。
+- `bash` 工具执行实现可先退化为一次性 `bash -lc`（Nonoka 没有 PTY 持久 shell 基建），但**模型可见 schema 与 description 必须一致**；持久 shell 是后续增强，不属于第一步锚定条件。
 - `str_replace_editor` 实现放新文件 `src/tools/dsh/`，只依赖工作区路径解析，不依赖其它工具。
 
 ### 4.2 两阶段工具目录
@@ -57,9 +57,9 @@
 ### 4.3 会话/人格路由
 
 - 新 `DSH_PERSONA = "dsh"`，`AgentMode::Dsh`。
-- `turn_mode_for_session`、`CreateSession`、`GetReplSession`、`ListSessions`、`parse_mode`、`mode_name`、CLI 参数 `nanoka dsh` 全部增加 Dsh 分支。
+- `turn_mode_for_session`、`CreateSession`、`GetReplSession`、`ListSessions`、`parse_mode`、`mode_name`、CLI 参数 `nonoka dsh` 全部增加 Dsh 分支。
 - 记忆、技能、会话列表与 dev 一样走独立保留人格，互不可见。
-- REPL/WebUI 入口：CLI `nanoka dsh`；WebUI 会话 mode 增加 `"dsh"`（D4：不强制 DeepSeek 模型）。
+- REPL/WebUI 入口：CLI `nonoka dsh`；WebUI 会话 mode 增加 `"dsh"`（D4：不强制 DeepSeek 模型）。
 
 ### 4.4 phase 持久化
 
@@ -81,7 +81,7 @@ ALTER TABLE sessions ADD COLUMN dsh_phase INTEGER NOT NULL DEFAULT 0;
 - 新 `src/tools/dsh/{mod.rs,bash.rs,str_replace_editor.rs}`：两个 DSH 契约工具（文件 <800 行）。
 - `src/state/*`：`DSH_PERSONA`、dsh phase 读写与迁移。
 - `src/web/dto.rs`、`src/web/sessions.rs`、`src/web/session_cmds.rs`、`src/web/turns/task.rs`、`src/web/ipc_server.rs`：mode 路由。
-- `src/cli/args.rs`、`src/cli/mod.rs`、`src/cli/repl/*`：`nanoka dsh` 入口与显示。
+- `src/cli/args.rs`、`src/cli/mod.rs`、`src/cli/repl/*`：`nonoka dsh` 入口与显示。
 - `src/config/persona_paths.rs`：`dsh_scoped` / `dsh_system_prompt`。
 
 ## 6. 缓存与字节稳定性
@@ -95,7 +95,7 @@ ALTER TABLE sessions ADD COLUMN dsh_phase INTEGER NOT NULL DEFAULT 0;
 
 1. 新 session 第一步请求 fixture：system 精确一句、tools 仅两件、无注入块。
 2. 第一步返回任意 assistant 消息后，第二步请求 tools 为 full；kill -9 后重启，phase 仍为 full。
-3. `nanoka dsh` / WebUI dsh 会话列表 / tool-call 目录 mode 返回正确。
+3. `nonoka dsh` / WebUI dsh 会话列表 / tool-call 目录 mode 返回正确。
 4. compaction 行为按 D14 决策有明确测试。
 5. `bash scripts/refactor-check.sh` 全绿；两轮 cache log 无明显异常 miss。
 

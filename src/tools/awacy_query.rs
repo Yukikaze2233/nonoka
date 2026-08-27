@@ -9,7 +9,7 @@
 //! 兼容性查询都要用它。
 
 use super::http_response;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::time::{Duration, SystemTime};
@@ -108,7 +108,7 @@ fn normalize(value: &str) -> String {
         .collect()
 }
 
-async fn load_table(paths: &NanokaPaths) -> Result<Vec<AwacyGame>> {
+async fn load_table(paths: &NonokaPaths) -> Result<Vec<AwacyGame>> {
     let cache_path = paths.cache_dir.join(CACHE_FILE);
     let fresh = tokio::fs::metadata(&cache_path)
         .await
@@ -145,7 +145,7 @@ async fn load_table(paths: &NanokaPaths) -> Result<Vec<AwacyGame>> {
 /// 按 Steam AppID 优先、游戏名兜底查找。返回 `None` 表示 AWACY 未收录——
 /// 这不等于该游戏没有反作弊，只代表没有记录，调用方必须把两者区分开。
 pub(super) async fn lookup(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     app_id: Option<u64>,
     name: &str,
 ) -> Result<Option<AwacyGame>> {

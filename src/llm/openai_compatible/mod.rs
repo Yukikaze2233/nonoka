@@ -31,7 +31,7 @@ use crate::config::{AppConfig, ProviderConfig};
 use crate::default_models::OPENCODE_ZEN_BASE_URL;
 use crate::i18n::text as t;
 use crate::models_cache::{self, ModelReasoningInfo, ReasoningSetting, ReasoningVariant};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
 use futures_util::{Stream, StreamExt};
 use reqwest::Client;
@@ -95,7 +95,7 @@ pub struct OpenAiCompatibleClient {
     /// claude-code 协议的运行时参数;端点池里没有该协议的端点时为 None。
     claude_code: Option<Arc<ClaudeCodeRuntime>>,
     /// 本会话是否 dev 模式(Agent 构造时置位),claude-code 的双四档工具
-    /// 作用域(native_tools/nanoka_tools)按它判定。
+    /// 作用域(native_tools/nonoka_tools)按它判定。
     claude_code_dev_mode: bool,
 }
 

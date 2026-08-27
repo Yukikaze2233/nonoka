@@ -1,10 +1,10 @@
- # Nanoka 项目 Windows 移植分析报告
+ # Nonoka 项目 Windows 移植分析报告
 
  ## 一、项目概况
 
- Nanoka 是一个基于 Rust 的命令行 AI 助手，单 crate、单二进制，约 17.9 万行代码。当前主要运行于 Arch Linux，对 macOS 也有部分支持。技术栈包括 tokio 异步运行时、SQLite（rusqlite bundled 特性）及大量第三方 crate。
+ Nonoka 是一个基于 Rust 的命令行 AI 助手，单 crate、单二进制，约 17.9 万行代码。当前主要运行于 Arch Linux，对 macOS 也有部分支持。技术栈包括 tokio 异步运行时、SQLite（rusqlite bundled 特性）及大量第三方 crate。
 
- 本文档分析将 Nanoka 移植到 Windows 所需的全部改动，按优先级排列。
+ 本文档分析将 Nonoka 移植到 Windows 所需的全部改动，按优先级排列。
 
 ---
 
@@ -180,13 +180,13 @@
  ### 12. 文件路径与目录（多处硬编码）
 
  **现状**：硬编码 Linux 路径：
- - `/usr/share/nanoka/scripts`、`/usr/share/nanoka/fonts`、`/usr/share/nanoka/memes`、`/usr/share/nanoka/default-kb`
+ - `/usr/share/nonoka/scripts`、`/usr/share/nonoka/fonts`、`/usr/share/nonoka/memes`、`/usr/share/nonoka/default-kb`
  - `/usr/share/fonts/noto-cjk`、`/usr/share/applications`
  - XDG 目录约定通过 `directories` crate（已支持 Windows）
 
  **方案**：
  - 使用 `directories` crate 的 `ProjectDirs` 获取跨平台路径
- - Windows 上资源目录：`C:\ProgramData\nanoka` 或 `%LOCALAPPDATA%\nanoka`
+ - Windows 上资源目录：`C:\ProgramData\nonoka` 或 `%LOCALAPPDATA%\nonoka`
  - 使用 `#[cfg]` 条件编译处理路径差异
 
  **工作量**：中。需逐一排查硬编码路径。
@@ -308,4 +308,4 @@
 
  ## 六、结论
 
- Nanoka 移植到 Windows 的主要障碍集中在 IPC 通信层和进程管理两个核心模块。文件权限和 /proc 访问虽分散但模式统一，可通过条件编译批量处理。项目已有的条件编译基础设施为移植工作提供了良好起点。建议按三个阶段逐步推进，优先确保编译通过，再逐步恢复功能完整性。
+ Nonoka 移植到 Windows 的主要障碍集中在 IPC 通信层和进程管理两个核心模块。文件权限和 /proc 访问虽分散但模式统一，可通过条件编译批量处理。项目已有的条件编译基础设施为移植工作提供了良好起点。建议按三个阶段逐步推进，优先确保编译通过，再逐步恢复功能完整性。

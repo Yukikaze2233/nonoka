@@ -45,7 +45,7 @@ pub(in crate::config_tui) fn apply_real_context_values(
 
 pub(in crate::config_tui) fn edit_real_context(
     stdout: &mut io::Stdout,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let (mut enabled, mut settings) = real_context_values(config)?;

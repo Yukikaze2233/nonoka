@@ -66,7 +66,7 @@ pub(crate) struct ScriptDisplayNames {
     pub(crate) en: Option<String>,
 }
 
-pub fn rescan_scripts(registry: &mut ToolRegistry, paths: &NanokaPaths) {
+pub fn rescan_scripts(registry: &mut ToolRegistry, paths: &NonokaPaths) {
     let dirs = [
         paths.system_scripts_dir.as_path(),
         paths.scripts_dir.as_path(),
@@ -74,13 +74,13 @@ pub fn rescan_scripts(registry: &mut ToolRegistry, paths: &NanokaPaths) {
     let scan = match scan_scripts(&dirs) {
         Ok(scan) => scan,
         Err(error) => {
-            tracing::warn!(error = %error, "failed to rescan Nanoka script directories");
+            tracing::warn!(error = %error, "failed to rescan Nonoka script directories");
             return;
         }
     };
     let specs = script_specs(&scan.entries, &paths.scripts_dir);
     if let Err(error) = registry.replace_script_tools(specs, scan.unregistered) {
-        tracing::warn!(error = %error, "failed to replace Nanoka script tools");
+        tracing::warn!(error = %error, "failed to replace Nonoka script tools");
     }
 }
 
@@ -239,7 +239,7 @@ pub(crate) fn resolve_script_path(path_str: &str, scripts_dir: &Path) -> PathBuf
             }
         }
         if let Some(base) = directories::BaseDirs::new() {
-            let legacy = base.config_dir().join("nanoka/scripts");
+            let legacy = base.config_dir().join("nonoka/scripts");
             if let Ok(relative) = p.strip_prefix(&legacy) {
                 return scripts_dir.join(relative);
             }

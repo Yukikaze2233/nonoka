@@ -496,7 +496,7 @@ impl Default for PlatformMemoryConfig {
 pub enum PlatformPersonaOverride {
     #[default]
     Inherit,
-    Nanoka,
+    Nonoka,
     Custom {
         name: String,
     },

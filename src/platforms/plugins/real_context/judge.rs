@@ -679,7 +679,7 @@ mod tests {
 
     #[test]
     fn judge_prompts_are_role_agnostic_and_target_aware() {
-        assert!(!JUDGE_SYSTEM_PROMPT.contains("Nanoka"));
+        assert!(!JUDGE_SYSTEM_PROMPT.contains("Nonoka"));
         assert!(JUDGE_SYSTEM_PROMPT.contains("never assume a fixed name or persona"));
         assert!(NORMAL_JUDGE_MODE.contains("expected responder"));
         assert!(REPLY_DECISION_GUIDANCE.contains("other group members"));

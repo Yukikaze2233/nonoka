@@ -55,7 +55,7 @@ fn host_environment_rides_the_system_prompt_for_owners_only() {
     assert!(owner.starts_with("base\n\n<host-environment os=\""));
     assert!(owner.contains("/>"));
     assert!(owner.contains("LaTeX"), "渲染能力说明应跟随 owner 提示词");
-    assert!(owner.contains(&format!(" nanoka_home=\"{}\"", paths.root_dir.display())));
+    assert!(owner.contains(&format!(" nonoka_home=\"{}\"", paths.root_dir.display())));
     // The static block must not be mistaken for the per-turn stamp, and
     // `mode_reminder_does_not_inject_a_reasoning_title_protocol` asserts the
     // system prompt never carries a `<runtime` tag.

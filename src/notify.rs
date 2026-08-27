@@ -36,7 +36,7 @@ pub fn notify(title: &str, body: &str) {
     }
     // Linux/BSD: notify-send is the de-facto interface, and `--` keeps a body
     // starting with a dash from being read as a flag.
-    spawn("notify-send", &["-a", "Nanoka", "--", title, body]);
+    spawn("notify-send", &["-a", "Nonoka", "--", title, body]);
 }
 
 fn spawn(program: &str, args: &[&str]) {
@@ -90,6 +90,6 @@ mod tests {
     fn a_missing_backend_is_silent() {
         // The point of the module: no panic, no error, no blocking, even when
         // nothing on the machine can show a notification.
-        spawn("nanoka-nonexistent-notification-backend", &["x"]);
+        spawn("nonoka-nonexistent-notification-backend", &["x"]);
     }
 }

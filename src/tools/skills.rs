@@ -1,6 +1,6 @@
 use super::{ToolRegistry, ToolSpec};
 use crate::config::AppConfig;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use crate::skills::{self, SkillEntry, SkillScope};
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 pub fn register_skills(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
 ) -> Result<()> {
     let (entries, fingerprint) = stable_catalog(config, paths)?;
     register_load_skill(registry, config.clone(), paths.clone(), &entries);
@@ -19,7 +19,7 @@ pub fn register_skills(
 pub fn refresh_skills(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
 ) -> Result<bool> {
     if !registry.contains("load_skill") {
         return Ok(false);
@@ -41,7 +41,7 @@ pub(crate) struct SkillCatalogSnapshot {
 pub(crate) fn prepare_skill_refresh(
     current: Option<[u8; 32]>,
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
 ) -> Result<Option<SkillCatalogSnapshot>> {
     let fingerprint = skills::catalog_fingerprint(config, paths)?;
     if current == Some(fingerprint) {
@@ -57,14 +57,14 @@ pub(crate) fn prepare_skill_refresh(
 pub(crate) fn apply_skill_refresh(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     snapshot: SkillCatalogSnapshot,
 ) {
     register_load_skill(registry, config.clone(), paths.clone(), &snapshot.entries);
     registry.set_skill_catalog_fingerprint(snapshot.fingerprint);
 }
 
-fn stable_catalog(config: &AppConfig, paths: &NanokaPaths) -> Result<(Vec<SkillEntry>, [u8; 32])> {
+fn stable_catalog(config: &AppConfig, paths: &NonokaPaths) -> Result<(Vec<SkillEntry>, [u8; 32])> {
     for _ in 0..3 {
         let before = skills::catalog_fingerprint(config, paths)?;
         let entries = skills::discover(config, paths)?;
@@ -78,11 +78,11 @@ fn stable_catalog(config: &AppConfig, paths: &NanokaPaths) -> Result<(Vec<SkillE
 
 /// 五件 Skill 创作工具合并成 `manage_skill`(08-17):create/update/delete/
 /// publish/list_drafts 是同一条创作流水线上的五个动作。
-pub fn register_authoring(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
+pub fn register_authoring(registry: &mut ToolRegistry, config: AppConfig, paths: NonokaPaths) {
     registry.register(
         ToolSpec::new(
             "manage_skill",
-            "Author Nanoka skills. action=create opens a hidden draft for a new skill; action=update copies an existing skill into an isolated draft; edit only the returned draft with apply_patch, then action=publish validates and atomically publishes it (create drafts never overwrite; update drafts fail if the live skill changed meanwhile). action=delete permanently removes a user skill; action=list_drafts lists retained drafts (drafts untouched for 30 days are pruned first). Scripts inside a skill stay resources and are never registered as tools.",
+            "Author Nonoka skills. action=create opens a hidden draft for a new skill; action=update copies an existing skill into an isolated draft; edit only the returned draft with apply_patch, then action=publish validates and atomically publishes it (create drafts never overwrite; update drafts fail if the live skill changed meanwhile). action=delete permanently removes a user skill; action=list_drafts lists retained drafts (drafts untouched for 30 days are pruned first). Scripts inside a skill stay resources and are never registered as tools.",
             json!({
                 "type": "object",
                 "properties": {
@@ -144,7 +144,7 @@ pub fn register_authoring(registry: &mut ToolRegistry, config: AppConfig, paths:
 fn register_load_skill(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: NanokaPaths,
+    paths: NonokaPaths,
     entries: &[SkillEntry],
 ) {
     // 第一行必须自洽:stub 模式只保留它,原来那句"必须匹配下方列出的可用
@@ -153,7 +153,7 @@ fn register_load_skill(
     let description = format!(
         "{}\n\n{}\n\n{}",
         "Load a specialized skill's full instructions and resources into the conversation.",
-        "The skill name must match one of the available skills listed below. Use this tool before applying a skill or using any scripts/resources from that skill. Skill allowed-tools metadata never grants Nanoka permissions.",
+        "The skill name must match one of the available skills listed below. Use this tool before applying a skill or using any scripts/resources from that skill. Skill allowed-tools metadata never grants Nonoka permissions.",
         available_skills_xml(entries),
     );
     registry.register(ToolSpec::new(
@@ -187,7 +187,7 @@ fn register_load_skill(
 
 
 
-fn load_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<String> {
+fn load_skill(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Result<String> {
     let name = required_string(&args, "name")?;
     let loaded = skills::load(&name, config, paths)?;
     let base_dir = loaded
@@ -250,7 +250,7 @@ fn skill_metadata_xml(metadata: &crate::skills::SkillMetadata) -> String {
     format!("<skill_metadata>\n{}\n</skill_metadata>", fields.join("\n"))
 }
 
-fn create_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<String> {
+fn create_skill(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Result<String> {
     let name = required_string(&args, "name")?;
     let description = required_string(&args, "description")?;
     let scope = SkillScope::parse(args.get("scope").and_then(Value::as_str))?;
@@ -263,7 +263,7 @@ fn create_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<
     }))?)
 }
 
-fn update_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<String> {
+fn update_skill(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Result<String> {
     let name = required_string(&args, "name")?;
     let scope_value = required_string(&args, "scope")?;
     let scope = SkillScope::parse(Some(&scope_value))?;
@@ -276,7 +276,7 @@ fn update_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<
     }))?)
 }
 
-fn publish_skill(args: Value, paths: &NanokaPaths) -> Result<String> {
+fn publish_skill(args: Value, paths: &NonokaPaths) -> Result<String> {
     let draft_id = required_string(&args, "draft_id")?;
     let published = skills::publish_draft(paths, &draft_id)?;
     Ok(serde_json::to_string_pretty(&json!({
@@ -287,7 +287,7 @@ fn publish_skill(args: Value, paths: &NanokaPaths) -> Result<String> {
     }))?)
 }
 
-fn delete_skill(args: Value, config: &AppConfig, paths: &NanokaPaths) -> Result<String> {
+fn delete_skill(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Result<String> {
     let name = required_string(&args, "name")?;
     let scope_value = required_string(&args, "scope")?;
     let scope = SkillScope::parse(Some(&scope_value))?;
@@ -341,8 +341,8 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn test_paths(root: &std::path::Path) -> NanokaPaths {
-        NanokaPaths {
+    fn test_paths(root: &std::path::Path) -> NonokaPaths {
+        NonokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -351,7 +351,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("data/pictures"),
-            fish_hook_file: root.join("fish/nanoka.fish"),
+            fish_hook_file: root.join("fish/nonoka.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("data/scripts"),
@@ -379,7 +379,7 @@ mod tests {
         std::fs::create_dir_all(&directory).unwrap();
         std::fs::write(
             directory.join("SKILL.md"),
-            "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: Nanoka\nallowed-tools: run_command\nmetadata:\n  author: test\n---\n\nBody.",
+            "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: Nonoka\nallowed-tools: run_command\nmetadata:\n  author: test\n---\n\nBody.",
         )
         .unwrap();
 
@@ -390,7 +390,7 @@ mod tests {
         )
         .unwrap();
         assert!(loaded.contains("<license>MIT</license>"));
-        assert!(loaded.contains("<compatibility>Nanoka</compatibility>"));
+        assert!(loaded.contains("<compatibility>Nonoka</compatibility>"));
         assert!(loaded
             .contains("<allowed_tools grants_permissions=\"false\">run_command</allowed_tools>"));
         assert!(loaded.contains("<entry key=\"author\">test</entry>"));

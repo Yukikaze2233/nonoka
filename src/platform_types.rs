@@ -180,7 +180,7 @@ pub(crate) struct PlatformContextFileRef {
     pub(crate) url: Option<String>,
 }
 
-/// A platform file downloaded into Nanoka's local platform file cache.
+/// A platform file downloaded into Nonoka's local platform file cache.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PlatformFileDownload {
     pub(crate) path: PathBuf,
@@ -444,7 +444,7 @@ pub(crate) trait PlatformAdapter: Send + Sync {
     fn fetch_platform_file<'a>(
         &'a self,
         _file_ref: &'a PlatformContextFileRef,
-        _paths: &'a crate::paths::NanokaPaths,
+        _paths: &'a crate::paths::NonokaPaths,
     ) -> BoxFuture<'a, Result<PlatformFileDownload>> {
         Box::pin(async {
             anyhow::bail!("platform file downloads are not supported by this platform")

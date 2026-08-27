@@ -51,7 +51,7 @@ pub(crate) fn register(registry: &mut ToolRegistry, context: Arc<PlatformTurnCon
             "additionalProperties": false
         })
     } else {
-        // 非管理员触发也能发 Nanoka 自产的生成图(执行侧按生图目录校验豁免);
+        // 非管理员触发也能发 Nonoka 自产的生成图(执行侧按生图目录校验豁免);
         // 任意本地文件仍只对管理员开放,所以这版没有 files。
         json!({
             "type": "object",
@@ -93,7 +93,7 @@ fn register_mention(registry: &mut ToolRegistry, context: Arc<PlatformTurnContex
     registry.register(
         ToolSpec::new(
             "qq_mention_users",
-            "Make Nanoka's next outgoing message in the current QQ group natively @ one or more members. Provide exact QQ IDs; use get_group_members_info first when only names are known. These explicit targets replace the automatic reply mention but preserve its message-quote behavior. This tool does not send a separate message.",
+            "Make Nonoka's next outgoing message in the current QQ group natively @ one or more members. Provide exact QQ IDs; use get_group_members_info first when only names are known. These explicit targets replace the automatic reply mention but preserve its message-quote behavior. This tool does not send a separate message.",
             json!({
                 "type": "object",
                 "properties": {
@@ -211,7 +211,7 @@ async fn send(arguments: Value, context: Arc<PlatformTurnContext>) -> Result<Str
         .map(|image| required_path(image, "path"))
         .collect::<Result<Vec<_>>>()?;
     if (!images.is_empty() || !files.is_empty()) && !context.host_tools_allowed() {
-        // 附件门槛防的是把宿主上任意文件发给陌生人;Nanoka 自己刚生成的图不在
+        // 附件门槛防的是把宿主上任意文件发给陌生人;Nonoka 自己刚生成的图不在
         // 此列——平台生图已改为模型显式发送(08-20 裁定),没有这条豁免,
         // 非管理员触发的画图请求就永远发不出结果。
         let exempt = files.is_empty()
@@ -355,7 +355,7 @@ fn register_usage_query(registry: &mut ToolRegistry, context: Arc<PlatformTurnCo
     registry.register(
         ToolSpec::new(
             "query_token_usage",
-            "Query Nanoka's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.",
+            "Query Nonoka's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.",
             json!({
                 "type": "object",
                 "properties": {

@@ -40,7 +40,7 @@ pub(crate) fn register(
     {
         "Read a text file uploaded to the current QQ group. `file` must be a file id from the visible chat history (e.g. file_<message_id>_1). Compressed archives, executables, images, video, and other binary formats are rejected; text is capped at 128 KiB per call."
     } else {
-        "Read a text file uploaded through the current QQ/platform conversation. `file` is either a file id from the visible chat history (e.g. file_<message_id>_1) or an absolute path Nanoka already downloaded under its platform_files cache. Compressed archives, executables, images, video, and other binary formats are rejected; text is capped at 128 KiB per call."
+        "Read a text file uploaded through the current QQ/platform conversation. `file` is either a file id from the visible chat history (e.g. file_<message_id>_1) or an absolute path Nonoka already downloaded under its platform_files cache. Compressed archives, executables, images, video, and other binary formats are rejected; text is capped at 128 KiB per call."
     };
     registry.register(
         ToolSpec::new(
@@ -158,7 +158,7 @@ fn read_platform_text(path: &Path, name: &str, size: u64) -> Result<String> {
         .as_deref()
         .is_some_and(|extension| BINARY_EXTENSIONS.contains(&extension));
     if binary_extension {
-        bail!("`{name}` is a binary or compressed format; Nanoka cannot read it as text");
+        bail!("`{name}` is a binary or compressed format; Nonoka cannot read it as text");
     }
 
     let file = std::fs::File::open(path).with_context(|| format!("opening {}", path.display()))?;

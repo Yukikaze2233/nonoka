@@ -68,7 +68,7 @@ impl GroupManagementPlugin {
         let settings = settings(&context)?;
         let query_enabled = settings.enable_tool || settings.enable_kick_tool;
         if context.conversation.kind != ConversationKind::Group {
-            // 群聊之外只给 Nanoka 管理员留跨群查询入口（group_id 必填）
+            // 群聊之外只给 Nonoka 管理员留跨群查询入口（group_id 必填）
             if query_enabled && context.is_admin {
                 self.register_history_query(registry, context);
             }
@@ -201,7 +201,7 @@ impl GroupManagementPlugin {
     ) {
         registry.register(ToolSpec::new(
             "qq_group_manage_history_query",
-            "Query QQ group management records (mute/kick/title). view=events lists individual actions newest-first; view=stats aggregates per member (ban_count, kick_count, total mute duration). Nanoka admins may pass group_id to query another group; group_id is required outside that group's chat.",
+            "Query QQ group management records (mute/kick/title). view=events lists individual actions newest-first; view=stats aggregates per member (ban_count, kick_count, total mute duration). Nonoka admins may pass group_id to query another group; group_id is required outside that group's chat.",
             history_query_schema(),
             move |args| {
                 let context = context.clone();
@@ -402,7 +402,7 @@ impl GroupManagementPlugin {
             match context.group_member_fresh(user_id).await {
                 Ok(None) => {
                     tracing::warn!(
-                        target: "nanoka::qq",
+                        target: "nonoka::qq",
                         user_id,
                         error = %error,
                         "{}",

@@ -125,45 +125,45 @@ fn platform_access_grants_are_cached_persisted_and_audited() {
 #[test]
 fn platform_bindings_survive_rename_and_isolate_personas() {
     let (_temp, store) = test_store();
-    let nanoka_session = store
-        .create_session("nanoka", "old display name", "user", None)
+    let nonoka_session = store
+        .create_session("nonoka", "old display name", "user", None)
         .unwrap();
     let other_session = store
         .create_session("other", "another display name", "user", None)
         .unwrap();
-    let nanoka_key = platform_binding_key("20000", None, "nanoka");
+    let nonoka_key = platform_binding_key("20000", None, "nonoka");
     let other_key = platform_binding_key("20000", None, "other");
 
     store
-        .bind_platform_session(&nanoka_key, &nanoka_session.session_id)
+        .bind_platform_session(&nonoka_key, &nonoka_session.session_id)
         .unwrap();
     store
         .bind_platform_session(&other_key, &other_session.session_id)
         .unwrap();
     store
-        .rename_session(&nanoka_session.session_id, "new display name")
+        .rename_session(&nonoka_session.session_id, "new display name")
         .unwrap();
 
     assert_eq!(
-        store.find_platform_session_binding(&nanoka_key).unwrap(),
-        Some(nanoka_session.session_id.clone())
+        store.find_platform_session_binding(&nonoka_key).unwrap(),
+        Some(nonoka_session.session_id.clone())
     );
     // `None` and an empty participant are the same database identity.
-    let empty_participant_key = platform_binding_key("20000", Some(""), "nanoka");
+    let empty_participant_key = platform_binding_key("20000", Some(""), "nonoka");
     assert_eq!(
         store
             .find_platform_session_binding(&empty_participant_key)
             .unwrap(),
-        Some(nanoka_session.session_id.clone())
+        Some(nonoka_session.session_id.clone())
     );
     assert_eq!(
         store.find_platform_session_binding(&other_key).unwrap(),
         Some(other_session.session_id)
     );
 
-    store.delete_session(&nanoka_session.session_id).unwrap();
+    store.delete_session(&nonoka_session.session_id).unwrap();
     assert_eq!(
-        store.find_platform_session_binding(&nanoka_key).unwrap(),
+        store.find_platform_session_binding(&nonoka_key).unwrap(),
         None
     );
 }
@@ -171,11 +171,11 @@ fn platform_bindings_survive_rename_and_isolate_personas() {
 #[test]
 fn platform_binding_overwrite_and_conflict_are_atomic() {
     let (_temp, store) = test_store();
-    let session_a = store.create_session("nanoka", "a", "user", None).unwrap();
-    let session_b = store.create_session("nanoka", "b", "user", None).unwrap();
-    let session_c = store.create_session("nanoka", "c", "user", None).unwrap();
-    let key_a = platform_binding_key("group-a", None, "nanoka");
-    let key_b = platform_binding_key("group-b", None, "nanoka");
+    let session_a = store.create_session("nonoka", "a", "user", None).unwrap();
+    let session_b = store.create_session("nonoka", "b", "user", None).unwrap();
+    let session_c = store.create_session("nonoka", "c", "user", None).unwrap();
+    let key_a = platform_binding_key("group-a", None, "nonoka");
+    let key_b = platform_binding_key("group-b", None, "nonoka");
 
     store
         .bind_platform_session(&key_a, &session_a.session_id)
@@ -213,7 +213,7 @@ fn concurrent_platform_bind_rejects_session_sharing() {
     let (temp, store) = test_store();
     let second_store = StateStore::new(&test_paths(temp.path())).unwrap();
     let session = store
-        .create_session("nanoka", "shared target", "user", None)
+        .create_session("nonoka", "shared target", "user", None)
         .unwrap();
     let barrier = Arc::new(std::sync::Barrier::new(3));
     let handles = [store.clone(), second_store]
@@ -222,7 +222,7 @@ fn concurrent_platform_bind_rejects_session_sharing() {
         .map(|(store, conversation_id)| {
             let barrier = barrier.clone();
             let session_id = session.session_id.clone();
-            let key = platform_binding_key(conversation_id, None, "nanoka");
+            let key = platform_binding_key(conversation_id, None, "nonoka");
             std::thread::spawn(move || {
                 barrier.wait();
                 let result = store.bind_platform_session(&key, &session_id);
@@ -257,9 +257,9 @@ fn concurrent_platform_bind_rejects_session_sharing() {
 fn concurrent_platform_claim_converges_on_one_session() {
     let (temp, store) = test_store();
     let second_store = StateStore::new(&test_paths(temp.path())).unwrap();
-    let session_a = store.create_session("nanoka", "a", "user", None).unwrap();
-    let session_b = store.create_session("nanoka", "b", "user", None).unwrap();
-    let key = platform_binding_key("same-group", None, "nanoka");
+    let session_a = store.create_session("nonoka", "a", "user", None).unwrap();
+    let session_b = store.create_session("nonoka", "b", "user", None).unwrap();
+    let key = platform_binding_key("same-group", None, "nonoka");
     let barrier = Arc::new(std::sync::Barrier::new(3));
     let handles = [
         (store.clone(), session_a.session_id.clone()),
@@ -292,7 +292,7 @@ fn concurrent_platform_claim_converges_on_one_session() {
 #[test]
 fn platform_session_creation_is_bound_atomically() {
     let (_temp, store) = test_store();
-    let key = platform_binding_key("atomic-group", None, "nanoka");
+    let key = platform_binding_key("atomic-group", None, "nonoka");
     let (platform, created) = store
         .create_or_get_platform_session(&key, "platform")
         .unwrap();
@@ -302,7 +302,7 @@ fn platform_session_creation_is_bound_atomically() {
         Some(platform.session_id.clone())
     );
     assert!(!store
-        .list_local_sessions("nanoka")
+        .list_local_sessions("nonoka")
         .unwrap()
         .iter()
         .any(|entry| entry.record.session_id == platform.session_id));
@@ -329,18 +329,18 @@ fn platform_plugin_json_is_shared_across_personas_and_supports_deletion() {
 
     // Pinned stores represent independent persona sessions but share the
     // external-conversation plugin scope.
-    let nanoka_session = store.create_session("nanoka", "nanoka", "user", None).unwrap();
+    let nonoka_session = store.create_session("nonoka", "nonoka", "user", None).unwrap();
     let other_session = store
         .create_session("other", "other", "user", None)
         .unwrap();
-    let nanoka_store = store.pinned(&nanoka_session.session_id);
+    let nonoka_store = store.pinned(&nonoka_session.session_id);
     let other_store = store.pinned(&other_session.session_id);
-    let from_nanoka: Option<Vec<String>> =
-        nanoka_store.plugin_get_json(&scope, "recent_images").unwrap();
+    let from_nonoka: Option<Vec<String>> =
+        nonoka_store.plugin_get_json(&scope, "recent_images").unwrap();
     let from_other: Option<Vec<String>> = other_store
         .plugin_get_json(&scope, "recent_images")
         .unwrap();
-    assert_eq!(from_nanoka, Some(replacement.clone()));
+    assert_eq!(from_nonoka, Some(replacement.clone()));
     assert_eq!(from_other, Some(replacement));
 
     store.plugin_put_json(&scope, "mode", &"image").unwrap();

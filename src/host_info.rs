@@ -1,5 +1,5 @@
 //! Host facts that never change while the process runs: which OS this is,
-//! which kernel it runs, and where Nanoka keeps its own files.
+//! which kernel it runs, and where Nonoka keeps its own files.
 //!
 //! These ride the system prompt (the stable prefix) rather than the per-turn
 //! `<runtime …/>` tail. The tail is fossilized into `turns.context_messages`
@@ -136,8 +136,8 @@ fn host_os_facts() -> &'static (String, Option<String>) {
 
 /// The static host block appended to the system prompt.
 ///
-/// `root_dir` is reported verbatim rather than as `~/.nanoka` because
-/// `NANOKA_HOME` can move it, and because a concrete path is what stops the
+/// `root_dir` is reported verbatim rather than as `~/.nonoka` because
+/// `NONOKA_HOME` can move it, and because a concrete path is what stops the
 /// model from guessing at the layout.
 pub(crate) fn host_environment_block(root_dir: &Path) -> String {
     let (os, kernel) = host_os_facts();
@@ -148,7 +148,7 @@ pub(crate) fn host_environment_block(root_dir: &Path) -> String {
         block.push_str(&format!(" kernel=\"{}\"", xml_attr_escape(kernel)));
     }
     block.push_str(&format!(
-        " nanoka_home=\"{}\"/>",
+        " nonoka_home=\"{}\"/>",
         xml_attr_escape(&root_dir.display().to_string())
     ));
     block
@@ -203,10 +203,10 @@ mod tests {
 
     #[test]
     fn host_block_is_a_single_self_closing_tag_with_the_real_root() {
-        let block = host_environment_block(&PathBuf::from("/home/tester/.nanoka"));
+        let block = host_environment_block(&PathBuf::from("/home/tester/.nonoka"));
         assert!(block.starts_with("<host-environment os=\""));
         assert!(block.ends_with("/>"));
-        assert!(block.contains(" nanoka_home=\"/home/tester/.nanoka\""));
+        assert!(block.contains(" nonoka_home=\"/home/tester/.nonoka\""));
         assert!(!block.contains('\n'));
         // No placeholder values leak in when a probe comes back empty.
         assert!(!block.contains("\"\""));
@@ -216,7 +216,7 @@ mod tests {
     #[test]
     fn host_block_escapes_paths_that_would_break_the_attribute() {
         let block = host_environment_block(&PathBuf::from("/tmp/a\"b&c"));
-        assert!(block.contains(" nanoka_home=\"/tmp/a&quot;b&amp;c\"/>"));
+        assert!(block.contains(" nonoka_home=\"/tmp/a&quot;b&amp;c\"/>"));
     }
 
     #[cfg(unix)]

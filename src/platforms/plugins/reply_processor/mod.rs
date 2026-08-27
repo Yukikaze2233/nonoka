@@ -258,7 +258,7 @@ impl ReplyProcessorPlugin {
         let display_name = context
             .bot_display_name()
             .await
-            .unwrap_or_else(|_| "Nanoka".to_string());
+            .unwrap_or_else(|_| "Nonoka".to_string());
         let mut transformed = OutboundMessage {
             body: OutboundBody::Forward(vec![ForwardNode {
                 user_id: context.conversation.account_id.clone(),
@@ -440,7 +440,7 @@ impl PlatformPlugin for ReplyProcessorPlugin {
                         Ok(prepared) => Ok(prepared),
                         Err(error) => {
                             tracing::warn!(
-                                target: "nanoka::qq",
+                                target: "nonoka::qq",
                                 error = %error,
                                 "{}",
                                 crate::i18n::text(

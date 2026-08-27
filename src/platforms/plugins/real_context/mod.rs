@@ -155,7 +155,7 @@ impl PlatformPlugin for RealContextPlugin {
             Ok(false) => {}
             Err(error) => {
                 tracing::warn!(
-                    target: "nanoka::qq",
+                    target: "nonoka::qq",
                     error = %error,
                     sender_id = %event.sender_id,
                     "{}",

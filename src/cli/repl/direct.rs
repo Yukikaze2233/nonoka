@@ -1,6 +1,6 @@
 //! 进程内直连的回合驱动。
 //!
-//! `NANOKA_DIRECT=1` 或 daemon 起不来时走这条：agent 直接在本进程跑，事件不过
+//! `NONOKA_DIRECT=1` 或 daemon 起不来时走这条：agent 直接在本进程跑，事件不过
 //! IPC。功能与远端那条等价，但少一层进程边界——调试和排查时用它能把「是不是
 //! IPC 丢了东西」这个变量排除掉。
 
@@ -11,7 +11,7 @@ use crate::cli::repl::tail::*;
 use crate::cli::*;
 
 pub(in crate::cli) async fn run_chat_with_images(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     message: String,
     pasted_images: Vec<Option<crate::clipboard::PastedImage>>,
 ) -> Result<()> {
@@ -118,7 +118,7 @@ pub(in crate::cli) async fn run_chat_with_images(
 }
 
 pub(in crate::cli) async fn run_chat_with_options(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     message: String,
     show_reasoning: Option<bool>,
     plain: bool,
@@ -256,7 +256,7 @@ pub(in crate::cli) async fn run_chat_with_options(
 }
 
 pub(in crate::cli) async fn run_direct_repl(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     initial_mode: AgentMode,
 ) -> Result<()> {
     let _core_lease = ipc::acquire_direct_core(paths)?;
@@ -639,8 +639,8 @@ pub(in crate::cli) async fn run_direct_repl(
             println!(
                 "{}",
                 t(
-                    "this command needs the full (daemon) REPL; start without NANOKA_DIRECT to use it",
-                    "该命令需要完整(daemon)REPL;不带 NANOKA_DIRECT 启动即可使用"
+                    "this command needs the full (daemon) REPL; start without NONOKA_DIRECT to use it",
+                    "该命令需要完整(daemon)REPL;不带 NONOKA_DIRECT 启动即可使用"
                 )
             );
             continue;

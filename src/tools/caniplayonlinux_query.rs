@@ -9,7 +9,7 @@
 //! 1.8 秒。sitemap 覆盖 2646 条，比目录页宣称的 2586 还多，且带 `lastmod`。
 
 use super::http_response;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::Result;
 use std::time::{Duration, SystemTime};
 
@@ -62,7 +62,7 @@ async fn fetch_text(url: &str) -> Result<String> {
     http_response::read_text(response, http_response::MAX_HTML_RESPONSE_BYTES).await
 }
 
-async fn sitemap(paths: &NanokaPaths) -> Result<String> {
+async fn sitemap(paths: &NonokaPaths) -> Result<String> {
     let cache_path = paths.cache_dir.join(SITEMAP_CACHE);
     let fresh = tokio::fs::metadata(&cache_path)
         .await
@@ -290,7 +290,7 @@ fn decode_entities(value: &str) -> String {
 
 /// `Ok(None)` = 站点没收录这个游戏，与"抓取失败"是两回事：前者渲染成
 /// `no result`，后者要把错误原样暴露出来。
-pub(super) async fn lookup(paths: &NanokaPaths, name: &str) -> Result<Option<CipolEntry>> {
+pub(super) async fn lookup(paths: &NonokaPaths, name: &str) -> Result<Option<CipolEntry>> {
     let slug = slugify(name);
     // 纯非拉丁名（如中文原名）slugify 后为空，拼出的 `/games//` 会命中目录首页
     // 并返回 200 —— 静默产出一份通用简介。必须挡在这里。

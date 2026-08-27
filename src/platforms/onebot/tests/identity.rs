@@ -168,10 +168,10 @@ fn qq_sender_and_group_metadata_stay_out_of_user_text() {
 #[test]
 fn named_mention_survives_after_the_qq_wake_prefix_is_removed() {
     let config = config_with(|config| {
-        config.group_chats.trigger_keywords = vec!["nanoka".to_string()];
+        config.group_chats.trigger_keywords = vec!["nonoka".to_string()];
     });
     let message = json!([
-        { "type": "text", "data": { "text": "nanoka，他是谁 " } },
+        { "type": "text", "data": { "text": "nonoka，他是谁 " } },
         { "type": "at", "data": { "qq": "8" } }
     ]);
     let parsed = parse_message(Some(&message), None, 10_000);
@@ -377,11 +377,11 @@ async fn qq_conversation_persona_drives_context_and_session_binding() {
         custom.config.active_persona_scope()
     );
 
-    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::Nanoka;
-    let nanoka = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
-    assert!(nanoka.config.prompt.active_persona.is_empty());
-    let nanoka_session = resolve_onebot_session(&state, &nanoka, target, &event).unwrap();
-    assert_ne!(custom_session, nanoka_session);
+    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::Nonoka;
+    let nonoka = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
+    assert!(nonoka.config.prompt.active_persona.is_empty());
+    let nonoka_session = resolve_onebot_session(&state, &nonoka, target, &event).unwrap();
+    assert_ne!(custom_session, nonoka_session);
 }
 
 #[tokio::test]

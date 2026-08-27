@@ -32,8 +32,8 @@ pub(super) fn sample_pop_turn(status: TurnStatus) -> Turn {
     }
 }
 
-pub(super) fn pop_test_paths(root: &std::path::Path) -> NanokaPaths {
-    NanokaPaths {
+pub(super) fn pop_test_paths(root: &std::path::Path) -> NonokaPaths {
+    NonokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -42,7 +42,7 @@ pub(super) fn pop_test_paths(root: &std::path::Path) -> NanokaPaths {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("fish/nanoka.fish"),
+        fish_hook_file: root.join("fish/nonoka.fish"),
         bash_hook_file: root.join("shell/bash-hook.sh"),
         zsh_hook_file: root.join("shell/zsh-hook.zsh"),
         scripts_dir: root.join("config/scripts"),

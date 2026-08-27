@@ -14,20 +14,20 @@ pub(in crate::cli) const RELOAD_RETRY_INTERVAL: Duration = Duration::from_secs(5
 
 pub(in crate::cli) const RELOAD_RESPONSE_TIMEOUT: Duration = Duration::from_secs(60);
 
-pub(in crate::cli) async fn run_web(paths: &NanokaPaths, mut args: WebArgs) -> Result<()> {
+pub(in crate::cli) async fn run_web(paths: &NonokaPaths, mut args: WebArgs) -> Result<()> {
     if let Some(info) = ipc::daemon_info(paths).await {
         if info.build_id == ipc::BUILD_ID {
             if args.port_explicit || args.password.is_some() || args.password_file.is_some() {
                 bail!(
                     "{}",
                     t(
-                        "the running Nanoka daemon already owns Web settings; restart it to change them",
-                        "当前 Nanoka daemon 已接管 Web 设置；如需修改请先重启 daemon"
+                        "the running Nonoka daemon already owns Web settings; restart it to change them",
+                        "当前 Nonoka daemon 已接管 Web 设置；如需修改请先重启 daemon"
                     )
                 );
             }
             for url in daemon_web_access_urls(&info) {
-                println!("Nanoka WebUI: {url}");
+                println!("Nonoka WebUI: {url}");
             }
             return Ok(());
         }
@@ -42,12 +42,12 @@ pub(in crate::cli) async fn run_web(paths: &NanokaPaths, mut args: WebArgs) -> R
     let launch = web_launch_config(paths, &args)?;
     let info = ipc::ensure_daemon(paths, launch.as_ref()).await?;
     for url in daemon_web_access_urls(&info) {
-        println!("Nanoka WebUI: {url}");
+        println!("Nonoka WebUI: {url}");
     }
     Ok(())
 }
 
-pub(in crate::cli) fn web_launch_config(paths: &NanokaPaths, args: &WebArgs) -> Result<Option<ipc::DaemonLaunchConfig>> {
+pub(in crate::cli) fn web_launch_config(paths: &NonokaPaths, args: &WebArgs) -> Result<Option<ipc::DaemonLaunchConfig>> {
     if !args.port_explicit
         && args.bind.is_none()
         && args.password.is_none()
@@ -88,7 +88,7 @@ pub(in crate::cli) fn daemon_web_access_urls(info: &ipc::DaemonInfo) -> Vec<Stri
     ipc::web_access_urls_for(bind, info.web_port)
 }
 
-pub(in crate::cli) async fn run_daemon_command(paths: &NanokaPaths, args: DaemonArgs) -> Result<()> {
+pub(in crate::cli) async fn run_daemon_command(paths: &NonokaPaths, args: DaemonArgs) -> Result<()> {
     let command = args.command.unwrap_or(DaemonCommand::Start);
     if args.port.is_some() && !matches!(command, DaemonCommand::Start | DaemonCommand::Restart) {
         bail!(
@@ -114,13 +114,13 @@ pub(in crate::cli) async fn run_daemon_command(paths: &NanokaPaths, args: Daemon
                 bail!(
                     "{}",
                     t(
-                        "the running Nanoka daemon already owns Web settings; use `nanoka daemon restart` to change the port",
-                        "当前 Nanoka daemon 已接管 Web 设置；如需修改端口请使用 `nanoka daemon restart`"
+                        "the running Nonoka daemon already owns Web settings; use `nonoka daemon restart` to change the port",
+                        "当前 Nonoka daemon 已接管 Web 设置；如需修改端口请使用 `nonoka daemon restart`"
                     )
                 );
             }
             ipc::ensure_daemon(paths, launch.as_ref()).await?;
-            let refreshed = NanokaPaths::new()?;
+            let refreshed = NonokaPaths::new()?;
             print_daemon_status(&refreshed).await
         }
         DaemonCommand::Stop => stop_daemon(paths).await,
@@ -139,7 +139,7 @@ pub(in crate::cli) async fn run_daemon_command(paths: &NanokaPaths, args: Daemon
                 }
                 return Err(error);
             };
-            let refreshed = match NanokaPaths::new() {
+            let refreshed = match NonokaPaths::new() {
                 Ok(paths) => paths,
                 Err(error) => {
                     if let Some(launch) = &pending_launch {
@@ -161,13 +161,13 @@ pub(in crate::cli) async fn run_daemon_command(paths: &NanokaPaths, args: Daemon
     }
 }
 
-pub(in crate::cli) async fn stop_daemon(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn stop_daemon(paths: &NonokaPaths) -> Result<()> {
     match ipc::daemon_info(paths).await {
         Some(info) => {
             ipc::shutdown_daemon(paths, &info).await?;
-            println!("{}", t("Nanoka daemon stopped", "Nanoka daemon 已停止"));
+            println!("{}", t("Nonoka daemon stopped", "Nonoka daemon 已停止"));
         }
-        None => println!("{}", t("Nanoka daemon is not running", "Nanoka daemon 未运行")),
+        None => println!("{}", t("Nonoka daemon is not running", "Nonoka daemon 未运行")),
     }
     // info 文件只指向最后一次 start 的进程:历史上多次 start 互相覆盖,会留
     // 下仍占 8300 的孤儿 daemon——stop 谎报成功,后续测试全打在旧代码上,新
@@ -185,11 +185,11 @@ pub(in crate::cli) async fn stop_daemon(paths: &NanokaPaths) -> Result<()> {
 }
 
 /// 扫描并终止属于本 home 的 `__daemon` 残留进程。归属按 /proc 环境里的
-/// NANOKA_HOME 判定(未设 = 默认 ~/.nanoka),隔离测试环境的 daemon 不受波及。
-async fn sweep_stray_daemons(paths: &NanokaPaths) -> usize {
+/// NONOKA_HOME 判定(未设 = 默认 ~/.nonoka),隔离测试环境的 daemon 不受波及。
+async fn sweep_stray_daemons(paths: &NonokaPaths) -> usize {
     let my_root = paths.root_dir.clone();
     let default_root =
-        std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".nanoka"));
+        std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".nonoka"));
     let mut strays = Vec::new();
     let Ok(entries) = std::fs::read_dir("/proc") else {
         return 0;
@@ -209,7 +209,7 @@ async fn sweep_stray_daemons(paths: &NanokaPaths) -> usize {
             continue;
         };
         let mut parts = cmdline.split(|byte| *byte == 0);
-        let is_daemon = parts.next().is_some_and(|argv0| argv0.ends_with(b"nanoka"))
+        let is_daemon = parts.next().is_some_and(|argv0| argv0.ends_with(b"nonoka"))
             && parts.next() == Some(b"__daemon");
         if !is_daemon {
             continue;
@@ -219,7 +219,7 @@ async fn sweep_stray_daemons(paths: &NanokaPaths) -> usize {
         };
         let home = environ
             .split(|byte| *byte == 0)
-            .find_map(|pair| pair.strip_prefix(b"NANOKA_HOME="))
+            .find_map(|pair| pair.strip_prefix(b"NONOKA_HOME="))
             .map(|value| std::path::PathBuf::from(String::from_utf8_lossy(value).to_string()))
             .or_else(|| default_root.clone());
         if home.as_deref() != Some(my_root.as_path()) {
@@ -244,15 +244,15 @@ async fn sweep_stray_daemons(paths: &NanokaPaths) -> usize {
     strays.len()
 }
 
-pub(in crate::cli) async fn print_daemon_status(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn print_daemon_status(paths: &NonokaPaths) -> Result<()> {
     let Some(info) = ipc::daemon_info(paths).await else {
-        println!("{}", t("Nanoka daemon: stopped", "Nanoka daemon：已停止"));
+        println!("{}", t("Nonoka daemon: stopped", "Nonoka daemon：已停止"));
         return Ok(());
     };
     let (_, data) = send_ipc_admin(paths, IpcCommand::GetStatus).await?;
     println!(
         "{} {} (PID {})",
-        t("Nanoka daemon:", "Nanoka daemon："),
+        t("Nonoka daemon:", "Nonoka daemon："),
         t("running", "运行中"),
         info.pid,
     );
@@ -317,16 +317,16 @@ pub(in crate::cli) fn daemon_web_status_lines(label: &str, urls: &[String]) -> V
         .collect()
 }
 
-/// `nanoka daemon logs request`:监控期间开启录制,滚动打印每个出网请求
+/// `nonoka daemon logs request`:监控期间开启录制,滚动打印每个出网请求
 /// 的摘要行;完整请求体在 JSONL 文件里(整段 prompt 打终端没法看)。
 /// Ctrl+C 退出时关闭录制——开关是 daemon 进程级内存位,不落配置。
-pub(in crate::cli) async fn run_request_monitor(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<()> {
     if ipc::daemon_info(paths).await.is_none() {
         bail!(
             "{}",
             t(
-                "the daemon is not running; start it first (nanoka daemon start)",
-                "daemon 未运行;先 nanoka daemon start"
+                "the daemon is not running; start it first (nonoka daemon start)",
+                "daemon 未运行;先 nonoka daemon start"
             )
         );
     }
@@ -457,7 +457,7 @@ pub(in crate::cli) fn daemon_process_alive(_pid: u32) -> bool {
     true
 }
 
-pub(in crate::cli) async fn reload_daemon_if_running(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn reload_daemon_if_running(paths: &NonokaPaths) -> Result<()> {
     if ipc::daemon_info(paths).await.is_some() {
         retry_config_reload(RELOAD_MAX_ATTEMPTS, RELOAD_RETRY_INTERVAL, || {
             request_config_reload(paths)
@@ -491,7 +491,7 @@ pub(in crate::cli) fn validate_config_reload_response(frame: Option<IpcFrame>) -
     Ok(ConfigReloadResponse::Reloaded)
 }
 
-pub(in crate::cli) async fn request_config_reload(paths: &NanokaPaths) -> Result<ConfigReloadResponse> {
+pub(in crate::cli) async fn request_config_reload(paths: &NonokaPaths) -> Result<ConfigReloadResponse> {
     request_config_reload_at(&paths.ipc_socket(), RELOAD_RESPONSE_TIMEOUT).await
 }
 
@@ -507,15 +507,15 @@ pub(in crate::cli) async fn request_config_reload_at(
     .await
     .with_context(|| {
         t(
-            "timed out waiting for Nanoka daemon to reload configuration",
-            "等待 Nanoka daemon 重新加载配置超时",
+            "timed out waiting for Nonoka daemon to reload configuration",
+            "等待 Nonoka daemon 重新加载配置超时",
         )
     })?
 }
 
-pub(in crate::cli) async fn run_reload(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn run_reload(paths: &NonokaPaths) -> Result<()> {
     if ipc::daemon_info(paths).await.is_none() {
-        bail!("{}", t("Nanoka daemon is not running", "Nanoka daemon 未运行"));
+        bail!("{}", t("Nonoka daemon is not running", "Nonoka daemon 未运行"));
     }
     retry_config_reload(RELOAD_MAX_ATTEMPTS, RELOAD_RETRY_INTERVAL, || {
         request_config_reload(paths)
@@ -545,11 +545,11 @@ where
                 let seconds = retry_interval.as_secs();
                 let message = if is_zh() {
                     format!(
-                        "Nanoka daemon 正忙；将在 {seconds} 秒后重试配置重载（{attempt}/{max_attempts}）"
+                        "Nonoka daemon 正忙；将在 {seconds} 秒后重试配置重载（{attempt}/{max_attempts}）"
                     )
                 } else {
                     format!(
-                        "Nanoka daemon is busy; retrying configuration reload in {seconds} seconds ({attempt}/{max_attempts})"
+                        "Nonoka daemon is busy; retrying configuration reload in {seconds} seconds ({attempt}/{max_attempts})"
                     )
                 };
                 eprintln!("{message}");
@@ -557,10 +557,10 @@ where
             }
             ConfigReloadResponse::Busy => {
                 let message = if is_zh() {
-                    format!("Nanoka daemon 在 {max_attempts} 次配置重载尝试后仍然忙碌")
+                    format!("Nonoka daemon 在 {max_attempts} 次配置重载尝试后仍然忙碌")
                 } else {
                     format!(
-                        "Nanoka daemon remained busy after {max_attempts} configuration reload attempts"
+                        "Nonoka daemon remained busy after {max_attempts} configuration reload attempts"
                     )
                 };
                 bail!("{message}");

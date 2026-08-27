@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="pics/nanoka-logo.png" alt="Nanoka" width="180">
+  <img src="pics/nonoka-logo.png" alt="Nonoka" width="180">
 </p>
 
-# Nanoka
+# Nonoka
 
 > 本项目是 [Miyu](https://github.com/SHORiN-KiWATA/Miyu) 的个人复刻版（MIT），上游致谢见文末。
 
@@ -10,15 +10,15 @@
 
 > 自用学习版，人格与立绘待定
 
-## 谁是 Nanoka？
+## 谁是 Nonoka？
 
-Nanoka（ほたる・蛍）是住在终端里的二次元少女。具体性格、设定与立绘待定（TODO）。
+Nonoka（ほたる・蛍）是住在终端里的二次元少女。具体性格、设定与立绘待定（TODO）。
 
 ## 有什么功能？
 
-`nanoka` 由大模型驱动，默认接入了 [opencode](https://github.com/anomalyco/opencode) 的公共模型服务，你也可以配置自己的大模型服务。
+`nonoka` 由大模型驱动，默认接入了 [opencode](https://github.com/anomalyco/opencode) 的公共模型服务，你也可以配置自己的大模型服务。
 
-`nanoka` 拥有两个模式
+`nonoka` 拥有两个模式
 
 - Normal 普通模式
   
@@ -28,7 +28,7 @@ Nanoka（ほたる・蛍）是住在终端里的二次元少女。具体性格�
 
   和普通模式隔离，移除所有和开发无关的功能和工具，通过极简设计最大限度发挥模型自身的能力。
 
-`nanoka` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
+`nonoka` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
 
 ![](./pics/shell-init.png)
 
@@ -39,7 +39,7 @@ Nanoka（ほたる・蛍）是住在终端里的二次元少女。具体性格�
 自带了 TUI 方便修改配置。
 
 ```
-nanoka config
+nonoka config
 ```
 
 ![](./pics/tui.png)
@@ -58,31 +58,31 @@ nanoka config
 - Arch Linux
 
   ```
-  yay -S nanoka  # 发布到 AUR 之前不可用
+  yay -S nonoka  # 发布到 AUR 之前不可用
   ```
 
 - 从源码构建
 
   ```
   git clone <你的仓库地址>
-  cd nanoka
+  cd nonoka
   cargo build --release
   ```
 
-安装完成后可以运行 `nanoka init` 初始化配置和状态文件；也可以直接运行 `nanoka daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `nanoka -h`。
+安装完成后可以运行 `nonoka init` 初始化配置和状态文件；也可以直接运行 `nonoka daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `nonoka -h`。
 
 ## 三种触发
 
-> 与 `nanoka` 运行最适配的是 `kitty`终端
+> 与 `nonoka` 运行最适配的是 `kitty`终端
 
 - REPL TUI
 
-  `nanoka normal` 进入普通模式的 REPL； `nanoka dev` 进入开发模式的 REPL。
+  `nonoka normal` 进入普通模式的 REPL； `nonoka dev` 进入开发模式的 REPL。
 
 - webui 局域网网页
 
   ```
-  nanoka web
+  nonoka web
   ```
 
 - shell hook 终端集成
@@ -90,37 +90,37 @@ nanoka config
   最好的集成效果要求使用 `fish`，`zsh` 和`bash` 只能做到单行对话，`fish` 可以完整无缝集成。
   
   ```
-  nanoka fish-init
+  nonoka fish-init
   ```
   初始化后可以直接在终端打字对话。
 
 ## 重要配置调整
 
-运行 `nanoka config` 命令打开配置 TUI。
+运行 `nonoka config` 命令打开配置 TUI。
 
 - 供应商和模型
 
-  `nanoka` 默认使用 opencode 的公共 API，推荐配置自己的 API。
+  `nonoka` 默认使用 opencode 的公共 API，推荐配置自己的 API。
 
 - 自定义提示词
 
-  `nanoka`的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。 
+  `nonoka`的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。 
 
 ## 搬到另一台机器
 
-`nanoka export` 把当前安装打成一个 `.tar.gz`（权限 0600），`nanoka import` 在新机器上还原：
+`nonoka export` 把当前安装打成一个 `.tar.gz`（权限 0600），`nonoka import` 在新机器上还原：
 
 ```bash
-nanoka export                      # 配置、会话历史、记忆、知识库原文、用户资源
-nanoka export --index --platforms  # 额外带上向量索引与平台聊天历史
-nanoka export --no-secrets         # 清空 API key 与令牌，导入后自行补填
-nanoka export --dry-run            # 只看清单与体积，不写文件
+nonoka export                      # 配置、会话历史、记忆、知识库原文、用户资源
+nonoka export --index --platforms  # 额外带上向量索引与平台聊天历史
+nonoka export --no-secrets         # 清空 API key 与令牌，导入后自行补填
+nonoka export --dry-run            # 只看清单与体积，不写文件
 
-nanoka daemon stop                 # daemon 占着数据库，导入前必须停
-nanoka import nanoka-export-*.tar.gz
+nonoka daemon stop                 # daemon 占着数据库，导入前必须停
+nonoka import nonoka-export-*.tar.gz
 ```
 
-默认**不含**知识库向量索引（很大，且 `nanoka kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
+默认**不含**知识库向量索引（很大，且 `nonoka kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
 
 ## 内置插件
 
@@ -129,17 +129,17 @@ nanoka import nanoka-export-*.tar.gz
 
 - 表情包
   
-  表情包毫无疑问是聊天时最重要的部分，在对话时，Nanoka 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
+  表情包毫无疑问是聊天时最重要的部分，在对话时，Nonoka 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
 
   ![](./pics/nvidiafuckyou.png)
 
-  Nanoka 自带了一些表情，存放在`/usr/share/nanoka`，对应的用户空间目录位于`~/.nanoka/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 Nanoka 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。Nanoka 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
+  Nonoka 自带了一些表情，存放在`/usr/share/nonoka`，对应的用户空间目录位于`~/.nonoka/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 Nonoka 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。Nonoka 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
 
 - 玄学算命
 
   >心理学。
   
-  算命就像看天气预报一般稀松平常。Nanoka 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
+  算命就像看天气预报一般稀松平常。Nonoka 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
 
   ![](./pics/玄学.png)
 
@@ -157,15 +157,15 @@ nanoka import nanoka-export-*.tar.gz
 
   >要我说，这比GNOME时钟的闹钟好用多了
   
-  Nanoka 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
+  Nonoka 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
 
   ![](./pics/set_alarm.png)
 
 - 知识库
 
-  Nanoka 自带了 [ShorinWiki](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide) 中的内容和一些日用 Linux 会遇到的问题作为默认知识库。
+  Nonoka 自带了 [ShorinWiki](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide) 中的内容和一些日用 Linux 会遇到的问题作为默认知识库。
 
-  当然，你也可以通过 `nanoka kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
+  当然，你也可以通过 `nonoka kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
 
   ![](./pics/kb.png)
 
@@ -177,19 +177,19 @@ nanoka import nanoka-export-*.tar.gz
 
   >这个游戏 Linux 能玩吗？
 
-  这是桌面端使用 Linux 的日经问题，Nanoka 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
+  这是桌面端使用 Linux 的日经问题，Nonoka 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
 
   ![](./pics/gaming.png)
 
 - 网络搜索
 
-  即使不配置网络搜索 API，Nanoka 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
+  即使不配置网络搜索 API，Nonoka 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
 
   ![](./pics/web-search-config.png)
 
 - 搜图
 
-  Nanoka 还能帮你找图片喔！搜图会根据网络环境并行使用多个来源，并通过视觉模型筛选相关且安全的结果。图片会默认保存至`~/.nanoka/data/pictures/web-images`。
+  Nonoka 还能帮你找图片喔！搜图会根据网络环境并行使用多个来源，并通过视觉模型筛选相关且安全的结果。图片会默认保存至`~/.nonoka/data/pictures/web-images`。
 
   >NSFW 禁止！
 
@@ -197,7 +197,7 @@ nanoka import nanoka-export-*.tar.gz
 
 - 生图
 
-  支持 OpenAI 的画图服务喔。图片会默认保存至`~/.nanoka/data/pictures/generated-images`。
+  支持 OpenAI 的画图服务喔。图片会默认保存至`~/.nonoka/data/pictures/generated-images`。
 
   >这个功能默认用不了，要自己在插件设置里开启并配置 API
 
@@ -225,7 +225,7 @@ nanoka import nanoka-export-*.tar.gz
 
 - Arch Linux相关
 
-  Arch Linux 是桌面 Linux 的热门之选，Nanoka 有一系列插件可以帮助提高 Arch Linux 的日用体验。
+  Arch Linux 是桌面 Linux 的热门之选，Nonoka 有一系列插件可以帮助提高 Arch Linux 的日用体验。
 
   - AUR 状态查询
 
@@ -247,7 +247,7 @@ nanoka import nanoka-export-*.tar.gz
 
   - PKGBUILD 审查
 
-    AUR 投毒的事件搞得人心惶惶，但现在，Nanoka 可以帮忙审查 PKGBUILD 啦！
+    AUR 投毒的事件搞得人心惶惶，但现在，Nonoka 可以帮忙审查 PKGBUILD 啦！
 
     ![](./pics/pkgbuild审核.png)
 
@@ -255,17 +255,17 @@ nanoka import nanoka-export-*.tar.gz
 
   >自不必说。
 
-  Nanoka 支持读写文件、搜索内容、查找文件、删除文件等。
+  Nonoka 支持读写文件、搜索内容、查找文件、删除文件等。
 
 - 计算器和哈希编解码
 
-  为了计算结果的准确性，Nanoka 自带了科学计算器和哈希编解码的能力。
+  为了计算结果的准确性，Nonoka 自带了科学计算器和哈希编解码的能力。
 
   ![](./pics/hash.png)
 
 - 记忆系统
 
-  Nanoka 的记忆分为短期日记、长期日记和知识点。每个成功完成的对话轮次会立即写入短期日记；同一人格累计 14 条未整理日记后，由独立后台线程并行提炼长期知识点和有回溯价值的长期经历，不会阻塞正常回复。成功整理的短期日记默认保留 14 天，每次有效联想会刷新保留时间；召回达到 3 次时会立即进入长期化整理。尚未成功整理的原文超期后会退出自动联想但不会丢失，后台仍可继续整理；整理成功后再物理清理。已经长期化的日记不再刷新短期原文的清理时间。
+  Nonoka 的记忆分为短期日记、长期日记和知识点。每个成功完成的对话轮次会立即写入短期日记；同一人格累计 14 条未整理日记后，由独立后台线程并行提炼长期知识点和有回溯价值的长期经历，不会阻塞正常回复。成功整理的短期日记默认保留 14 天，每次有效联想会刷新保留时间；召回达到 3 次时会立即进入长期化整理。尚未成功整理的原文超期后会退出自动联想但不会丢失，后台仍可继续整理；整理成功后再物理清理。已经长期化的日记不再刷新短期原文的清理时间。
 
   联想会同时检索三类记忆，并使用 `jieba-rs` 中文分词进行低成本匹配。Embedding 后续可以作为可选辅助接入，但不是记忆系统运行的前提。长期知识点和长期日记会随时间衰减为“已遗忘”，不物理删除；显式搜索仍可找回。
 
@@ -277,7 +277,7 @@ nanoka import nanoka-export-*.tar.gz
 
   >Token 燃烧警告
 
-  重量级插件。对于一个命题，Nanoka 可以引经据典，有理有据地进行深度研究并写出研究报告。
+  重量级插件。对于一个命题，Nonoka 可以引经据典，有理有据地进行深度研究并写出研究报告。
 
   ![](./pics/深度研究.png)
 
@@ -314,4 +314,4 @@ nanoka import nanoka-export-*.tar.gz
 
 ## 许可
 
-Nanoka 使用 MIT License 发布，见 `LICENSE`。
+Nonoka 使用 MIT License 发布，见 `LICENSE`。

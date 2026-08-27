@@ -131,7 +131,7 @@ async fn request_frames_enforce_the_input_budget() {
 
 #[test]
 fn renders_supported_markdown_and_unicode_to_nonempty_png() {
-    let markdown = r#"# Nanoka 长回复 🚀
+    let markdown = r#"# Nonoka 长回复 🚀
 
 普通中文段落，包含 **粗体**、*斜体*、`inline code` 和 [链接文字](https://example.com)。
 
@@ -465,7 +465,7 @@ fn main() {
 | `x1` | 对齐 |
 "#;
     let pages = render(markdown, &RenderConfig::default()).unwrap();
-    let out = std::env::temp_dir().join("nanoka-font-sample.png");
+    let out = std::env::temp_dir().join("nonoka-font-sample.png");
     std::fs::write(&out, &pages[0].png).unwrap();
     eprintln!(
         "sample: {} ({}x{})",

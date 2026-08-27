@@ -6,8 +6,8 @@ use super::shared::*;
 #[test]
 fn platform_tool_payload_pretty_prints_small_json() {
     assert_eq!(
-        format_platform_tool_payload_for(r#"{"query":"Nanoka","limit":2}"#, Locale::Zh),
-        "{\n  \"limit\": 2,\n  \"query\": \"Nanoka\"\n}"
+        format_platform_tool_payload_for(r#"{"query":"Nonoka","limit":2}"#, Locale::Zh),
+        "{\n  \"limit\": 2,\n  \"query\": \"Nonoka\"\n}"
     );
 }
 
@@ -44,14 +44,14 @@ fn platform_tool_logs_include_correlation_and_result_details() {
             "tool_id": "run_123_tool_2",
             "name": "web_search",
             "display_name": "网页搜索",
-            "arguments": "{\"query\":\"Nanoka\"}"
+            "arguments": "{\"query\":\"Nonoka\"}"
         }),
         Locale::Zh,
     );
     assert!(started.starts_with("【工具：web_search】\n运行：run_123"));
     assert!(started.contains("调用 ID：run_123_tool_2"));
     assert!(started.contains("显示名称：网页搜索"));
-    assert!(started.contains("\"query\": \"Nanoka\""));
+    assert!(started.contains("\"query\": \"Nonoka\""));
 
     let finished = format_platform_tool_finished_log_for(
         "run_123",

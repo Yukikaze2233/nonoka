@@ -1,5 +1,5 @@
 use super::{awacy_query, caniplayonlinux_query, http_response, ToolRegistry, ToolSpec};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 use std::fmt::Write as _;
@@ -19,7 +19,7 @@ const TOOL_DESC: &str = "查询某个游戏在 Linux 上的兼容性。一次调
 /// 不提供选择数据源的参数(08-19)：三源并发一共约 2 秒、1.5KB，为省这点再分单源
 /// 查是过度设计。唯一的旋钮是 `max_reports`——只有 ProtonDB 评论的体积随游戏
 /// 热度线性增长（Apex 1776 条 vs 冷门游戏 5 条），其余两源都是定长。
-pub fn register(registry: &mut ToolRegistry, paths: NanokaPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: NonokaPaths) {
     registry.register(ToolSpec::new(
         "game_compat",
         TOOL_DESC,
@@ -75,7 +75,7 @@ struct Report {
 
 // ── 入口 ─────────────────────────────────────────────
 
-async fn game_compat(args: Value, paths: NanokaPaths) -> Result<String> {
+async fn game_compat(args: Value, paths: NonokaPaths) -> Result<String> {
     let query = args
         .get("query")
         .and_then(Value::as_str)

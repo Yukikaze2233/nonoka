@@ -156,7 +156,7 @@ pub(in crate::web) async fn redo_turn(
         if manager.admin_busy || manager.session_has_runs(&session_id) {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
-                "Nanoka is busy in this conversation",
+                "Nonoka is busy in this conversation",
             ));
         }
         manager.active_runs.insert(
@@ -304,7 +304,7 @@ pub(in crate::web) async fn create_turn(
         if manager.admin_busy || manager.session_has_runs(&session_id) {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
-                "Nanoka is busy in this conversation",
+                "Nonoka is busy in this conversation",
             ));
         }
         manager.active_runs.insert(

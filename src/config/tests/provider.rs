@@ -873,7 +873,7 @@ fn one_assumed_model_makes_the_whole_pool_assumed() {
     );
 }
 
-/// 量尺：`NANOKA_HOME=~/.nanoka cargo test --lib real_config_window_source -- --ignored --nocapture`
+/// 量尺：`NONOKA_HOME=~/.nonoka cargo test --lib real_config_window_source -- --ignored --nocapture`
 ///
 /// 拿**用户真实的配置和模型缓存**跑一遍窗口解析，看它到底解出多少、算不算有
 /// 出处。纯读，不写任何东西。
@@ -883,12 +883,12 @@ fn one_assumed_model_makes_the_whole_pool_assumed() {
 #[test]
 #[ignore]
 fn real_config_window_source() {
-    let Some(home) = std::env::var_os("NANOKA_HOME") else {
-        println!("\n  跳过：没给 NANOKA_HOME");
+    let Some(home) = std::env::var_os("NONOKA_HOME") else {
+        println!("\n  跳过：没给 NONOKA_HOME");
         return;
     };
-    let paths = crate::paths::NanokaPaths::new().unwrap();
-    println!("\n  NANOKA_HOME = {}", std::path::Path::new(&home).display());
+    let paths = crate::paths::NonokaPaths::new().unwrap();
+    println!("\n  NONOKA_HOME = {}", std::path::Path::new(&home).display());
     let config = AppConfig::load(&paths).unwrap();
     crate::models_cache::ensure_active_metadata(&paths, &config);
 

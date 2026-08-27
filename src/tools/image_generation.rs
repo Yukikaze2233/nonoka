@@ -1,7 +1,7 @@
 use super::vision::ReferenceResolver;
 use super::{vision, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, ImageGenerationPluginConfig};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 use chrono::Local;
@@ -34,7 +34,7 @@ fn parameters() -> Value {
     })
 }
 
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: NanokaPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: NonokaPaths) {
     let resolver = ReferenceResolver::unscoped(config.clone(), paths);
     register_with_resolver(registry, config, resolver, false);
 }

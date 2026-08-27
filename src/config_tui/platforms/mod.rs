@@ -1,7 +1,7 @@
 //! 平台（QQ 等）的接入配置。
 //!
 //! 这里的 ID 列表编辑（`parse_id_lines`、`prompt_single_id`）都做严格校验：这
-//! 些值最终会决定谁能指挥 Nanoka，填错一个数字就是把权限给了别人。
+//! 些值最终会决定谁能指挥 Nonoka，填错一个数字就是把权限给了别人。
 //!
 //! 模型路由（`select_platform_model_routes`）让不同会话走不同的模型池，摘要函
 //! 数（`*_summary`、`*_label`）只是把配置压成菜单里一行看得懂的字。
@@ -23,7 +23,7 @@ pub(in crate::config_tui) fn platforms_label(config: &AppConfig) -> String {
 
 pub(in crate::config_tui) fn select_platforms(
     stdout: &mut io::Stdout,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;
@@ -232,7 +232,7 @@ pub(in crate::config_tui) fn enabled_label(value: bool) -> &'static str {
 
 pub(in crate::config_tui) fn edit_qq(
     stdout: &mut io::Stdout,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     config: &mut AppConfig,
 ) -> Result<()> {
     let mut selected = 0usize;

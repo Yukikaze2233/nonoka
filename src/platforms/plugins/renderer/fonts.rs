@@ -25,7 +25,7 @@ pub(in crate::platforms::plugins::renderer) const CODE_FONT_FILE: &str =
 
 pub(in crate::platforms::plugins::renderer) const EMOJI_FONT_FILE: &str = "NotoColorEmoji.ttf";
 
-pub(in crate::platforms::plugins::renderer) const RENDERER_FONTS_ENV: &str = "NANOKA_RENDERER_FONTS_DIR";
+pub(in crate::platforms::plugins::renderer) const RENDERER_FONTS_ENV: &str = "NONOKA_RENDERER_FONTS_DIR";
 
 pub(in crate::platforms::plugins::renderer) fn renderer_fonts_dir() -> Result<PathBuf> {
     let mut candidates = Vec::new();
@@ -34,10 +34,10 @@ pub(in crate::platforms::plugins::renderer) fn renderer_fonts_dir() -> Result<Pa
     }
     #[cfg(debug_assertions)]
     candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/fonts"));
-    candidates.push(PathBuf::from("/usr/share/nanoka/fonts"));
-    if let Ok(executable) = crate::paths::nanoka_executable() {
+    candidates.push(PathBuf::from("/usr/share/nonoka/fonts"));
+    if let Ok(executable) = crate::paths::nonoka_executable() {
         if let Some(prefix) = executable.parent().and_then(std::path::Path::parent) {
-            candidates.push(prefix.join("share/nanoka/fonts"));
+            candidates.push(prefix.join("share/nonoka/fonts"));
         }
         if let Some(workspace) = executable
             .parent()
@@ -47,7 +47,7 @@ pub(in crate::platforms::plugins::renderer) fn renderer_fonts_dir() -> Result<Pa
             candidates.push(workspace.join("assets/fonts"));
         }
     }
-    // 兜底:发行版 noto-fonts-cjk 的标准安装路径。nanoka 专用字体目录缺失
+    // 兜底:发行版 noto-fonts-cjk 的标准安装路径。nonoka 专用字体目录缺失
     // (比如误装了不带字体的 release 资产包)时,长文转图靠系统字体继续工作。
     candidates.push(PathBuf::from("/usr/share/fonts/noto-cjk"));
     for candidate in &candidates {
@@ -61,7 +61,7 @@ pub(in crate::platforms::plugins::renderer) fn renderer_fonts_dir() -> Result<Pa
         .collect::<Vec<_>>()
         .join(", ");
     bail!(
-        "renderer font is missing; install {CJK_FONT_FILE} in /usr/share/nanoka/fonts or set {RENDERER_FONTS_ENV} (searched: {searched})"
+        "renderer font is missing; install {CJK_FONT_FILE} in /usr/share/nonoka/fonts or set {RENDERER_FONTS_ENV} (searched: {searched})"
     )
 }
 

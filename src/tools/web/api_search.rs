@@ -326,9 +326,9 @@ pub(in crate::tools::web) async fn search_exa(
 
 pub(in crate::tools::web) const EXA_MCP_ENDPOINT: &str = "https://mcp.exa.ai/mcp";
 
-/// 免 key 通道的 MCP 端点，可用 NANOKA_EXA_MCP_ENDPOINT 覆盖（自建代理/测试用）
+/// 免 key 通道的 MCP 端点，可用 NONOKA_EXA_MCP_ENDPOINT 覆盖（自建代理/测试用）
 pub(in crate::tools::web) fn exa_mcp_endpoint() -> String {
-    std::env::var("NANOKA_EXA_MCP_ENDPOINT")
+    std::env::var("NONOKA_EXA_MCP_ENDPOINT")
         .ok()
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| EXA_MCP_ENDPOINT.to_string())
@@ -349,7 +349,7 @@ pub(in crate::tools::web) async fn search_exa_public(
         "params": {
             "protocolVersion": "2025-03-26",
             "capabilities": {},
-            "clientInfo": {"name": "nanoka", "version": env!("CARGO_PKG_VERSION")},
+            "clientInfo": {"name": "nonoka", "version": env!("CARGO_PKG_VERSION")},
         },
     });
     let response = client

@@ -2,10 +2,10 @@
 """低占用专项 A/B 测量:对指定二进制量 daemon/REPL 的内存与 CPU 足迹。
 
 用法:
-    BIN=/usr/bin/nanoka python3 run.py baseline
-    BIN=../../target/release/nanoka python3 run.py round2
+    BIN=/usr/bin/nonoka python3 run.py baseline
+    BIN=../../target/release/nonoka python3 run.py round2
 
-隔离手法(见 memory/nanoka-live-testing-notes):独立 NANOKA_HOME + 独立
+隔离手法(见 memory/nonoka-live-testing-notes):独立 NONOKA_HOME + 独立
 XDG_RUNTIME_DIR + daemon 显式 `__daemon --port 18490`,与线上 8300 完全
 不相交;provider 只有本地桩,无真实出网(models.dev 后台刷新除外,两组
 同样发生,A/B 公平)。
@@ -32,7 +32,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
 REPO = BASE.parents[1]
-BIN = Path(os.environ.get("BIN", REPO / "target" / "release" / "nanoka")).resolve()
+BIN = Path(os.environ.get("BIN", REPO / "target" / "release" / "nonoka")).resolve()
 TAG = sys.argv[1] if len(sys.argv) > 1 else "run"
 HOME = BASE / "homes" / TAG
 RUN_DIR = BASE / "xdg-run" / TAG
@@ -45,8 +45,8 @@ IDLE_SECONDS = float(os.environ.get("IDLE_SECONDS", "30"))
 sys.path.insert(0, str(REPO / "testkit" / "persona-ab"))
 from run import strip_jsonc  # noqa: E402
 
-REAL_CONFIG = Path.home() / ".nanoka" / "config" / "config.jsonc"
-REAL_MODELS_CACHE = Path.home() / ".nanoka" / "cache" / "models_cache.json"
+REAL_CONFIG = Path.home() / ".nonoka" / "config" / "config.jsonc"
+REAL_MODELS_CACHE = Path.home() / ".nonoka" / "cache" / "models_cache.json"
 
 
 def build_home():
@@ -82,9 +82,9 @@ def build_home():
 
 def env_for(extra=None):
     env = dict(os.environ)
-    for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "NANOKA_DIRECT"):
+    for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "NONOKA_DIRECT"):
         env.pop(k, None)
-    env["NANOKA_HOME"] = str(HOME)
+    env["NONOKA_HOME"] = str(HOME)
     env["XDG_RUNTIME_DIR"] = str(RUN_DIR)
     env["TERM"] = "xterm-256color"
     if extra:

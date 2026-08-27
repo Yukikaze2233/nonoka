@@ -170,7 +170,7 @@ pub(in crate::platforms::plugins::group_management) fn append_event(
 }
 
 /// 解析查询目标群：群聊内默认当前群；带 group_id 且非当前群时要求
-/// Nanoka 管理员；群聊之外（私聊/CLI）group_id 必填且仅限管理员。
+/// Nonoka 管理员；群聊之外（私聊/CLI）group_id 必填且仅限管理员。
 pub(in crate::platforms::plugins::group_management) fn resolve_query_scope(
     args: &Value,
     context: &PlatformTurnContext,
@@ -196,7 +196,7 @@ pub(in crate::platforms::plugins::group_management) fn resolve_query_scope(
         return Ok(current);
     }
     if !context.is_admin {
-        bail!("跨群查询仅限 Nanoka 管理员");
+        bail!("跨群查询仅限 Nonoka 管理员");
     }
     Ok(PlatformPluginScopeKey {
         conversation_kind: "group".to_string(),
@@ -486,7 +486,7 @@ pub(in crate::platforms::plugins::group_management) async fn record_real_context
     duration: Option<u64>,
 ) -> Result<()> {
     let mut text = format!(
-        "[System:群管理行为]\n操作：{action}\n执行者：Nanoka（{}）\n对象：{}（{}）",
+        "[System:群管理行为]\n操作：{action}\n执行者：Nonoka（{}）\n对象：{}（{}）",
         context.conversation.account_id,
         member.display_name(),
         member.user_id

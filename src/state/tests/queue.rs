@@ -125,7 +125,7 @@ fn queued_prompts_survive_prompt_changes_but_not_a_new_store_session() {
     assert_eq!(store.load_queued_prompts().unwrap().len(), 1);
     drop(store);
 
-    let paths = NanokaPaths {
+    let paths = NonokaPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().join("config"),
         config_file: temp.path().join("config/config.jsonc"),
@@ -134,7 +134,7 @@ fn queued_prompts_survive_prompt_changes_but_not_a_new_store_session() {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("pictures"),
-        fish_hook_file: temp.path().join("fish/nanoka.fish"),
+        fish_hook_file: temp.path().join("fish/nonoka.fish"),
         bash_hook_file: temp.path().join("shell/bash-hook.sh"),
         zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
         scripts_dir: temp.path().join("config/scripts"),

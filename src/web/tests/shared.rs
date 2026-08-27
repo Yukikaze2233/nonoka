@@ -4,8 +4,8 @@ use crate::question::QuestionRequest;
 use crate::question::{QuestionOption, QuestionPrompt};
 use crate::web::*;
 
-pub(super) fn test_paths(root: &FilePath) -> NanokaPaths {
-    NanokaPaths {
+pub(super) fn test_paths(root: &FilePath) -> NonokaPaths {
+    NonokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),

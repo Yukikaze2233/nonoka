@@ -172,7 +172,7 @@ pub(in crate::web) async fn poppable_turns_http(
 /// `/pop <count>`：从当前上下文弹出最旧的 N 轮。
 ///
 /// REPL 的无参数形态是交互式挑选，离不开终端；WebUI 对齐的是
-/// `nanoka pop <count>` 的按数量形态。轮次在这里解析成 id 再交给
+/// `nonoka pop <count>` 的按数量形态。轮次在这里解析成 id 再交给
 /// `ActorCommand::Pop`——actor 侧会拿可弹出集合再过滤一遍，读取和
 /// 预订管理锁之间被人抢先弹掉的轮次不会被弹两次。
 pub(in crate::web) async fn pop_conversation(

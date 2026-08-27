@@ -6,15 +6,15 @@ use std::path::PathBuf;
 
 use base64::{engine::general_purpose, Engine as _};
 
-const PROMPT_MASK: &[u8] = b"NanokaPromptMask";
+const PROMPT_MASK: &[u8] = b"NonokaPromptMask";
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/prompts/nanoka.md");
-    println!("cargo:rerun-if-changed=src/prompts/nanoka.hint.md");
-    println!("cargo:rerun-if-changed=src/prompts/nanoka-dialogs.md");
+    println!("cargo:rerun-if-changed=src/prompts/nonoka.md");
+    println!("cargo:rerun-if-changed=src/prompts/nonoka.hint.md");
+    println!("cargo:rerun-if-changed=src/prompts/nonoka-dialogs.md");
     println!("cargo:rerun-if-changed=assets/o200k_base.tiktoken");
     println!("cargo:rerun-if-changed=assets/jieba/dict.txt");
-    // Rerun on any source or frontend change so NANOKA_BUILD_ID uniquely
+    // Rerun on any source or frontend change so NONOKA_BUILD_ID uniquely
     // identifies a build; the CLI uses it to detect (and restart) a daemon
     // left running from an older build.
     println!("cargo:rerun-if-changed=src");
@@ -23,7 +23,7 @@ fn main() {
     println!("cargo:rerun-if-changed=web/styles.css");
     println!("cargo:rerun-if-changed=web/app.js");
     println!(
-        "cargo:rustc-env=NANOKA_BUILD_ID={}",
+        "cargo:rustc-env=NONOKA_BUILD_ID={}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|duration| duration.as_nanos())
@@ -39,18 +39,18 @@ fn main() {
             .collect::<Vec<_>>();
         base64_encode(&encoded)
     };
-    let prompt = obfuscate("src/prompts/nanoka.md");
-    let hint = obfuscate("src/prompts/nanoka.hint.md");
-    let dialogs = obfuscate("src/prompts/nanoka-dialogs.md");
+    let prompt = obfuscate("src/prompts/nonoka.md");
+    let hint = obfuscate("src/prompts/nonoka.hint.md");
+    let dialogs = obfuscate("src/prompts/nonoka-dialogs.md");
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR is set by cargo");
-    let dest = Path::new(&out_dir).join("default_nanoka_prompt.rs");
+    let dest = Path::new(&out_dir).join("default_nonoka_prompt.rs");
     fs::write(
         dest,
         format!(
-            "const PROMPT_MASK: &[u8] = b\"NanokaPromptMask\";\n\
+            "const PROMPT_MASK: &[u8] = b\"NonokaPromptMask\";\n\
              const OBFUSCATED_DEFAULT_SYSTEM_PROMPT: &str = \"{prompt}\";\n\
-             const OBFUSCATED_DEFAULT_NANOKA_HINT: &str = \"{hint}\";\n\
-             const OBFUSCATED_DEFAULT_NANOKA_DIALOGS: &str = \"{dialogs}\";\n"
+             const OBFUSCATED_DEFAULT_NONOKA_HINT: &str = \"{hint}\";\n\
+             const OBFUSCATED_DEFAULT_NONOKA_DIALOGS: &str = \"{dialogs}\";\n"
         ),
     )
     .expect("write generated prompt asset");

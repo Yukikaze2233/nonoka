@@ -44,7 +44,7 @@ use crate::llm::{
     ImageUrlContent, OpenAiCompatibleClient, ToolCall, ToolCallFunction, TurnTokens, Usage,
 };
 use crate::memory::{EvictedTurn, MemoryAccess, MemoryOrganizerHandle, MemoryOrigin, MemoryStore};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use crate::persona_hint;
 use crate::platforms::{PlatformContextFileRef, PlatformContextImageRef, PlatformTurnContext};
 use crate::question::{
@@ -246,7 +246,7 @@ pub struct Agent {
     mode: AgentMode,
     prompt_audience: PromptAudience,
     config: AppConfig,
-    paths: NanokaPaths,
+    paths: NonokaPaths,
     on_overflow: String,
     turn_display_content: Option<String>,
     attachment_run_id: Option<String>,

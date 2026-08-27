@@ -62,14 +62,14 @@ pub(crate) fn resource_layout_entries(layout: &Layout) -> Vec<ResourceMigrationE
 
 pub(crate) fn resource_runtime_dir(layout: &Layout) -> PathBuf {
     if cfg!(test) {
-        return layout.state_dir.join("nanoka");
+        return layout.state_dir.join("nonoka");
     }
     match std::env::var_os("XDG_RUNTIME_DIR") {
         Some(runtime_root) => runtime_dir_for(
             Path::new(&runtime_root),
-            std::env::var_os("NANOKA_HOME").as_deref().map(Path::new),
+            std::env::var_os("NONOKA_HOME").as_deref().map(Path::new),
         ),
-        None => layout.state_dir.join("nanoka"),
+        None => layout.state_dir.join("nonoka"),
     }
 }
 
@@ -99,7 +99,7 @@ pub(crate) fn resource_layout_marker_exists(layout: &Layout) -> Result<bool> {
 
 pub(crate) fn migrate_resource_layout(layout: &Layout) -> Result<()> {
     if !try_migrate_resource_layout(layout, false)? {
-        bail!("Nanoka resource migration is deferred while another daemon or starter is active");
+        bail!("Nonoka resource migration is deferred while another daemon or starter is active");
     }
     Ok(())
 }
@@ -148,7 +148,7 @@ pub(crate) fn try_migrate_resource_layout(layout: &Layout, current_process_is_da
             return match recovery {
                 Ok(()) => Err(error).with_context(|| {
                     format!(
-                        "migrating Nanoka resource from {} to {}",
+                        "migrating Nonoka resource from {} to {}",
                         entry.source.display(),
                         entry.destination.display()
                     )
@@ -210,7 +210,7 @@ pub(crate) fn preflight_resource_entries(layout: &Layout, entries: &[ResourceMig
         let source_metadata = fs::symlink_metadata(&entry.source)?;
         if source_metadata.file_type().is_symlink() {
             bail!(
-                "Nanoka resource migration refuses symbolic-link source {}",
+                "Nonoka resource migration refuses symbolic-link source {}",
                 entry.source.display()
             );
         }
@@ -220,7 +220,7 @@ pub(crate) fn preflight_resource_entries(layout: &Layout, entries: &[ResourceMig
         ensure_resource_same_filesystem(&entry.source, &entry.destination)?;
         match fs::symlink_metadata(&entry.destination) {
             Ok(_) => bail!(
-                "Nanoka resource migration destination already exists: {}; move or remove it and retry",
+                "Nonoka resource migration destination already exists: {}; move or remove it and retry",
                 entry.destination.display()
             ),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -241,7 +241,7 @@ pub(crate) fn ensure_destination_ancestors(layout: &Layout, destination: &Path) 
         .strip_prefix(&layout.data_dir)
         .with_context(|| {
             format!(
-                "resource destination escapes Nanoka data directory: {}",
+                "resource destination escapes Nonoka data directory: {}",
                 destination.display()
             )
         })?;
@@ -253,11 +253,11 @@ pub(crate) fn ensure_destination_ancestors(layout: &Layout, destination: &Path) 
         }
         match fs::symlink_metadata(&current) {
             Ok(metadata) if metadata.file_type().is_symlink() => bail!(
-                "Nanoka resource migration refuses symbolic-link destination ancestor {}",
+                "Nonoka resource migration refuses symbolic-link destination ancestor {}",
                 current.display()
             ),
             Ok(metadata) if !metadata.is_dir() => bail!(
-                "Nanoka resource migration destination ancestor is not a directory: {}",
+                "Nonoka resource migration destination ancestor is not a directory: {}",
                 current.display()
             ),
             Ok(_) => {}
@@ -289,7 +289,7 @@ pub(crate) fn ensure_resource_same_filesystem(source: &Path, destination: &Path)
     };
     if source_device != destination_device {
         bail!(
-            "Nanoka resource migration requires source and destination on the same filesystem: {} -> {}",
+            "Nonoka resource migration requires source and destination on the same filesystem: {} -> {}",
             source.display(),
             destination.display()
         );
@@ -315,7 +315,7 @@ pub(crate) fn ensure_resource_targets_do_not_overlap(
     let nested_source = parent.source.join(relative);
     if entry_exists(&nested_source)? && entry_exists(&child.source)? {
         bail!(
-            "Nanoka resource migration found overlapping sources for {} and {}; remove one duplicate and retry",
+            "Nonoka resource migration found overlapping sources for {} and {}; remove one duplicate and retry",
             nested_source.display(),
             child.source.display()
         );
@@ -366,11 +366,11 @@ pub(crate) fn recover_resource_migration(layout: &Layout) -> Result<()> {
     let mut journal: ResourceMigrationJournal = serde_json::from_str(&raw)
         .with_context(|| format!("parsing resource migration journal {}", path.display()))?;
     if journal.moved > journal.entries.len() {
-        bail!("invalid Nanoka resource migration journal: moved count is out of range");
+        bail!("invalid Nonoka resource migration journal: moved count is out of range");
     }
     if let Some(index) = journal.pending {
         if index != journal.moved || index >= journal.entries.len() {
-            bail!("invalid Nanoka resource migration journal: pending index is out of range");
+            bail!("invalid Nonoka resource migration journal: pending index is out of range");
         }
         let entry = &journal.entries[index];
         match (
@@ -383,12 +383,12 @@ pub(crate) fn recover_resource_migration(layout: &Layout) -> Result<()> {
                 journal.pending = None;
             }
             (true, true) => bail!(
-                "cannot recover Nanoka resource migration because both paths exist: {} and {}",
+                "cannot recover Nonoka resource migration because both paths exist: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
             (false, false) => bail!(
-                "cannot recover Nanoka resource migration because both paths are missing: {} and {}",
+                "cannot recover Nonoka resource migration because both paths are missing: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
@@ -405,7 +405,7 @@ pub(crate) fn recover_resource_migration(layout: &Layout) -> Result<()> {
             (false, true) => {
                 atomic_resource_move(&entry.destination, &entry.source).with_context(|| {
                     format!(
-                        "rolling back Nanoka resource migration from {} to {}",
+                        "rolling back Nonoka resource migration from {} to {}",
                         entry.destination.display(),
                         entry.source.display()
                     )
@@ -413,12 +413,12 @@ pub(crate) fn recover_resource_migration(layout: &Layout) -> Result<()> {
             }
             (true, false) => {}
             (true, true) => bail!(
-                "cannot recover Nanoka resource migration because both paths exist: {} and {}",
+                "cannot recover Nonoka resource migration because both paths exist: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
             (false, false) => bail!(
-                "cannot recover Nanoka resource migration because both paths are missing: {} and {}",
+                "cannot recover Nonoka resource migration because both paths are missing: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),

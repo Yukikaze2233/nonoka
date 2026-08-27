@@ -1,7 +1,7 @@
 //! 好友申请与入群审核。
 
 use crate::platforms::onebot::*;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use super::shared::*;
 
 #[test]
@@ -241,7 +241,7 @@ async fn group_add_request_handler_approves_rejects_and_pends() {
     let (handle, mut frames) = test_connection(None);
 
     let approve_review = |_config: AppConfig,
-                          _paths: NanokaPaths,
+                          _paths: NonokaPaths,
                           _settings: QqGroupJoinApprovalPluginSettings,
                           _condition: String,
                           _request: GroupJoinRequest,
@@ -273,7 +273,7 @@ async fn group_add_request_handler_approves_rejects_and_pends() {
     assert!(frames.try_recv().is_err());
 
     let reject_review = |_config: AppConfig,
-                         _paths: NanokaPaths,
+                         _paths: NonokaPaths,
                          _settings: QqGroupJoinApprovalPluginSettings,
                          _condition: String,
                          _request: GroupJoinRequest,
@@ -302,7 +302,7 @@ async fn group_add_request_handler_approves_rejects_and_pends() {
     assert!(frames.try_recv().is_err());
 
     let pending_review = |_config: AppConfig,
-                          _paths: NanokaPaths,
+                          _paths: NonokaPaths,
                           _settings: QqGroupJoinApprovalPluginSettings,
                           _condition: String,
                           _request: GroupJoinRequest,
@@ -326,7 +326,7 @@ async fn group_add_request_handler_leaves_unknown_or_disabled_pending() {
     state.manager.lock().unwrap().config.platforms.qq.enabled = true;
     let (handle, mut frames) = test_connection(None);
     let review = |_config: AppConfig,
-                  _paths: NanokaPaths,
+                  _paths: NonokaPaths,
                   _settings: QqGroupJoinApprovalPluginSettings,
                   _condition: String,
                   _request: GroupJoinRequest,
@@ -380,7 +380,7 @@ async fn group_add_request_handler_leaves_unknown_or_disabled_pending() {
     // AI review error is fail-closed.
     let failing =
         |_config: AppConfig,
-         _paths: NanokaPaths,
+         _paths: NonokaPaths,
          _settings: QqGroupJoinApprovalPluginSettings,
          _condition: String,
          _request: GroupJoinRequest,

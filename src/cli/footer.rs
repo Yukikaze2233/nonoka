@@ -233,7 +233,7 @@ pub(in crate::cli) fn repl_footer_left(
     let thinking = footer.thinking.as_deref().unwrap_or_default();
     let colored_thinking = (!thinking.is_empty()).then(|| primary_footer_text(thinking));
     let colored_thinking = colored_thinking.as_deref().unwrap_or_default();
-    // 回合运行中,模型信息右侧是 Nanoka 的声波律动(用户 08-20 选定):五柱
+    // 回合运行中,模型信息右侧是 Nonoka 的声波律动(用户 08-20 选定):五柱
     // 波浪的高度与亮度随帧流动,颜色跟随模式主色(普通蓝/dev 酒红)。与
     // 模型信息之间隔三个空格,不进 " · " 序列(用户点名)。
     let wave = footer
@@ -364,7 +364,7 @@ pub(in crate::cli) fn turn_meter(
 /// The footer/status display must reflect the session's pinned model pool,
 /// not just the global config.
 pub(in crate::cli) fn footer_config_for_session(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     config: &AppConfig,
     session_id: &str,
 ) -> AppConfig {

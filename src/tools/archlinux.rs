@@ -1,5 +1,5 @@
 use super::{html_conversion, http_response, ToolRegistry, ToolSpec};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
@@ -8,7 +8,7 @@ const ARCH_STATUS_PAGE_ID: &str = "vmM5ruWEAB";
 const ARCH_NEWS_FEED_URL: &str = "https://archlinux.org/feeds/news/";
 const ARCH_NEWS_CACHE_FILE: &str = "arch_news_last_seen.json";
 
-pub fn register(registry: &mut ToolRegistry, paths: &NanokaPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: &NonokaPaths) {
     // 三件 AUR 查询工具合并成 `aur`(08-17):search/info/status 都走官方 RPC,
     // 拆开只是让 tools 数组多背两份外壳。
     registry.register(ToolSpec::new(
@@ -99,7 +99,7 @@ async fn official_package_query(args: Value) -> Result<String> {
     };
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
-        .user_agent("nanoka-archlinux-official-package-query/0.1")
+        .user_agent("nonoka-archlinux-official-package-query/0.1")
         .build()?;
     let resp = client.get(&url).send().await?;
     let status = resp.status();
@@ -200,7 +200,7 @@ async fn aur_info(args: Value) -> Result<String> {
 async fn arch_status() -> Result<String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
-        .user_agent("nanoka-arch-status/0.1")
+        .user_agent("nonoka-arch-status/0.1")
         .build()?;
 
     let event_url = format!(
@@ -582,7 +582,7 @@ async fn archlinux_news(args: Value, state_dir: &std::path::Path) -> Result<Stri
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
-        .user_agent("nanoka-archlinux-news/0.1")
+        .user_agent("nonoka-archlinux-news/0.1")
         .build()?;
     let resp = client.get(ARCH_NEWS_FEED_URL).send().await?;
     if !resp.status().is_success() {

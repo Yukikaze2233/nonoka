@@ -1,6 +1,6 @@
 //! 数据类命令：知识库、记忆、技能。
 //!
-//! 三者的共性是「Nanoka 记住的东西」的增删查改入口——知识库是人喂的资料，记忆
+//! 三者的共性是「Nonoka 记住的东西」的增删查改入口——知识库是人喂的资料，记忆
 //! 是它自己攒的，技能是可复用的操作手册。放在一起是因为它们的子命令结构与
 //! 输出格式高度相似，改一个通常要顺手对齐另外两个。
 
@@ -139,7 +139,7 @@ pub struct KbEmbedReindexArgs {
     pub quiet: bool,
 }
 
-pub(in crate::cli) async fn run_kb(paths: &NanokaPaths, args: KbArgs) -> Result<()> {
+pub(in crate::cli) async fn run_kb(paths: &NonokaPaths, args: KbArgs) -> Result<()> {
     let config = AppConfig::load(paths)?;
     let kb = tools::knowledge_base::KnowledgeBase::new(config, paths.clone())?;
     match args.command {
@@ -201,7 +201,7 @@ pub(in crate::cli) async fn run_kb(paths: &NanokaPaths, args: KbArgs) -> Result<
     Ok(())
 }
 
-pub(in crate::cli) async fn run_update_default_kb(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) async fn run_update_default_kb(paths: &NonokaPaths) -> Result<()> {
     let config = AppConfig::load_or_default(paths)?;
     let state = crate::default_kb::update(paths, &config, |stage| {
         let mut stderr = io::stderr().lock();
@@ -223,7 +223,7 @@ pub(in crate::cli) fn write_default_kb_update_progress(
     output.flush()
 }
 
-pub(in crate::cli) fn run_memory(paths: &NanokaPaths, args: MemoryArgs) -> Result<()> {
+pub(in crate::cli) fn run_memory(paths: &NonokaPaths, args: MemoryArgs) -> Result<()> {
     let config = AppConfig::load_or_default(paths)?;
     let store = MemoryStore::new(&config, paths);
     match args.command {
@@ -246,7 +246,7 @@ pub(in crate::cli) fn run_memory(paths: &NanokaPaths, args: MemoryArgs) -> Resul
     Ok(())
 }
 
-pub(in crate::cli) fn run_skills(paths: &NanokaPaths, args: SkillsArgs) -> Result<()> {
+pub(in crate::cli) fn run_skills(paths: &NonokaPaths, args: SkillsArgs) -> Result<()> {
     std::fs::create_dir_all(&paths.skills_dir)?;
     match args.command {
         SkillsCommand::List => {
@@ -317,7 +317,7 @@ pub(in crate::cli) fn run_skills(paths: &NanokaPaths, args: SkillsArgs) -> Resul
     Ok(())
 }
 
-pub(in crate::cli) fn skill_names(paths: &NanokaPaths) -> Result<Vec<String>> {
+pub(in crate::cli) fn skill_names(paths: &NonokaPaths) -> Result<Vec<String>> {
     let mut names = Vec::new();
     if !paths.skills_dir.exists() {
         return Ok(names);
@@ -332,7 +332,7 @@ pub(in crate::cli) fn skill_names(paths: &NanokaPaths) -> Result<Vec<String>> {
     Ok(names)
 }
 
-pub(in crate::cli) fn skill_dir(paths: &NanokaPaths, name: &str) -> Result<PathBuf> {
+pub(in crate::cli) fn skill_dir(paths: &NonokaPaths, name: &str) -> Result<PathBuf> {
     let clean = name.trim();
     if clean.is_empty()
         || clean.contains('/')

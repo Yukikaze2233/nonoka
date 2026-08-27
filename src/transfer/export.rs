@@ -1,9 +1,9 @@
-//! `nanoka export`: pack a portable copy of this installation.
+//! `nonoka export`: pack a portable copy of this installation.
 
 use super::manifest::{Entry, Manifest, Scope, MANIFEST_FORMAT_VERSION, MANIFEST_NAME};
 use super::registry::{is_backup_name, unit_for, DataUnit, UnitKind, IGNORED_SUFFIXES, UNITS};
 use crate::i18n::text as t;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
 use flate2::write::GzEncoder;
 use flate2::Compression;
@@ -32,7 +32,7 @@ impl ExportOptions {
 /// One concrete file destined for the archive.
 struct Planned {
     unit: &'static str,
-    /// Where it lands in the archive, relative to `NANOKA_HOME`.
+    /// Where it lands in the archive, relative to `NONOKA_HOME`.
     rel: String,
     /// Where to read it from — the live file, or a snapshot in a temp dir.
     source: PathBuf,
@@ -49,8 +49,8 @@ pub struct ExportReport {
     pub by_unit: Vec<(&'static str, u64)>,
 }
 
-pub fn export(paths: &NanokaPaths, output: &Path, options: &ExportOptions) -> Result<ExportReport> {
-    let root = nanoka_home(paths)?;
+pub fn export(paths: &NonokaPaths, output: &Path, options: &ExportOptions) -> Result<ExportReport> {
+    let root = nonoka_home(paths)?;
     if !options.dry_run && output.exists() && !options.force {
         bail!(
             "{}: {}",
@@ -102,7 +102,7 @@ pub fn export(paths: &NanokaPaths, output: &Path, options: &ExportOptions) -> Re
 
     let manifest = Manifest {
         format_version: MANIFEST_FORMAT_VERSION,
-        nanoka_version: env!("CARGO_PKG_VERSION").to_string(),
+        nonoka_version: env!("CARGO_PKG_VERSION").to_string(),
         exported_at: chrono::Local::now().to_rfc3339(),
         config_version: crate::config::CURRENT_CONFIG_VERSION,
         schema_versions,
@@ -142,13 +142,13 @@ pub fn export(paths: &NanokaPaths, output: &Path, options: &ExportOptions) -> Re
     })
 }
 
-/// `NANOKA_HOME` — the common ancestor of the config/data/state/cache roots.
-pub fn nanoka_home(paths: &NanokaPaths) -> Result<PathBuf> {
+/// `NONOKA_HOME` — the common ancestor of the config/data/state/cache roots.
+pub fn nonoka_home(paths: &NonokaPaths) -> Result<PathBuf> {
     paths
         .config_dir
         .parent()
         .map(Path::to_path_buf)
-        .context("could not determine NANOKA_HOME from the config directory")
+        .context("could not determine NONOKA_HOME from the config directory")
 }
 
 fn plan_unit(

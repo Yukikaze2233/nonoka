@@ -8,7 +8,7 @@
 
 use crate::tools::memes::*;
 
-pub(crate) const BUILTIN_MEMES_DIR: &str = "/usr/share/nanoka/memes";
+pub(crate) const BUILTIN_MEMES_DIR: &str = "/usr/share/nonoka/memes";
 
 pub(crate) const MIN_SHORT_MEME_ID_LEN: usize = 7;
 
@@ -102,7 +102,7 @@ pub(crate) struct MemeLibraryCache {
     pub(crate) memes: Vec<LoadedMeme>,
 }
 
-pub(crate) fn load_library(paths: &NanokaPaths, library: &str) -> Result<Vec<LoadedMeme>> {
+pub(crate) fn load_library(paths: &NonokaPaths, library: &str) -> Result<Vec<LoadedMeme>> {
     let builtin_dir = builtin_library_dir(library);
     let user_dir = user_library_dir(paths, library);
     let builtin_index = builtin_dir.join("index.json");
@@ -161,7 +161,7 @@ pub(crate) fn index_mtime(path: &Path) -> Option<SystemTime> {
         .ok()
 }
 
-pub(crate) fn find_meme(paths: &NanokaPaths, library: &str, id: &str) -> Result<Option<LoadedMeme>> {
+pub(crate) fn find_meme(paths: &NonokaPaths, library: &str, id: &str) -> Result<Option<LoadedMeme>> {
     find_meme_in(load_library(paths, library)?, id)
 }
 
@@ -169,7 +169,7 @@ pub(crate) fn find_meme(paths: &NanokaPaths, library: &str, id: &str) -> Result<
 /// (`enabled=true`)必须能找到已禁用条目,否则禁用成了单向门。
 /// 管理操作低频,不走库缓存。
 pub(crate) fn find_meme_any(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     library: &str,
     id: &str,
 ) -> Result<Option<LoadedMeme>> {
@@ -298,14 +298,14 @@ pub(crate) fn current_persona_library(config: &AppConfig) -> String {
     )
 }
 
-pub(crate) fn meme_ref_exists(paths: &NanokaPaths, meme: &MemeRef) -> Result<bool> {
+pub(crate) fn meme_ref_exists(paths: &NonokaPaths, meme: &MemeRef) -> Result<bool> {
     Ok(find_meme(paths, &meme.library, &meme.id)?.is_some())
 }
 
 pub(crate) async fn delete_meme_reference(
     meme: &MemeRef,
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
 ) -> Result<()> {
     let result = delete_meme(
         json!({
@@ -358,7 +358,7 @@ pub(crate) fn sanitize_library(value: &str) -> String {
 }
 
 pub(crate) fn builtin_library_dir(library: &str) -> PathBuf {
-    if let Some(path) = std::env::var_os("NANOKA_MEMES_DIR") {
+    if let Some(path) = std::env::var_os("NONOKA_MEMES_DIR") {
         return PathBuf::from(path).join(library);
     }
     let dev = PathBuf::from("src/memes").join(library);
@@ -368,7 +368,7 @@ pub(crate) fn builtin_library_dir(library: &str) -> PathBuf {
     PathBuf::from(BUILTIN_MEMES_DIR).join(library)
 }
 
-pub(crate) fn user_library_dir(paths: &NanokaPaths, library: &str) -> PathBuf {
+pub(crate) fn user_library_dir(paths: &NonokaPaths, library: &str) -> PathBuf {
     paths.data_dir.join("memes").join(sanitize_library(library))
 }
 

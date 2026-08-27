@@ -1,7 +1,7 @@
 ---
 name: linux-game-compatibility
 description: 调查某款游戏在 Linux 下的兼容性（Proton/反作弊/多人联机/性能），产出红绿灯结论与可执行的游玩步骤。Use when the user asks whether a game runs on Linux, Steam Deck, Proton, Wine, Lutris, Heroic, or anti-cheat support.
-compatibility: Nanoka built-in research workflow
+compatibility: Nonoka built-in research workflow
 ---
 
 # Linux 游戏兼容性调查

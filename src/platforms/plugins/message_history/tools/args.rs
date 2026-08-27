@@ -152,7 +152,7 @@ pub(crate) fn require_cross_conversation_access(
         bail!("cross-conversation history access is disabled");
     }
     if !effective_admin(context) {
-        bail!("only a Nanoka platform administrator may access another conversation's history");
+        bail!("only a Nonoka platform administrator may access another conversation's history");
     }
     Ok(())
 }

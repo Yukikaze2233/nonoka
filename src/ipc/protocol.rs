@@ -64,7 +64,7 @@ impl Request {
     }
 }
 
-/// 触发回合的终端身份:tty 设备路径 + 拉起 nanoka 的 shell 进程。
+/// 触发回合的终端身份:tty 设备路径 + 拉起 nonoka 的 shell 进程。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OriginTty {
     pub path: std::path::PathBuf,
@@ -207,7 +207,7 @@ pub enum Command {
     SetReplSession {
         target: SessionRef,
     },
-    /// 工具桥(任务#12):`nanoka tool-call` 打回 daemon,以指定会话的身份与
+    /// 工具桥(任务#12):`nonoka tool-call` 打回 daemon,以指定会话的身份与
     /// 回合来源执行结构化工具——内层调用照走 guard/超时管线。bash 就是
     /// 编排层:中间数据在脚本里流动,不经模型上下文往返。
     ToolCall {
@@ -216,7 +216,7 @@ pub enum Command {
         name: String,
         #[serde(default)]
         arguments: String,
-        /// 序列化的 TurnOrigin(来自 run_command 注入的 NANOKA_TURN_ORIGIN)。
+        /// 序列化的 TurnOrigin(来自 run_command 注入的 NONOKA_TURN_ORIGIN)。
         #[serde(default)]
         origin: Option<String>,
         /// 递归深度(护栏,daemon 侧校验)。

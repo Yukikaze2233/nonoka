@@ -92,10 +92,10 @@ impl Agent {
                         }
                         Ok(Ok((None, _, _))) => {}
                         Ok(Err(error)) => {
-                            tracing::warn!(error = %error, "failed to refresh Nanoka skill catalog")
+                            tracing::warn!(error = %error, "failed to refresh Nonoka skill catalog")
                         }
                         Err(error) => {
-                            tracing::warn!(error = %error, "Nanoka skill catalog worker stopped")
+                            tracing::warn!(error = %error, "Nonoka skill catalog worker stopped")
                         }
                     }
                 }

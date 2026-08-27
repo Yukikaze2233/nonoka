@@ -1,4 +1,4 @@
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Result};
 use chrono::{Local, TimeZone};
 use serde::{Deserialize, Serialize};
@@ -22,11 +22,11 @@ pub enum AlarmStatus {
     Ringing,
 }
 
-pub fn alarms_file(paths: &NanokaPaths) -> PathBuf {
+pub fn alarms_file(paths: &NonokaPaths) -> PathBuf {
     paths.state_dir.join("alarms.json")
 }
 
-pub fn alarm_log_file(paths: &NanokaPaths) -> PathBuf {
+pub fn alarm_log_file(paths: &NonokaPaths) -> PathBuf {
     paths.logs_dir().join("alarm.log")
 }
 
@@ -82,7 +82,7 @@ pub fn due_at_from_time(value: &str) -> Result<i64> {
         .ok_or_else(|| anyhow::anyhow!("alarm time overflows: {value}"))
 }
 
-pub fn load(paths: &NanokaPaths) -> Result<Vec<AlarmRecord>> {
+pub fn load(paths: &NonokaPaths) -> Result<Vec<AlarmRecord>> {
     let file = alarms_file(paths);
     if !file.exists() {
         return Ok(Vec::new());
@@ -94,7 +94,7 @@ pub fn load(paths: &NanokaPaths) -> Result<Vec<AlarmRecord>> {
     Ok(serde_json::from_str(&content)?)
 }
 
-pub fn save(paths: &NanokaPaths, records: &[AlarmRecord]) -> Result<()> {
+pub fn save(paths: &NonokaPaths, records: &[AlarmRecord]) -> Result<()> {
     std::fs::create_dir_all(&paths.state_dir)?;
     let file = alarms_file(paths);
     let temp = tempfile::NamedTempFile::new_in(&paths.state_dir)?;
@@ -103,14 +103,14 @@ pub fn save(paths: &NanokaPaths, records: &[AlarmRecord]) -> Result<()> {
     Ok(())
 }
 
-pub fn upsert(paths: &NanokaPaths, record: AlarmRecord) -> Result<()> {
+pub fn upsert(paths: &NonokaPaths, record: AlarmRecord) -> Result<()> {
     let mut records = load(paths)?;
     records.retain(|existing| existing.id != record.id);
     records.push(record);
     save(paths, &records)
 }
 
-pub fn update_status(paths: &NanokaPaths, id: &str, status: AlarmStatus) -> Result<()> {
+pub fn update_status(paths: &NonokaPaths, id: &str, status: AlarmStatus) -> Result<()> {
     let mut records = load(paths)?;
     if let Some(record) = records.iter_mut().find(|record| record.id == id) {
         record.status = status;
@@ -118,7 +118,7 @@ pub fn update_status(paths: &NanokaPaths, id: &str, status: AlarmStatus) -> Resu
     save(paths, &records)
 }
 
-pub fn remove(paths: &NanokaPaths, id: &str) -> Result<Option<AlarmRecord>> {
+pub fn remove(paths: &NonokaPaths, id: &str) -> Result<Option<AlarmRecord>> {
     let mut records = load(paths)?;
     let mut removed = None;
     records.retain(|record| {
@@ -133,7 +133,7 @@ pub fn remove(paths: &NanokaPaths, id: &str) -> Result<Option<AlarmRecord>> {
     Ok(removed)
 }
 
-pub fn cleanup_dead(paths: &NanokaPaths) -> Result<Vec<AlarmRecord>> {
+pub fn cleanup_dead(paths: &NonokaPaths) -> Result<Vec<AlarmRecord>> {
     let records = load(paths)?;
     let active = records
         .into_iter()
@@ -203,9 +203,9 @@ pub fn format_due_at(timestamp: i64) -> String {
 mod tests {
     use super::*;
 
-    fn test_paths(state_dir: PathBuf) -> NanokaPaths {
+    fn test_paths(state_dir: PathBuf) -> NonokaPaths {
         let cache_dir = state_dir.join("cache");
-        NanokaPaths {
+        NonokaPaths {
             root_dir: PathBuf::new(),
             config_dir: PathBuf::new(),
             config_file: PathBuf::new(),

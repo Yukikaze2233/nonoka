@@ -1,6 +1,6 @@
 //! 导出与导入。
 //!
-//! 整个 Nanoka 状态的搬家：配置、会话库、记忆、知识库、技能、素材。导出要能在
+//! 整个 Nonoka 状态的搬家：配置、会话库、记忆、知识库、技能、素材。导出要能在
 //! 另一台机器上还原出等价的环境，所以路径必须相对化、密钥必须显式选择带不带。
 
 use crate::cli::*;
@@ -37,12 +37,12 @@ pub(in crate::cli) fn default_export_name() -> String {
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "nanoka".to_string());
+        .unwrap_or_else(|| "nonoka".to_string());
     let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
-    format!("nanoka-export-{host}-{stamp}.tar.gz")
+    format!("nonoka-export-{host}-{stamp}.tar.gz")
 }
 
-pub(in crate::cli) fn run_export(paths: &NanokaPaths, args: ExportArgs) -> Result<()> {
+pub(in crate::cli) fn run_export(paths: &NonokaPaths, args: ExportArgs) -> Result<()> {
     let output = args
         .output
         .unwrap_or_else(|| PathBuf::from(default_export_name()));
@@ -96,23 +96,23 @@ pub(in crate::cli) fn run_export(paths: &NanokaPaths, args: ExportArgs) -> Resul
         println!(
             "{}",
             t(
-                "The knowledge-base vector index was left out; run `nanoka kb embed` after importing (or re-export with --index).",
-                "未包含知识库向量索引；导入后请运行 nanoka kb embed（或改用 --index 重新导出）。",
+                "The knowledge-base vector index was left out; run `nonoka kb embed` after importing (or re-export with --index).",
+                "未包含知识库向量索引；导入后请运行 nonoka kb embed（或改用 --index 重新导出）。",
             )
         );
     }
     Ok(())
 }
 
-pub(in crate::cli) async fn run_import(paths: &NanokaPaths, args: ImportArgs) -> Result<()> {
+pub(in crate::cli) async fn run_import(paths: &NonokaPaths, args: ImportArgs) -> Result<()> {
     // The daemon holds conversation.db's WAL open; replacing the file under it
     // would leave both the old process and the new database inconsistent.
     if crate::ipc::daemon_info(paths).await.is_some() {
         anyhow::bail!(
             "{}",
             t(
-                "the Nanoka daemon is running and holds the database open; stop it first with `nanoka daemon stop`",
-                "Nanoka daemon 正在运行并占用数据库；请先执行 nanoka daemon stop",
+                "the Nonoka daemon is running and holds the database open; stop it first with `nonoka daemon stop`",
+                "Nonoka daemon 正在运行并占用数据库；请先执行 nonoka daemon stop",
             )
         );
     }
@@ -139,7 +139,7 @@ pub(in crate::cli) async fn run_import(paths: &NanokaPaths, args: ImportArgs) ->
         )
     );
     if !report.unknown_units.is_empty() {
-        // A newer Nanoka wrote data this build has no name for. It is on disk;
+        // A newer Nonoka wrote data this build has no name for. It is on disk;
         // say so rather than let it look like it vanished.
         let units = report
             .unknown_units
@@ -152,9 +152,9 @@ pub(in crate::cli) async fn run_import(paths: &NanokaPaths, args: ImportArgs) ->
             owned(
                 format!(
                     "Restored data this version does not recognise \
-                     (written by a newer Nanoka): {units}"
+                     (written by a newer Nonoka): {units}"
                 ),
-                format!("恢复了本版本不认识的数据（由更新版本的 Nanoka 写入）：{units}"),
+                format!("恢复了本版本不认识的数据（由更新版本的 Nonoka 写入）：{units}"),
             )
         );
     }
@@ -176,23 +176,23 @@ pub(in crate::cli) async fn run_import(paths: &NanokaPaths, args: ImportArgs) ->
     println!(
         "  {}",
         t(
-            "reinstall the shell integration: `nanoka fish-init` / `bash-init` / `zsh-init`",
-            "重装 shell 集成：nanoka fish-init / bash-init / zsh-init",
+            "reinstall the shell integration: `nonoka fish-init` / `bash-init` / `zsh-init`",
+            "重装 shell 集成：nonoka fish-init / bash-init / zsh-init",
         )
     );
     println!(
         "  {}",
         t(
-            "`nanoka kb reindex` — the knowledge base records absolute paths from the old machine",
-            "nanoka kb reindex —— 知识库记录的是旧机器上的绝对路径",
+            "`nonoka kb reindex` — the knowledge base records absolute paths from the old machine",
+            "nonoka kb reindex —— 知识库记录的是旧机器上的绝对路径",
         )
     );
     if !report.index_included {
         println!(
             "  {}",
             t(
-                "`nanoka kb embed` — the vector index was not in the archive",
-                "nanoka kb embed —— 归档中不含向量索引",
+                "`nonoka kb embed` — the vector index was not in the archive",
+                "nonoka kb embed —— 归档中不含向量索引",
             )
         );
     }
@@ -200,8 +200,8 @@ pub(in crate::cli) async fn run_import(paths: &NanokaPaths, args: ImportArgs) ->
         println!(
             "  {}",
             t(
-                "refill API keys and access tokens: `nanoka config`",
-                "补填 API key 与访问令牌：nanoka config",
+                "refill API keys and access tokens: `nonoka config`",
+                "补填 API key 与访问令牌：nonoka config",
             )
         );
     }

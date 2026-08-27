@@ -64,7 +64,7 @@ impl DeleteConfirmations {
         let token = random_confirmation_token();
         let scope = describe_scope(&request.scope);
         let mode = describe_delete_request(&request);
-        let phrase = format!("确认删除 Nanoka 历史 范围={scope} 模式={mode} {token}");
+        let phrase = format!("确认删除 Nonoka 历史 范围={scope} 模式={mode} {token}");
         let now = Instant::now();
         let mut pending = self.pending.lock().unwrap();
         pending.retain(|_, entry| entry.expires_at > now && entry.principal != principal);
@@ -187,7 +187,7 @@ pub(crate) async fn delete(
     confirmations: DeleteConfirmations,
 ) -> Result<String> {
     if !effective_admin(&context) {
-        bail!("only a configured Nanoka platform administrator may delete history");
+        bail!("only a configured Nonoka platform administrator may delete history");
     }
     let principal = DeletePrincipal::from_context(&context);
     match required_string(&arguments, "action")?.as_str() {

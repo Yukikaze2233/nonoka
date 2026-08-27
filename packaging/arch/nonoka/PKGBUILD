@@ -1,10 +1,10 @@
 # Maintainer: Yukikaze <yingziyuw@gmail.com>
 #
-# AUR `nanoka` 包装包：下载 GitHub Release 上的预编译资产重新打包（避免让
+# AUR `nonoka` 包装包：下载 GitHub Release 上的预编译资产重新打包（避免让
 # AUR 用户本地编译）。0.4.4 起字体（Noto CJK / Noto Emoji / JetBrains Mono）
 # 已随 release 资产一并打包，不再从上游单独拉取。
 
-pkgname=nanoka
+pkgname=nonoka
 pkgver=0.4.5
 pkgrel=1
 pkgdesc='一个活在终端里的二次元少女。开箱即用的开源 AI 助手，支持接入通讯平台。'
@@ -29,6 +29,6 @@ sha256sums=(
 )
 
 package() {
-  install -Dm755 "${srcdir}/usr/bin/nanoka" "${pkgdir}/usr/bin/nanoka"
+  install -Dm755 "${srcdir}/usr/bin/nonoka" "${pkgdir}/usr/bin/nonoka"
   cp -a "${srcdir}/usr/share" "${pkgdir}/usr/"
 }

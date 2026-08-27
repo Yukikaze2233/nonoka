@@ -3,7 +3,7 @@
 //! stdout 每行一个 JSON 事件;`stream_event` 里包的就是原生 Anthropic SSE
 //! 事件,直接复用 [`AnthropicStreamEvent`] 与缓冲发射件。与 HTTP 线的两个关
 //! 键差异:①一个 claude 回合可能含多次模型调用(MCP 工具循环),content 跨
-//! 消息累积,权威用量以最终 `result` 帧为准;②tool_use 不回吐给 Nanoka 执行
+//! 消息累积,权威用量以最终 `result` 帧为准;②tool_use 不回吐给 Nonoka 执行
 //! (桥在 claude 侧闭环),只作为思考通道的一行进度展示。
 //!
 //! 超时/出错路径必须显式杀进程组:drop future 只是弃 promise,不杀子进程。
@@ -373,9 +373,9 @@ where
             .unwrap_or_default()
             .to_string();
         let raw_name = block.get("name").and_then(Value::as_str).unwrap_or("tool");
-        // MCP 前缀剥掉:Nanoka 工具按本名显示(readable_tool_name 才认识),
+        // MCP 前缀剥掉:Nonoka 工具按本名显示(readable_tool_name 才认识),
         // claude 原生工具保持原名。
-        let name = raw_name.strip_prefix("mcp__nanoka__").unwrap_or(raw_name);
+        let name = raw_name.strip_prefix("mcp__nonoka__").unwrap_or(raw_name);
         remote_tools.insert(id.clone(), name.to_string());
         let input = block.get("input").cloned().unwrap_or(json!({}));
         on_chunk(ChatStreamChunk {

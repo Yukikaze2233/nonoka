@@ -4,12 +4,12 @@ use std::process::{Child, Command, Output, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-fn nanoka_command(binary: &Path, home: &Path, runtime: &Path) -> Command {
+fn nonoka_command(binary: &Path, home: &Path, runtime: &Path) -> Command {
     let mut command = Command::new(binary);
     command
-        .env("NANOKA_HOME", home)
+        .env("NONOKA_HOME", home)
         .env("XDG_RUNTIME_DIR", runtime)
-        .env("NANOKA_LANG", "en");
+        .env("NONOKA_LANG", "en");
     command
 }
 
@@ -22,7 +22,7 @@ struct DaemonGuard {
 
 impl Drop for DaemonGuard {
     fn drop(&mut self) {
-        let _ = nanoka_command(&self.binary, &self.home, &self.runtime)
+        let _ = nonoka_command(&self.binary, &self.home, &self.runtime)
             .args(["daemon", "stop"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -40,7 +40,7 @@ impl Drop for DaemonGuard {
 }
 
 fn run(binary: &Path, home: &Path, runtime: &Path, args: &[&str]) -> Output {
-    nanoka_command(binary, home, runtime)
+    nonoka_command(binary, home, runtime)
         .args(args)
         .output()
         .unwrap()
@@ -52,16 +52,16 @@ fn reload_fails_without_starting_a_daemon() {
     let home = temp.path().join("home");
     let runtime = temp.path().join("runtime");
     std::fs::create_dir_all(&runtime).unwrap();
-    let binary = PathBuf::from(env!("CARGO_BIN_EXE_nanoka"));
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_nonoka"));
 
     assert!(run(&binary, &home, &runtime, &["init"]).status.success());
     let reload = run(&binary, &home, &runtime, &["reload"]);
     assert!(!reload.status.success());
-    assert!(String::from_utf8_lossy(&reload.stderr).contains("Nanoka daemon is not running"));
+    assert!(String::from_utf8_lossy(&reload.stderr).contains("Nonoka daemon is not running"));
 
     let status = run(&binary, &home, &runtime, &["daemon", "status"]);
     assert!(status.status.success());
-    assert!(String::from_utf8_lossy(&status.stdout).contains("Nanoka daemon: stopped"));
+    assert!(String::from_utf8_lossy(&status.stdout).contains("Nonoka daemon: stopped"));
 }
 
 #[test]
@@ -70,12 +70,12 @@ fn reload_applies_config_without_restarting_daemon() {
     let home = temp.path().join("home");
     let runtime = temp.path().join("runtime");
     std::fs::create_dir_all(&runtime).unwrap();
-    let binary = PathBuf::from(env!("CARGO_BIN_EXE_nanoka"));
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_nonoka"));
 
     let init = run(&binary, &home, &runtime, &["init"]);
-    assert!(init.status.success(), "nanoka init failed: {init:?}");
+    assert!(init.status.success(), "nonoka init failed: {init:?}");
 
-    let child = nanoka_command(&binary, &home, &runtime)
+    let child = nonoka_command(&binary, &home, &runtime)
         .args(["__daemon", "--port", "0"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -98,7 +98,7 @@ fn reload_applies_config_without_restarting_daemon() {
         );
         let status = run(&binary, &home, &runtime, &["daemon", "status"]);
         if status.status.success()
-            && String::from_utf8_lossy(&status.stdout).contains("Nanoka daemon: running")
+            && String::from_utf8_lossy(&status.stdout).contains("Nonoka daemon: running")
         {
             break;
         }
@@ -119,7 +119,7 @@ fn reload_applies_config_without_restarting_daemon() {
     .unwrap();
 
     let reload = run(&binary, &home, &runtime, &["reload"]);
-    assert!(reload.status.success(), "nanoka reload failed: {reload:?}");
+    assert!(reload.status.success(), "nonoka reload failed: {reload:?}");
     assert!(String::from_utf8_lossy(&reload.stdout).contains("configuration reloaded"));
     assert_eq!(daemon.child.id(), pid);
     assert!(daemon.child.try_wait().unwrap().is_none());

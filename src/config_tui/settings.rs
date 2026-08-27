@@ -103,9 +103,9 @@ pub(in crate::config_tui) fn edit_settings(
             ),
             config.display.repl_replay_turns.to_string(),
         ),
-        // 验收:default_mode 只能改 config.jsonc 不像话——空=裸 nanoka 出帮助。
+        // 验收:default_mode 只能改 config.jsonc 不像话——空=裸 nonoka 出帮助。
         Field::new(
-            t("Bare `nanoka` default mode", "裸 nanoka 默认模式"),
+            t("Bare `nonoka` default mode", "裸 nonoka 默认模式"),
             config.default_mode.clone(),
         )
         .choices(&["", "normal", "dev"])

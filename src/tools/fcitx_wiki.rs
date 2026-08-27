@@ -280,7 +280,7 @@ fn claims_for_topic(topic: &str, language: Language) -> Vec<WikiClaim> {
                 "XIM 需要有效 locale；locale 必须出现在 `locale -a`，并且不能是 `C` 或 `POSIX`。",
                 "XIM needs a valid locale; the locale must appear in `locale -a` and must not be `C` or `POSIX`.",
                 "locale",
-                "Check the target process, not only the shell that launched Nanoka.",
+                "Check the target process, not only the shell that launched Nonoka.",
             ),
             claim(
                 language,
@@ -329,7 +329,7 @@ fn text(language: Language, zh: &'static str, en: &'static str) -> BilingualText
 async fn fetch_page_excerpt(url: &str) -> Result<String> {
     let response = reqwest::Client::builder()
         .timeout(Duration::from_secs(12))
-        .user_agent("nanoka/0.1 fcitx5_input_method_wiki_qurey")
+        .user_agent("nonoka/0.1 fcitx5_input_method_wiki_qurey")
         .build()?
         .get(url)
         .send()

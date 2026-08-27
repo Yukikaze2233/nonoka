@@ -311,7 +311,7 @@
 
   const state = {
     backgroundJobs: new Map(),
-    jobsStripOpen: localStorage.getItem("nanoka.web.jobsStripOpen") === "1",
+    jobsStripOpen: localStorage.getItem("nonoka.web.jobsStripOpen") === "1",
     bootId: null,
     latestEventId: 0,
     lastEventId: 0,
@@ -323,9 +323,9 @@
     queuedPrompts: [],
     models: [],
     persona: {
-      name: "Nanoka",
-      avatar_url: "/assets/nanoka-logo.png",
-      board_image_url: "/assets/nanokawallpaper.png",
+      name: "Nonoka",
+      avatar_url: "/assets/nonoka-logo.png",
+      board_image_url: "/assets/nonokawallpaper.png",
       board_title: DEFAULT_BOARD_TITLE,
       board_subtitle: DEFAULT_BOARD_SUBTITLE,
       starter_prompts: DEFAULT_STARTER_PROMPTS
@@ -529,7 +529,7 @@
     }
     const themeColor = document.querySelector('meta[name="theme-color"]');
     if (themeColor) themeColor.content = selected === "graphite" ? "#171821" : "#f6f0e2";
-    if (persist) safeStorageSet("nanoka.web.theme", selected);
+    if (persist) safeStorageSet("nonoka.web.theme", selected);
   }
 
   /*
@@ -551,7 +551,7 @@
       // 探测不到 matugen 输出时,「壁纸取色」整个选项不显示。
       if (button.dataset.schemeChoice === "matugen") button.hidden = state.matugenAvailable !== true;
     });
-    if (persist) safeStorageSet("nanoka.web.colorScheme", requested);
+    if (persist) safeStorageSet("nonoka.web.colorScheme", requested);
   }
 
   async function probeMatugenTheme() {
@@ -562,7 +562,7 @@
       state.matugenAvailable = false;
     }
     // 无持久化记录时:matugen 可用则维持现状(matugen),否则窗边。默认值不写入存储。
-    setColorScheme(safeStorageGet("nanoka.web.colorScheme") || (state.matugenAvailable ? "matugen" : "madobe"), false);
+    setColorScheme(safeStorageGet("nonoka.web.colorScheme") || (state.matugenAvailable ? "matugen" : "madobe"), false);
   }
 
   /* 仅 WebUI 的本地显示偏好(localStorage,不写入 config) */
@@ -577,7 +577,7 @@
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
     });
-    if (persist) safeStorageSet("nanoka.web.chatFontSize", selected);
+    if (persist) safeStorageSet("nonoka.web.chatFontSize", selected);
   }
 
   function setReasoningExpanded(value, persist = true) {
@@ -587,7 +587,7 @@
     document.querySelectorAll(".reasoning-block").forEach((block) => {
       block.open = state.reasoningExpanded;
     });
-    if (persist) safeStorageSet("nanoka.web.reasoningExpanded", String(state.reasoningExpanded));
+    if (persist) safeStorageSet("nonoka.web.reasoningExpanded", String(state.reasoningExpanded));
   }
 
   function setToolExpanded(value, persist = true) {
@@ -598,7 +598,7 @@
       card.classList.toggle("collapsed", !state.toolExpanded);
       card.querySelector(".tool-head")?.setAttribute("aria-expanded", String(state.toolExpanded));
     });
-    if (persist) safeStorageSet("nanoka.web.toolExpanded", String(state.toolExpanded));
+    if (persist) safeStorageSet("nonoka.web.toolExpanded", String(state.toolExpanded));
   }
 
   function thinkingVariantLabel(variant, short = false) {
@@ -670,7 +670,7 @@
     if (elements.sidebarExpandButton) elements.sidebarExpandButton.hidden = !state.sidebarCollapsed;
     if (elements.sidebarCollapseButton) elements.sidebarCollapseButton.hidden = state.sidebarCollapsed;
     if (state.sidebarCollapsed) closeSidebar();
-    if (!automatic) safeStorageSet("nanoka.web.sidebarCollapsed", String(state.sidebarCollapsed));
+    if (!automatic) safeStorageSet("nonoka.web.sidebarCollapsed", String(state.sidebarCollapsed));
     syncArtifactLayout?.();
   }
 
@@ -797,7 +797,7 @@
   }
 
   function normalizePersona(value) {
-    const name = String(value?.name || "").trim() || "Nanoka";
+    const name = String(value?.name || "").trim() || "Nonoka";
     const avatarUrl = typeof value?.avatar_url === "string" && value.avatar_url ? value.avatar_url : null;
     const boardImageUrl = typeof value?.board_image_url === "string" && value.board_image_url
       ? value.board_image_url
@@ -2005,7 +2005,7 @@
     active.className = "config-input";
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
-    defaultOption.textContent = kind === "personas" ? "Nanoka 默认人格" : "不使用用户身份";
+    defaultOption.textContent = kind === "personas" ? "Nonoka 默认人格" : "不使用用户身份";
     active.appendChild(defaultOption);
     for (const promptDocument of documents) {
       const option = document.createElement("option");
@@ -2304,7 +2304,7 @@
     try {
       response = await fetch(path, { ...options, headers, credentials: "same-origin" });
     } catch (_) {
-      throw new ApiError("无法连接 Nanoka WebUI", 0);
+      throw new ApiError("无法连接 Nonoka WebUI", 0);
     }
     if (!response.ok) throw new ApiError(await readErrorMessage(response), response.status);
     return response;
@@ -3993,7 +3993,7 @@
     request.open("POST", `/api/attachments?session_id=${encodeURIComponent(item.sessionId)}`);
     request.setRequestHeader("Accept", "application/json");
     request.setRequestHeader("Content-Type", item.file.type || "application/octet-stream");
-    request.setRequestHeader("X-Nanoka-Filename", encodeURIComponent(item.file.name));
+    request.setRequestHeader("X-Nonoka-Filename", encodeURIComponent(item.file.name));
     request.upload.addEventListener("progress", (event) => {
       if (!event.lengthComputable || item.request !== request) return;
       item.progress = Math.min(99, Math.round((event.loaded / event.total) * 100));
@@ -5191,7 +5191,7 @@
     state.stageTodos = todos?.length ? todos : null;
     const panel = elements.stageTodos;
     panel.replaceChildren();
-    const card = state.stageTodos ? window.NanokaTodos?.renderList(state.stageTodos) : null;
+    const card = state.stageTodos ? window.NonokaTodos?.renderList(state.stageTodos) : null;
     if (!card) {
       panel.hidden = true;
       return;
@@ -5472,7 +5472,7 @@
       const response = await apiRequest(`/api/sessions/${encodeURIComponent(scope)}/todos`);
       const payload = await response.json();
       if (generation !== state.stageTodosGeneration) return;
-      renderStageTodos(window.NanokaTodos?.normalize(payload?.todos) || null);
+      renderStageTodos(window.NonokaTodos?.normalize(payload?.todos) || null);
     } catch (_) {
       // 面板是附带信息,拿不到就空着,不打扰对话。
       if (generation === state.stageTodosGeneration) renderStageTodos(null);
@@ -5848,7 +5848,7 @@
     const imageMime = !mime || mime.startsWith("image/");
     const width = validAssetDimension(source.width);
     const height = validAssetDimension(source.height);
-    const alt = String(source.alt || "").trim() || "Nanoka 生成的图片";
+    const alt = String(source.alt || "").trim() || "Nonoka 生成的图片";
 
     const figure = document.createElement("figure");
     figure.className = "conversation-media";
@@ -5899,7 +5899,7 @@
       visual.setAttribute("role", "button");
       visual.setAttribute("aria-label", `放大预览 ${alt}`);
       const openLightbox = () => {
-        window.NanokaLightbox?.open({
+        window.NonokaLightbox?.open({
           url,
           name: alt,
           onOpenInWorkspace: () => {
@@ -5923,7 +5923,7 @@
   /*
    * display.reasoning 只决定后端产生什么(摘要/完整/不产生);
    * WebUI 是否渲染仅以「有没有思考内容」为准,hidden 时若仍收到文本则不渲染(保底)。
-   * 默认展开/收起由本地偏好 nanoka.web.reasoningExpanded 决定,与 summary/full 无关。
+   * 默认展开/收起由本地偏好 nonoka.web.reasoningExpanded 决定,与 summary/full 无关。
    */
   function reasoningHidden() {
     return state.display?.reasoning === "hidden";
@@ -6073,8 +6073,8 @@
         blocks.appendChild(createPersistedToolCard(call));
         // share_file 的富预览(播放器/图片/下载条)重建:实时靠 tool.finished
         // 的输出渲染,刷新/切换后从落库的 tool_flow 输出里复原同一份。
-        if (window.NanokaShared?.isShareTool(String(call?.name || ""))) {
-          const shared = window.NanokaShared.renderCard(String(call?.output || ""));
+        if (window.NonokaShared?.isShareTool(String(call?.name || ""))) {
+          const shared = window.NonokaShared.renderCard(String(call?.output || ""));
           if (shared) blocks.appendChild(shared);
         }
       }
@@ -6361,7 +6361,7 @@
       for (const turn of turns) renderPersistedTurn(turn);
     }
     // 命令回执不是回合，不在 state.turns 里；timeline 每次重建都要补回来。
-    window.NanokaCommands?.renderNotices(elements.timeline, state.viewSessionId);
+    window.NonokaCommands?.renderNotices(elements.timeline, state.viewSessionId);
     reattachLiveArticles();
     // 落盘回合数为 0 不等于屏幕上没内容：回执和正在流式输出的气泡都不在
     // state.turns 里。只按 turns 判空的话，运行中一次重绘就把画面整个换成
@@ -7180,10 +7180,10 @@
     }
     card.append(head, body);
     // 待办列表挂在签外面,收起态也看得见——那是给人看的产出,不是调试信息。
-    const todos = window.NanokaTodos?.isTodoTool(name) ? window.NanokaTodos.render(output) : null;
+    const todos = window.NonokaTodos?.isTodoTool(name) ? window.NonokaTodos.render(output) : null;
     if (todos) card.appendChild(todos);
     // 分享附件同理:文件卡片是交付物,直接出现在气泡里,点击即下载。
-    const shared = window.NanokaShared?.isShareTool(name) ? window.NanokaShared.renderCard(output) : null;
+    const shared = window.NonokaShared?.isShareTool(name) ? window.NonokaShared.renderCard(output) : null;
     if (shared) card.appendChild(shared);
     return card;
   }
@@ -7611,20 +7611,20 @@
       const ok = Boolean(data?.ok);
       resetPreparingWindow(live);
       // 只刷正在看的那个会话——后台会话的 todowrite 不该改屏幕上这块面板。
-      if (ok && window.NanokaTodos?.isTodoTool(tool.name)
+      if (ok && window.NonokaTodos?.isTodoTool(tool.name)
         && runSessionId(live.runId) === String(state.viewSessionId || "")) {
-        renderStageTodos(window.NanokaTodos.parse(output));
+        renderStageTodos(window.NonokaTodos.parse(output));
       }
       // 与回看那份同构（`createPersistedToolCard`）：待办列表挂在签外面。
       // 只在这里画会让实时和刷新后长得不一样,那正是工具签之前踩过的坑。
-      if (ok && window.NanokaTodos?.isTodoTool(tool.name)) {
-        const todos = window.NanokaTodos.render(output);
+      if (ok && window.NonokaTodos?.isTodoTool(tool.name)) {
+        const todos = window.NonokaTodos.render(output);
         tool.card.querySelector(".todo-panel")?.remove();
         if (todos) tool.card.appendChild(todos);
       }
       // 分享附件同坑同修:实时完成时也要挂,否则只有刷新后才能看到卡片。
-      if (ok && window.NanokaShared?.isShareTool(tool.name)) {
-        const shared = window.NanokaShared.renderCard(output);
+      if (ok && window.NonokaShared?.isShareTool(tool.name)) {
+        const shared = window.NonokaShared.renderCard(output);
         tool.card.querySelector(".shared-attachment")?.remove();
         if (shared) tool.card.appendChild(shared);
       }
@@ -8245,7 +8245,7 @@
       toggle.replaceChildren(toggleMarker, toggleText);
       toggle.addEventListener("click", () => {
         state.jobsStripOpen = !state.jobsStripOpen;
-        localStorage.setItem("nanoka.web.jobsStripOpen", state.jobsStripOpen ? "1" : "0");
+        localStorage.setItem("nonoka.web.jobsStripOpen", state.jobsStripOpen ? "1" : "0");
         renderJobsStrip();
       });
       fragment.appendChild(toggle);
@@ -8935,7 +8935,7 @@
     elements.timeline.hidden = true;
     elements.emptyState.hidden = true;
     elements.blockedState.hidden = false;
-    elements.blockedTitle.textContent = unauthorized ? "登录 Nanoka" : "无法载入 Nanoka WebUI";
+    elements.blockedTitle.textContent = unauthorized ? "登录 Nonoka" : "无法载入 Nonoka WebUI";
     elements.blockedMessage.textContent = unauthorized ? "输入访问密码以继续。" : message || "本地服务暂时无法访问";
     elements.loginForm.hidden = !unauthorized;
     elements.retryBootstrapButton.hidden = unauthorized;
@@ -8947,7 +8947,7 @@
     if (unauthorized) window.requestAnimationFrame(() => elements.loginPassword.focus());
   }
 
-  const VIEW_SESSION_KEY = "nanoka.web.viewSession";
+  const VIEW_SESSION_KEY = "nonoka.web.viewSession";
 
   /// 页面加载后该打开哪个会话。
   ///
@@ -9204,8 +9204,8 @@
     const content = elements.composerInput.value.trim();
     // 命中命令表就当命令执行，不当消息发。不命中的 `/xxx` 照常发给模型
     // ——与 REPL 同一语义（slash_commands::parse_repl_input）。
-    if (window.NanokaCommands?.match(content)) {
-      window.NanokaCommands.hide();
+    if (window.NonokaCommands?.match(content)) {
+      window.NonokaCommands.hide();
       // 同一条命令不能重入。命令往往要等服务端干完活（/reset 要清库、/compact
       // 要重算上下文），这期间用户看不出回车生效没有，很自然会再敲一次。
       if (state.commandRunning) return;
@@ -9217,7 +9217,7 @@
       updateControlState();
       let handled = false;
       try {
-        handled = await window.NanokaCommands.tryRun(content, {
+        handled = await window.NonokaCommands.tryRun(content, {
           apiRequest,
           sessionId: state.viewSessionId,
           mode: viewSessionEntry()?.mode === "dev" ? "dev" : "normal",
@@ -9526,7 +9526,7 @@
       && !typingSomewhere()
       && !state.blocked
       && !consoleIsOpen()
-      && !window.NanokaLightbox?.isOpen()
+      && !window.NonokaLightbox?.isOpen()
       && !elements.resetDialog.open
       && !elements.composerInput.disabled) {
       event.preventDefault();
@@ -10320,7 +10320,7 @@
           window.cancelAnimationFrame(resizeFrame);
           applyResize();
         }
-        safeStorageSet("nanoka.web.artifactWidthRatio.v2", String(state.artifactWidthRatio));
+        safeStorageSet("nonoka.web.artifactWidthRatio.v2", String(state.artifactWidthRatio));
         elements.artifactResizeHandle.removeEventListener("pointermove", move);
         elements.artifactResizeHandle.removeEventListener("pointerup", finish);
         elements.artifactResizeHandle.removeEventListener("pointercancel", finish);
@@ -10407,13 +10407,13 @@
     elements.composerInput.addEventListener("input", resizeComposer);
     // 斜杠命令的补全菜单（逻辑在 commands.js，这里只喂输入、收回填）
     elements.composerInput.addEventListener("input", () => {
-      window.NanokaCommands?.onInput(elements.composerInput.value, elements.composerDock, (name) => {
+      window.NonokaCommands?.onInput(elements.composerInput.value, elements.composerDock, (name) => {
         elements.composerInput.value = name;
         elements.composerInput.focus();
         resizeComposer();
       });
     });
-    elements.composerInput.addEventListener("blur", () => window.NanokaCommands?.hide());
+    elements.composerInput.addEventListener("blur", () => window.NonokaCommands?.hide());
     elements.attachButton.addEventListener("click", () => elements.attachmentInput.click());
     elements.attachmentInput.addEventListener("change", () => {
       addComposerFiles(elements.attachmentInput.files);
@@ -10459,7 +10459,7 @@
     elements.composerInput.addEventListener("keydown", (event) => {
       // 菜单开着时它先吃掉上下键与 Tab/Enter：补全后再按一次回车才执行，
       // 与 REPL 一致，用户有机会反悔。
-      if (window.NanokaCommands?.handleKey(event)) {
+      if (window.NonokaCommands?.handleKey(event)) {
         event.preventDefault();
         return;
       }
@@ -10518,18 +10518,18 @@
   function initialize() {
     renderIconSlots();
     if (window.location.hash.includes("console")) consoleOpen();
-    setTheme(safeStorageGet("nanoka.web.theme") || "graphite", false);
-    const storedScheme = safeStorageGet("nanoka.web.colorScheme");
+    setTheme(safeStorageGet("nonoka.web.theme") || "graphite", false);
+    const storedScheme = safeStorageGet("nonoka.web.colorScheme");
     if (storedScheme) setColorScheme(storedScheme, false);
     probeMatugenTheme();
-    setChatFontSize(safeStorageGet("nanoka.web.chatFontSize") || "15px", false);
-    setReasoningExpanded(safeStorageGet("nanoka.web.reasoningExpanded") === "true", false);
-    setToolExpanded(safeStorageGet("nanoka.web.toolExpanded") === "true", false);
-    const artifactRatio = Number(safeStorageGet("nanoka.web.artifactWidthRatio.v2"));
+    setChatFontSize(safeStorageGet("nonoka.web.chatFontSize") || "15px", false);
+    setReasoningExpanded(safeStorageGet("nonoka.web.reasoningExpanded") === "true", false);
+    setToolExpanded(safeStorageGet("nonoka.web.toolExpanded") === "true", false);
+    const artifactRatio = Number(safeStorageGet("nonoka.web.artifactWidthRatio.v2"));
     if (Number.isFinite(artifactRatio) && artifactRatio >= 0.25 && artifactRatio <= 0.9) {
       state.artifactWidthRatio = artifactRatio;
     }
-    setSidebarCollapsed(safeStorageGet("nanoka.web.sidebarCollapsed") === "true");
+    setSidebarCollapsed(safeStorageGet("nonoka.web.sidebarCollapsed") === "true");
     syncArtifactLayout();
     setSettingsView("interface");
     bindEvents();
@@ -10537,13 +10537,13 @@
     updateSettingsControls();
     // 命令目录从服务端拉，前端不维护第二份清单。拉失败就当没有命令，
     // 所有 / 开头的输入照常发给模型。
-    window.NanokaCommands?.load(apiRequest);
+    window.NonokaCommands?.load(apiRequest);
     // 灯箱自己不会画图标（图标集在这边），把工厂函数递过去。
-    window.NanokaLightbox?.init({ makeIconSlot });
+    window.NonokaLightbox?.init({ makeIconSlot });
     startBrailleTicker();
-    // G2:页面不可见时给 body 挂 nanoka-paused,CSS 据此暂停全部装饰动画。
+    // G2:页面不可见时给 body 挂 nonoka-paused,CSS 据此暂停全部装饰动画。
     // 实测(Xvfb+Chrome)不挂这个时隐藏窗口的合成负载与可见时完全一样。
-    const syncPaused = () => document.body.classList.toggle("nanoka-paused", document.hidden);
+    const syncPaused = () => document.body.classList.toggle("nonoka-paused", document.hidden);
     document.addEventListener("visibilitychange", syncPaused);
     syncPaused();
     loadBootstrap();

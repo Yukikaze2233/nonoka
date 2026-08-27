@@ -1,6 +1,6 @@
 //! 模型与思考变体的命令。
 //!
-//! `nanoka models` 管的是「这个会话用哪些模型」，`nanoka variant` 管的是「思考多
+//! `nonoka models` 管的是「这个会话用哪些模型」，`nonoka variant` 管的是「思考多
 //! 深」。两者都有全局池与会话覆盖两层：会话不设就继承全局，设了就只用自己
 //! 那份。菜单渲染也在这里——终端里要在有限宽度内把 provider、模型名、变体三
 //! 列排整齐。
@@ -55,7 +55,7 @@ pub(in crate::cli) fn show_mixed_model_endpoint(config: &AppConfig, interactive:
         }
 }
 
-pub(in crate::cli) fn initialize_models_cache(paths: &NanokaPaths) {
+pub(in crate::cli) fn initialize_models_cache(paths: &NonokaPaths) {
     crate::models_cache::try_load(paths);
     crate::models_cache::spawn_background_refresh(paths.clone());
     if let Ok(config) = AppConfig::load_or_default(paths) {
@@ -63,7 +63,7 @@ pub(in crate::cli) fn initialize_models_cache(paths: &NanokaPaths) {
     }
 }
 
-pub(in crate::cli) async fn run_models(paths: &NanokaPaths, args: ModelsArgs) -> Result<()> {
+pub(in crate::cli) async fn run_models(paths: &NonokaPaths, args: ModelsArgs) -> Result<()> {
     run_models_for_session(paths, args, None).await
 }
 
@@ -91,16 +91,16 @@ pub(in crate::cli) fn parse_models_argument(argument: &str) -> ModelsArgs {
     }
 }
 
-/// `nanoka models --global`:直接编辑全局激活模型池。
+/// `nonoka models --global`:直接编辑全局激活模型池。
 ///
 /// 不带 --global 时这条命令改的只是终端集成会话的覆盖,全局池此前只能进
-/// `nanoka config` 的 TUI 里翻。全局池是所有没有单独覆盖的会话(WebUI、通讯
+/// `nonoka config` 的 TUI 里翻。全局池是所有没有单独覆盖的会话(WebUI、通讯
 /// 平台、新开的终端会话)共同的默认来源,值得有一条一行就能改完的路。
 ///
 /// 与会话覆盖的两点不同:池不能清空(至少留一个端点,`set_active_provider_models`
 /// 自己会拦),以及 `default` 没有意义——全局池本身就是那个"默认"。
 pub(in crate::cli) async fn run_models_global(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     target: Option<&str>,
 ) -> Result<()> {
     let mut config = AppConfig::load(paths)?;
@@ -200,9 +200,9 @@ pub(in crate::cli) async fn run_models_global(
 
 /// Switches the model pool of one session (the current session when
 /// `session_id` is None). The override persists on the session, so reopening
-/// it restores the model; the global pool is managed in `nanoka config`.
+/// it restores the model; the global pool is managed in `nonoka config`.
 pub(in crate::cli) async fn run_models_for_session(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     args: ModelsArgs,
     session_id: Option<&str>,
 ) -> Result<()> {
@@ -248,7 +248,7 @@ pub(in crate::cli) async fn run_models_for_session(
         let override_pool = session_model_override_snapshot(paths, session_id)?;
         // 第一项是「继承全局模型池」,与 config TUI 的会话/QQ 模型菜单同款:
         // 会话没有自己的覆盖时它就是当前状态。此前想恢复继承只能记住
-        // `nanoka models default` 这个隐藏写法,菜单里根本看不到这条路。
+        // `nonoka models default` 这个隐藏写法,菜单里根本看不到这条路。
         let inherit_label = t("Inherit global model pool", "继承全局模型池").to_string();
         let mut labels = vec![inherit_label];
         labels.extend(choices.iter().map(|choice| choice.label()));
@@ -315,7 +315,7 @@ pub(in crate::cli) async fn run_models_for_session(
     Ok(())
 }
 
-pub(in crate::cli) fn run_list_models(paths: &NanokaPaths) -> Result<()> {
+pub(in crate::cli) fn run_list_models(paths: &NonokaPaths) -> Result<()> {
     let config = AppConfig::load(paths)?;
     let choices = config.text_provider_model_choices();
     if choices.is_empty() {
@@ -332,8 +332,8 @@ pub(in crate::cli) fn run_list_models(paths: &NanokaPaths) -> Result<()> {
     println!(
         "{}",
         t(
-            "switch with: nanoka models <index|provider/model>; 'nanoka models default' follows the global pool",
-            "切换：nanoka models <序号|供应商/模型>；nanoka models default 恢复跟随全局模型池"
+            "switch with: nonoka models <index|provider/model>; 'nonoka models default' follows the global pool",
+            "切换：nonoka models <序号|供应商/模型>；nonoka models default 恢复跟随全局模型池"
         )
     );
     Ok(())
@@ -375,7 +375,7 @@ pub(in crate::cli) fn print_model_choices(
 /// Reads a session's model override straight from the shared state database;
 /// works whether or not the daemon is running.
 pub(in crate::cli) fn session_model_override_snapshot(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     session_id: Option<&str>,
 ) -> Result<Option<Vec<ActiveProviderModelConfig>>> {
     let store = StateStore::new(paths)?;
@@ -387,7 +387,7 @@ pub(in crate::cli) fn session_model_override_snapshot(
 }
 
 pub(in crate::cli) async fn set_session_models(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     session_id: Option<&str>,
     models: Vec<ActiveProviderModelConfig>,
 ) -> Result<()> {
@@ -432,7 +432,7 @@ pub(in crate::cli) enum VariantOutcome {
     Rejected(String),
 }
 
-pub(in crate::cli) fn run_variant(paths: &NanokaPaths, args: VariantArgs) -> Result<()> {
+pub(in crate::cli) fn run_variant(paths: &NonokaPaths, args: VariantArgs) -> Result<()> {
     let selected = args
         .name
         .as_deref()
@@ -442,8 +442,8 @@ pub(in crate::cli) fn run_variant(paths: &NanokaPaths, args: VariantArgs) -> Res
         bail!(
             "{}",
             t(
-                "interactive variant selection requires a terminal; use `nanoka variant <name>`",
-                "交互 variant 选择需要终端；请使用 `nanoka variant <名称>`",
+                "interactive variant selection requires a terminal; use `nonoka variant <name>`",
+                "交互 variant 选择需要终端；请使用 `nonoka variant <名称>`",
             )
         );
     }
@@ -458,7 +458,7 @@ pub(in crate::cli) fn run_variant(paths: &NanokaPaths, args: VariantArgs) -> Res
 
     let config = AppConfig::load_or_default(paths)?;
     let mut client = OpenAiCompatibleClient::from_config(&config, paths)?;
-    match execute_variant(paths, &mut client, selected, "nanoka variant")? {
+    match execute_variant(paths, &mut client, selected, "nonoka variant")? {
         VariantOutcome::Updated => print_variant_updated(),
         VariantOutcome::Cancelled => {}
         VariantOutcome::Rejected(message) => bail!("{message}"),
@@ -467,7 +467,7 @@ pub(in crate::cli) fn run_variant(paths: &NanokaPaths, args: VariantArgs) -> Res
 }
 
 pub(in crate::cli) fn execute_variant(
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     client: &mut OpenAiCompatibleClient,
     selected: Option<&str>,
     selector_command: &str,

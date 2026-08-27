@@ -195,7 +195,7 @@ impl PlatformAdapter for OneBotAdapter {
                 },
                 Err(error) => {
                     tracing::debug!(
-                        target: "nanoka::qq",
+                        target: "nonoka::qq",
                         error = %error,
                         self_id = self.self_id,
                         group_id,
@@ -254,7 +254,7 @@ impl PlatformAdapter for OneBotAdapter {
     fn fetch_platform_file<'a>(
         &'a self,
         file_ref: &'a PlatformContextFileRef,
-        paths: &'a crate::paths::NanokaPaths,
+        paths: &'a crate::paths::NonokaPaths,
     ) -> BoxFuture<'a, Result<PlatformFileDownload>> {
         Box::pin(async move { self.fetch_platform_file_impl(file_ref, paths).await })
     }
@@ -456,7 +456,7 @@ impl OneBotAdapter {
     pub(in crate::platforms::onebot) async fn fetch_platform_file_impl(
         &self,
         file_ref: &PlatformContextFileRef,
-        paths: &crate::paths::NanokaPaths,
+        paths: &crate::paths::NonokaPaths,
     ) -> Result<PlatformFileDownload> {
         migrate_legacy_platform_file_cache(paths).await;
         let url = if let Some(url) = file_ref.url.as_deref() {

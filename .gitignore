@@ -16,7 +16,10 @@
 /.cargo-home/
 /.smoke-home/
 /.runtime/
-/.smoke-nanoka/
+/.smoke-nonoka/
 /.smoke-persona/
 /.smoke-mix/
 /.smoke-deepseek/
+
+# all local smoke-test homes
+/.smoke-*/

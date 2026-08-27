@@ -2070,7 +2070,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nanoka"
+name = "nonoka"
 version = "0.4.5"
 dependencies = [
  "anyhow",

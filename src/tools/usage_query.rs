@@ -12,7 +12,7 @@ pub fn register(registry: &mut ToolRegistry, history_file: PathBuf, config: crat
     registry.register(
         ToolSpec::new(
             "query_token_usage",
-            "Query Nanoka's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.",
+            "Query Nonoka's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.",
             json!({
                 "type": "object",
                 "properties": {

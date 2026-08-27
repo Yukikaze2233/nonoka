@@ -1,6 +1,6 @@
 # 低占用专项（perf/low-footprint）
 
-目标：在**不改变任何功能与语义**的前提下降低 Nanoka 的内存 / CPU / GPU 占用。
+目标：在**不改变任何功能与语义**的前提下降低 Nonoka 的内存 / CPU / GPU 占用。
 原则沿用 08-18 专项：**没有测量数字不合并**；方案是嫌疑人，不是证词。
 
 ## 0. 实测基线（2026-08-20，本机 v0.4.4 线上环境）
@@ -10,7 +10,7 @@
 | daemon | 81.7 MB | anon 40 MB + file 41.6 MB（二进制页） | 空闲窗口实测 0.4%（51min 累计 0.24%） |
 | REPL（空载） | 53 MB | anon 26.5 MB + file 26.5 MB（与 daemon 共享物理页，PSS 36 MB） | 空闲 0 输出字节/0 重绘 |
 | __renderer-worker | 30.5 MB | anon 9.4 MB + file 21.1 MB | 0%（渲染后常驻 1 小时才退） |
-| `nanoka daemon logs` | 16 MB | — | — |
+| `nonoka daemon logs` | 16 MB | — | — |
 
 二进制 62 MB：.text 41.4 MB / .rodata 11.3 MB / .eh_frame+gcc_except_table 5.4 MB。
 
@@ -84,7 +84,7 @@ GPU 结论（排除性调查）：daemon/CLI 进程**零 GPU**（纯 CPU 光栅�
 - 3.1 mimalloc **实测后不合并**：默认参数 daemon 落定 104MB（glibc 60MB）、HWM 105 vs 63.5；调参（PURGE_DELAY=0 等）后落定 58.5 但回合后 65.1 vs glibc 50.3——负载形态不合 + env 调参无法随包分发。数据在 testkit/low-footprint/results/。
 - 3.3 codegen-units=1 落地：二进制 62.0→50.8MB(−18%)，.text −20%，release 编译 1m35s→5m36s。
 - 3.2 o200k RankTable 落地：24B/词 HashMap → 12B 槽开放寻址+tag 字节+字节校验（无碰撞语义风险），8192 样本差分与全文档参考比对全绿，release 基准 21MB/s 与参考编码器同量级。
-- G2 半落地：Xvfb+Chrome 实测**隐藏窗口合成负载与可见完全相同**（renderer 1.93%/gpu 0.77% 不变）→ pause-on-hidden 有真实价值；已实现 body.nanoka-paused CSS + braille/jobs 两个 JS ticker 的 hidden 短路；后效待新二进制重测。
+- G2 半落地：Xvfb+Chrome 实测**隐藏窗口合成负载与可见完全相同**（renderer 1.93%/gpu 0.77% 不变）→ pause-on-hidden 有真实价值；已实现 body.nonoka-paused CSS + braille/jobs 两个 JS ticker 的 hidden 短路；后效待新二进制重测。
 - 3.5 资源外置：**收益重估**——嵌入资产本来就是 file-backed 可回收页，外置只赢二进制体积不赢 RSS；排到最后做或与用户再确认。
 
 A/B 实测（testkit/low-footprint/run.py，隔离 home+桩 LLM，5 流式回合；round3-cu1=第1+2轮+cu1，final=再加词表压缩+G2 资产）：
@@ -103,7 +103,7 @@ G2 终局（Xvfb+Chrome，30s 窗）：切走标签后 renderer 2.0→0.07%、gp
 
 ## 3. 验证方法
 
-- CPU：/proc/pid/stat jiffies 差分（空闲窗口 + 心跳注入窗口）；stub-llm + 隔离 NANOKA_HOME 跑真实回合量活跃期。
+- CPU：/proc/pid/stat jiffies 差分（空闲窗口 + 心跳注入窗口）；stub-llm + 隔离 NONOKA_HOME 跑真实回合量活跃期。
 - 内存：smaps_rollup 前后对比（anon/file 分开）；scaling probe（#[ignore]）钉单项；改前改后同场景。
 - GPU：REPL 用 PTY 量空闲/活跃输出字节速率（重绘次数代理指标）；WebUI 用浏览器任务管理器/chrome://gpu 前后读数。
 - 语义：全量 cargo test 基线对齐；字节敏感路径（请求组装、出站文本）差分测试。

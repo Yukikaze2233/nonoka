@@ -3,7 +3,7 @@ pub(super) mod tools;
 
 use super::{PlatformPlugin, PluginDescriptor, PreparedSend};
 use crate::config::{QqMessageHistoryPluginSettings, QQ_MESSAGE_HISTORY_PLUGIN_ID};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use crate::platforms::{
     ConversationKind, OutboundBody, OutboundMessage, OutboundSegment, PlatformInboundEvent,
     PlatformInboundEventKind, PlatformMediaKind, PlatformTurnContext, SendReceipt,
@@ -31,7 +31,7 @@ fn stores() -> &'static Mutex<HashMap<PathBuf, HistoryStore>> {
     STORES.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-pub(super) fn store_for_paths(paths: &NanokaPaths) -> HistoryStore {
+pub(super) fn store_for_paths(paths: &NonokaPaths) -> HistoryStore {
     let path = history_db_path(paths);
     let mut stores = stores().lock().unwrap();
     stores
@@ -40,7 +40,7 @@ pub(super) fn store_for_paths(paths: &NanokaPaths) -> HistoryStore {
         .clone()
 }
 
-fn history_db_path(paths: &NanokaPaths) -> PathBuf {
+fn history_db_path(paths: &NonokaPaths) -> PathBuf {
     let path = paths.data_dir.join(HISTORY_DB);
     if path.exists() {
         return path;
@@ -125,7 +125,7 @@ impl MessageHistoryPlugin {
         ))
     }
 
-    async fn record_inbound(paths: &NanokaPaths, event: &PlatformInboundEvent) -> Result<()> {
+    async fn record_inbound(paths: &NonokaPaths, event: &PlatformInboundEvent) -> Result<()> {
         let key = ConversationKey::for_kind(
             event.conversation.platform.clone(),
             event.conversation.account_id.clone(),
@@ -203,11 +203,11 @@ impl MessageHistoryPlugin {
             .message_ids
             .first()
             .cloned()
-            .unwrap_or_else(|| format!("nanoka-{timestamp}-{:08x}", rand::random::<u32>()));
+            .unwrap_or_else(|| format!("nonoka-{timestamp}-{:08x}", rand::random::<u32>()));
         let sender_name = context
             .bot_display_name()
             .await
-            .unwrap_or_else(|_| "Nanoka".to_string());
+            .unwrap_or_else(|_| "Nonoka".to_string());
         store_for_paths(&context.paths)
             .record_message(NewHistoryMessage {
                 group: conversation_key(context)?,
@@ -242,7 +242,7 @@ impl PlatformPlugin for MessageHistoryPlugin {
 
     fn observe_ingress<'a>(
         &'a self,
-        paths: &'a NanokaPaths,
+        paths: &'a NonokaPaths,
         _config: &'a crate::config::AppConfig,
         event: &'a PlatformInboundEvent,
     ) -> BoxFuture<'a, Result<()>> {
@@ -308,12 +308,12 @@ impl PlatformPlugin for MessageHistoryPlugin {
             let sender_name = context
                 .bot_display_name()
                 .await
-                .unwrap_or_else(|_| "Nanoka".to_string());
+                .unwrap_or_else(|_| "Nonoka".to_string());
             store_for_paths(&context.paths)
                 .record_message(NewHistoryMessage {
                     group: conversation_key(context)?,
                     message_id: if message_id.trim().is_empty() {
-                        format!("nanoka-{timestamp}-{:08x}", rand::random::<u32>())
+                        format!("nonoka-{timestamp}-{:08x}", rand::random::<u32>())
                     } else {
                         message_id.to_string()
                     },
@@ -448,8 +448,8 @@ mod tests {
     };
     use std::time::Instant;
 
-    fn test_paths(root: &std::path::Path) -> NanokaPaths {
-        NanokaPaths {
+    fn test_paths(root: &std::path::Path) -> NonokaPaths {
+        NonokaPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),

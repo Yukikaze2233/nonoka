@@ -261,7 +261,7 @@ pub(crate) fn default_web_images_timeout() -> u64 {
 }
 
 pub(crate) fn default_deep_research_dir() -> String {
-    default_nanoka_home()
+    default_nonoka_home()
         .join("data/documents/deep-thinking")
         .display()
         .to_string()
@@ -308,17 +308,17 @@ pub(crate) fn default_image_generation_resolution() -> String {
 }
 
 pub(crate) fn default_image_generation_output_dir() -> String {
-    default_nanoka_home()
+    default_nonoka_home()
         .join("data/pictures/generated-images")
         .display()
         .to_string()
 }
 
-pub(crate) fn default_nanoka_home() -> PathBuf {
-    std::env::var_os("NANOKA_HOME")
+pub(crate) fn default_nonoka_home() -> PathBuf {
+    std::env::var_os("NONOKA_HOME")
         .map(PathBuf::from)
-        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".nanoka")))
-        .unwrap_or_else(|| PathBuf::from("~/.nanoka"))
+        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".nonoka")))
+        .unwrap_or_else(|| PathBuf::from("~/.nonoka"))
 }
 
 pub(crate) fn default_image_generation_timeout() -> u64 {
@@ -435,7 +435,7 @@ pub(crate) fn default_claude_code_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_claude_code_nanoka_tools() -> String {
+pub(crate) fn default_claude_code_nonoka_tools() -> String {
     "all".to_string()
 }
 

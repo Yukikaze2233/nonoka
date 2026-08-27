@@ -2,7 +2,7 @@
 
 use crate::agent::*;
 use crate::config::{AppConfig, ProviderConfig};
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use crate::platforms::{OutboundMessage, PlatformAdapter, SendReceipt};
 use futures_util::future::BoxFuture;
 use std::path::PathBuf;
@@ -88,8 +88,8 @@ pub(super) fn queue_test_config(base_url: String) -> AppConfig {
     config
 }
 
-pub(super) fn test_paths(root: &std::path::Path) -> NanokaPaths {
-    NanokaPaths {
+pub(super) fn test_paths(root: &std::path::Path) -> NonokaPaths {
+    NonokaPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -98,7 +98,7 @@ pub(super) fn test_paths(root: &std::path::Path) -> NanokaPaths {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("fish/nanoka.fish"),
+        fish_hook_file: root.join("fish/nonoka.fish"),
         bash_hook_file: root.join("shell/bash-hook.sh"),
         zsh_hook_file: root.join("shell/zsh-hook.zsh"),
         scripts_dir: root.join("config/scripts"),
@@ -114,6 +114,6 @@ impl PlatformAdapter for NoopPlatformAdapter {
     }
 
     fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-        Box::pin(async { Ok("Nanoka".to_string()) })
+        Box::pin(async { Ok("Nonoka".to_string()) })
     }
 }

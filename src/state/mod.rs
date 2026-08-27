@@ -12,14 +12,14 @@ pub use migrations::DEFAULT_SESSION_ID;
 pub(crate) mod usage;
 
 /// Newest `conversation.db` schema this build can open — the gate an import
-/// checks before restoring a database written by a newer Nanoka.
+/// checks before restoring a database written by a newer Nonoka.
 pub fn latest_schema_version() -> i64 {
     migrations::LATEST_VERSION
 }
 
 use crate::llm::{TurnTokens, Usage};
 use crate::memory_types::EvictedTurn;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -52,7 +52,7 @@ pub const USER_SESSION_KIND: &str = "user";
 /// 按人格隔离机制白拿会话/记忆/REPL 指针的分家;模式由会话的
 /// persona==DEV_PERSONA 推导,无需迁移。
 pub const DEV_PERSONA: &str = "dev";
-/// Backs a one-shot `nanoka ask` / `nanoka '<message>'` turn: created just before
+/// Backs a one-shot `nonoka ask` / `nonoka '<message>'` turn: created just before
 /// the turn, deleted right after, and invisible to every listing in between.
 pub const ASK_SESSION_KIND: &str = "ask";
 
@@ -191,7 +191,7 @@ pub struct StateStore {
 }
 
 impl StateStore {
-    pub fn new(paths: &NanokaPaths) -> Result<Self> {
+    pub fn new(paths: &NonokaPaths) -> Result<Self> {
         let state_dir = paths.state_dir.clone();
         let conv_db = Arc::new(ConversationDb::open(&state_dir)?);
         let platform_access = shared_platform_access_index(&state_dir, &conv_db)?;
@@ -236,7 +236,7 @@ impl StateStore {
             std::fs::write(self.usage_file(), "{\n  \"requests\": 0,\n  \"prompt_tokens\": 0,\n  \"completion_tokens\": 0,\n  \"total_tokens\": 0,\n  \"conversation_tokens\": 0\n}\n")?;
         }
         if !self.profile_file().exists() {
-            std::fs::write(self.profile_file(), "# Nanoka Profile\n\n")?;
+            std::fs::write(self.profile_file(), "# Nonoka Profile\n\n")?;
         }
         Ok(())
     }

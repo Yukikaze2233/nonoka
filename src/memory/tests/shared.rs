@@ -2,10 +2,10 @@
 
 use crate::memory::*;
 use crate::config::AppConfig;
-use crate::paths::NanokaPaths;
+use crate::paths::NonokaPaths;
 
-pub(super) fn test_paths(temp: &tempfile::TempDir) -> NanokaPaths {
-    NanokaPaths {
+pub(super) fn test_paths(temp: &tempfile::TempDir) -> NonokaPaths {
+    NonokaPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().join("config"),
         config_file: temp.path().join("config/config.jsonc"),
@@ -14,7 +14,7 @@ pub(super) fn test_paths(temp: &tempfile::TempDir) -> NanokaPaths {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("pictures"),
-        fish_hook_file: temp.path().join("fish/nanoka.fish"),
+        fish_hook_file: temp.path().join("fish/nonoka.fish"),
         bash_hook_file: temp.path().join("shell/bash-hook.sh"),
         zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
         scripts_dir: temp.path().join("config/scripts"),
@@ -48,7 +48,7 @@ pub(super) fn platform_origin(user_id: &str, display_name: &str) -> MemoryOrigin
 
 pub(super) fn scoped_store(
     config: &AppConfig,
-    paths: &NanokaPaths,
+    paths: &NonokaPaths,
     origin: &MemoryOrigin,
     privileged: bool,
 ) -> MemoryStore {

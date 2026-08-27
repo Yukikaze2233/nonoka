@@ -1,6 +1,6 @@
 //! 工具桥内层调用的 progress 泵。
 //!
-//! 桥调用(`nanoka tool-call` / MCP 桥)在 daemon 侧执行,工具的 progress 事件
+//! 桥调用(`nonoka tool-call` / MCP 桥)在 daemon 侧执行,工具的 progress 事件
 //! 没有回合的事件发射端可挂——此前 `registry.call` 给的是空 progress,图片
 //! 被静默丢弃,`prepare_for_external_output` 还会误答 true 把图打进 daemon
 //! 自己的 stdout。这里补一条与回合渲染同构的路:图片照常落 image asset

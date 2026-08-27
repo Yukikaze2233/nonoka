@@ -29,10 +29,10 @@ impl LiveReplTail {
         let page_bottom = self.tail_start.saturating_sub(1);
         let cursor_row = cursor_row_or(self.output_cursor.1);
         let overflow = cursor_row.saturating_sub(page_bottom);
-        if std::env::var_os("NANOKA_TAIL_TRACE").is_some() {
+        if std::env::var_os("NONOKA_TAIL_TRACE").is_some() {
             use std::io::Write as _;
             let path = std::path::Path::new(&std::env::var("HOME").unwrap_or_default())
-                .join(".nanoka/cache/logs/tail-trace.log");
+                .join(".nonoka/cache/logs/tail-trace.log");
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -278,7 +278,7 @@ impl LiveReplTail {
         let input_row = (i32::from(self.input_cursor.1) + shift)
             .clamp(0, i32::from(terminal_rows.saturating_sub(1))) as u16;
         queue!(transaction, MoveTo(self.input_cursor.0, input_row))?;
-        if std::env::var_os("NANOKA_TAIL_TRACE").is_some() {
+        if std::env::var_os("NONOKA_TAIL_TRACE").is_some() {
             trace_tail_redraw(
                 self.tail_start,
                 next_tail,
