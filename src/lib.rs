@@ -15,6 +15,7 @@ mod config_tui;
 mod daemon;
 mod default_kb;
 mod default_models;
+mod dsh;
 mod host_info;
 mod i18n;
 mod ipc;

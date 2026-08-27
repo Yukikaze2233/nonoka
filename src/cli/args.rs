@@ -121,6 +121,24 @@ pub enum Command {
     /// MCP stdio 工具桥(claude-code 供应商内部使用,由 claude 拉起)
     #[command(name = "mcp-serve", hide = true)]
     McpServe,
+    /// 验证与 DSH Web API 的连接、会话、事件流和首轮回复
+    #[command(name = "dsh-test")]
+    DshTest(DshTestArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DshTestArgs {
+    /// DSH Web 地址
+    #[arg(long)]
+    pub base_url: Option<String>,
+
+    /// 发送给 DSH 的测试消息
+    #[arg(default_value = "只回复两个字：收到")]
+    pub message: String,
+
+    /// DSH agent preset（留空使用 DSH 默认 preset）
+    #[arg(long)]
+    pub agent_preset: Option<String>,
 }
 
 #[derive(Debug, Args)]
