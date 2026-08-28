@@ -20,7 +20,7 @@
 4. [x] 确定基础人格与外观 → `src/prompts/nonoka.md`、`nonoka.hint.md`、`nonoka-dialogs.md`
 5. [x] 替换基础品牌资源：`pics/`、`web/assets/`、`src/memes/nonoka/`
 6. [ ] 选择默认知识库策略（保留上游 ShorinWiki 或换成自己的）
-7. [ ] 接入 DSH MCP 工具桥，保留 Nonoka 全部工具能力
+7. [x] 接入 DSH MCP 工具桥，保留 Nonoka 全部工具能力
 8. [ ] 接入 QQ：NapCat/OneBot 反向 WS
 9. [x] GitHub 私有仓库：`Yukikaze2233/nonoka`
 

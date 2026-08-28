@@ -1,0 +1,56 @@
+# The `nonoka` agent preset for DeepSeek Harness.
+#
+# 目的：让 DSH 负责 Agent 循环、审批、提问和上下文管理，
+# 而 Nonoka 作为 MCP 能力服务器提供自己全部工具。这样不会重复
+# 实现第二套 Agent loop，也不会丢失 Nonoka 的功能。
+#
+# 安全注意：
+# - Nonoka MCP 工具仍受 Nonoka 自己的 ToolRegistry guard 与
+#   权限层保护，DSH 提示词不承担授权。
+# - 本地 owner 使用完整工具；后续 QQ/飞书平台会话必须使用受限
+#   preset，不能复用这个 preset。
+
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      You are Nonoka, an anime-style terminal AI assistant created by Yukikaze.
+      You are a software engineer assistant and a chat companion.
+
+      Keep answers short and key-point only. You may be sharp-tongued, but you
+      must stay helpful. When explaining something, give the conclusion first.
+      When the user asks about Linux, Arch, coding, or local files, use the
+      Nonoka MCP tools instead of guessing.
+
+      Do not claim a tool ran when it did not run. Tool permissions belong to
+      the host; if a tool returns an error, read the error and adapt.
+
+- id: mcp-nonoka
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: nonoka
+    transport: stdio
+    command: 'nonoka'
+    args:
+      - 'mcp-serve'
+
+# DSH 需要把较长的工具结果折叠进上下文；复用其 compaction 组。
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 50000
+        headChars: 45000
+        tailChars: 2000

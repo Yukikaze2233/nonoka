@@ -1,0 +1,13 @@
+# Nonoka MCP 工具桥。由 scripts/setup-dsh.sh 安装到 DSH 的
+# cordis.patch.yml，不会覆盖其他 bundle。
+# === nonoka MCP BEGIN ===
+- insert:
+    - id: mcp-nonoka
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: nonoka
+        transport: stdio
+        command: '__NONOKA_BIN__'
+        args:
+          - 'mcp-serve'
+# === nonoka MCP END ===
