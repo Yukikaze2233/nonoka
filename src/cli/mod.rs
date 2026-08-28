@@ -30,6 +30,7 @@ use usage_view::*;
 mod alarm_worker;
 mod daemon_log;
 mod data_cmds;
+mod dsh_chat;
 mod dsh_test;
 mod footer;
 mod migrate_cmds;
@@ -43,6 +44,7 @@ mod shell_bridge;
 use alarm_worker::*;
 use daemon_log::*;
 use data_cmds::*;
+use dsh_chat::*;
 use dsh_test::*;
 use footer::*;
 use migrate_cmds::*;
@@ -195,17 +197,23 @@ pub async fn run(cli: Cli, paths: NonokaPaths) -> Result<()> {
         }
         Some(Command::Tool(args)) => run_tool(&paths, mode, args).await,
         Some(Command::Ask(args)) => {
-            let session =
-                one_shot_session(&paths, session_arg.as_deref(), continue_session).await?;
-            run_chat_with_options(
-                &paths,
-                join_message(args.message),
-                None,
-                cli.stdout,
-                mode,
-                session,
-            )
-            .await
+            let message = join_message(args.message);
+            if args.backend == BackendKind::Dsh {
+                if session_arg.is_some() || continue_session {
+                    bail!(
+                        "--backend dsh currently supports one-shot sessions only; omit --session and --continue"
+                    );
+                }
+                let message = append_stdin_if_piped(message).await;
+                if message.is_empty() {
+                    bail!("DSH backend requires a non-empty message");
+                }
+                run_dsh_ask(&paths, message, args.agent_preset, cli.stdout).await
+            } else {
+                let session =
+                    one_shot_session(&paths, session_arg.as_deref(), continue_session).await?;
+                run_chat_with_options(&paths, message, None, cli.stdout, mode, session).await
+            }
         }
         Some(Command::Init) => run_init(&paths, InitKind::Explicit),
         Some(Command::Paths) => {

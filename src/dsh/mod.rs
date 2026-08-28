@@ -160,6 +160,14 @@ impl DshClient {
             .await
     }
 
+    pub async fn workspace_archive_session(&self, session_id: &str) -> Result<Value> {
+        self.call(
+            "workspace.archiveSession",
+            json!({ "sessionId": session_id }),
+        )
+        .await
+    }
+
     pub async fn events_mux(&self) -> Result<DshEventStream> {
         let endpoint = websocket_url(&self.base_url, "/api/events.mux")?;
         let (socket, _) = connect_async(&endpoint)

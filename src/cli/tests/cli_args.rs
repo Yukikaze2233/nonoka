@@ -53,6 +53,33 @@ fn variant_is_a_cli_subcommand_with_an_optional_name() {
 }
 
 #[test]
+fn ask_backend_defaults_to_direct_and_accepts_dsh() {
+    let cli = parse_args(
+        ["nonoka", "ask", "--backend", "dsh", "hello"]
+            .map(OsString::from)
+            .to_vec(),
+    )
+    .unwrap();
+    assert!(matches!(
+        cli.command,
+        Some(Command::Ask(MessageArgs {
+            backend: BackendKind::Dsh,
+            agent_preset: None,
+            message,
+        })) if message == vec!["hello".to_string()]
+    ));
+
+    let cli = parse_args(["nonoka", "ask", "hello"].map(OsString::from).to_vec()).unwrap();
+    assert!(matches!(
+        cli.command,
+        Some(Command::Ask(MessageArgs {
+            backend: BackendKind::Direct,
+            ..
+        }))
+    ));
+}
+
+#[test]
 fn continue_and_session_flags_are_mutually_exclusive() {
     let cli = parse_args(["nonoka", "-c", "hello"].map(OsString::from).to_vec()).unwrap();
     assert!(cli.continue_session);

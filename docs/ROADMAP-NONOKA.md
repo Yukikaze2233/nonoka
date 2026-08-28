@@ -8,17 +8,21 @@
 - [x] 包/二进制/数据目录品牌改名：`miyu` → `nonoka`
 - [x] 资源改名：logo、壁纸、默认人格文件、表情库、matugen 模板
 - [x] 补充 NOTICE.md 与上游署名
+- [x] Rust 原生 DSH 协议客户端：RPC + `events.mux` WebSocket
+- [x] `nonoka dsh-test` 真实回合验收
+- [x] `nonoka ask --backend dsh` 一次性聊天验收
 
 ## 待办（按建议顺序）
 
-1. [ ] 编译验证：`cargo build --release`，修复改名引入的问题
-2. [ ] 首跑验证：`nonoka init` / `nonoka normal` / `nonoka dev` / `nonoka web`
+1. [x] 编译验证：`cargo build`，修复改名引入的问题
+2. [x] 首跑验证：`nonoka init` / `nonoka paths` / `nonoka config validate`
 3. [ ] 配置自己的 LLM API（`nonoka config` → 供应商/模型）
-4. [ ] 确定人格设定 → 替换 `src/prompts/nonoka.md`、`nonoka.hint.md`、`nonoka-dialogs.md`
-5. [ ] 替换品牌资源：`pics/`、`web/assets/`、`src/memes/nonoka/`、内置音频
+4. [x] 确定基础人格与外观 → `src/prompts/nonoka.md`、`nonoka.hint.md`、`nonoka-dialogs.md`
+5. [x] 替换基础品牌资源：`pics/`、`web/assets/`、`src/memes/nonoka/`
 6. [ ] 选择默认知识库策略（保留上游 ShorinWiki 或换成自己的）
-7. [ ] 按需接入 QQ：NapCat/OneBot 反向 WS
-8. [ ] 按需发布：GitHub 远程、AUR PKGBUILD、release 资产
+7. [ ] 接入 DSH MCP 工具桥，保留 Nonoka 全部工具能力
+8. [ ] 接入 QQ：NapCat/OneBot 反向 WS
+9. [x] GitHub 私有仓库：`Yukikaze2233/nonoka`
 
 ## 每次改动后的验收流程（沿用上游 AGENTS.md）
 

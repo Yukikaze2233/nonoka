@@ -4,6 +4,16 @@
 //! 就生效，而那时命令行还没解析。
 
 use crate::cli::*;
+use clap::ValueEnum;
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum BackendKind {
+    /// 现有 Nonoka Agent，默认路径。
+    #[default]
+    Direct,
+    /// 外部 DeepSeek Harness Agent。
+    Dsh,
+}
 
 #[derive(Debug, Parser)]
 #[command(name = "nonoka", version, about = "Nonoka CLI AI Agent")]
@@ -143,6 +153,13 @@ pub struct DshTestArgs {
 
 #[derive(Debug, Args)]
 pub struct MessageArgs {
+    #[arg(long, value_enum, default_value_t = BackendKind::Direct)]
+    pub backend: BackendKind,
+
+    /// DSH agent preset；仅在 `--backend dsh` 时使用。
+    #[arg(long)]
+    pub agent_preset: Option<String>,
+
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub message: Vec<String>,
 }
