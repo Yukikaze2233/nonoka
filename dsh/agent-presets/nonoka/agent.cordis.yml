@@ -9,6 +9,10 @@
 #   权限层保护，DSH 提示词不承担授权。
 # - 本地 owner 使用完整工具；后续 QQ/飞书平台会话必须使用受限
 #   preset，不能复用这个 preset。
+# - MCP 客户端实例由 scripts/setup-dsh.sh 注入 host 层
+#   （cordis.patch.yml，serverName: nonoka），本 preset 只声明 persona
+#   与 compaction；preset 内再挂一个同名 mcp-client 会与 host 实例
+#   冲突（DSH 按 ctx.root 拒绝重复 serverName）。
 
 - id: persona
   name: '@deepseek-ai/dsh-persona'
@@ -24,15 +28,6 @@
 
       Do not claim a tool ran when it did not run. Tool permissions belong to
       the host; if a tool returns an error, read the error and adapt.
-
-- id: mcp-nonoka
-  name: '@deepseek-ai/dsh-mcp-client'
-  config:
-    serverName: nonoka
-    transport: stdio
-    command: 'nonoka'
-    args:
-      - 'mcp-serve'
 
 # DSH 需要把较长的工具结果折叠进上下文；复用其 compaction 组。
 - id: compaction

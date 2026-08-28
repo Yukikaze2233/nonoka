@@ -58,8 +58,10 @@ if begin in text and end in text:
         text,
     )
 else:
-    text = text.replace('[]', '[]')
-    if text.strip() == '[]':
+    # cordis.patch.yml 是单 YAML 文档：追加块序列前必须移除占位符
+    # []，否则「注释 + []」会和新块解析成两个文档，DSH 启动会失败。
+    text = text.replace('[]', '')
+    if not text.strip():
         text = block + '\n'
     else:
         text = text.rstrip() + '\n\n' + block + '\n'
