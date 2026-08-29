@@ -78,6 +78,10 @@ impl DshBackend {
         })
     }
 
+    pub(crate) fn base_url(&self) -> &str {
+        self.client.base_url()
+    }
+
     pub(crate) async fn chat(&self, paths: &NonokaPaths, message: String) -> Result<String> {
         self.chat_in_directory(&paths.state_dir.join("dsh-ask"), message)
             .await
