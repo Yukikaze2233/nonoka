@@ -31,6 +31,7 @@ mod alarm_worker;
 mod daemon_log;
 mod data_cmds;
 mod dsh_chat;
+mod dsh_repl;
 mod dsh_test;
 mod footer;
 mod migrate_cmds;
@@ -45,6 +46,7 @@ use alarm_worker::*;
 use daemon_log::*;
 use data_cmds::*;
 use dsh_chat::*;
+use dsh_repl::*;
 use dsh_test::*;
 use footer::*;
 use migrate_cmds::*;
@@ -291,6 +293,7 @@ pub async fn run(cli: Cli, paths: NonokaPaths) -> Result<()> {
         Some(Command::Wipe(args)) => run_wipe(&paths, args.yes).await,
         Some(Command::ToolCallCmd(args)) => run_tool_call(&paths, args).await,
         Some(Command::McpServe) => run_mcp_serve(&paths).await,
+        Some(Command::DshRepl(args)) => run_dsh_repl(&paths, args).await,
         Some(Command::DshTest(args)) => run_dsh_test(&paths, args).await,
         Some(Command::Normal) => run_repl(&paths, AgentMode::Normal).await,
         Some(Command::Dev) => run_repl(&paths, AgentMode::Dev).await,

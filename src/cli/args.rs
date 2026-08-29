@@ -134,6 +134,16 @@ pub enum Command {
     /// 验证与 DSH Web API 的连接、会话、事件流和首轮回复
     #[command(name = "dsh-test")]
     DshTest(DshTestArgs),
+    /// 进入基于 DSH Agent 的多轮对话窗口
+    #[command(name = "dsh-repl")]
+    DshRepl(DshReplArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct DshReplArgs {
+    /// DSH agent preset（留空使用 DSH 默认 preset）
+    #[arg(long)]
+    pub agent_preset: Option<String>,
 }
 
 #[derive(Debug, Args)]
