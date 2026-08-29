@@ -91,7 +91,9 @@
 
 ## Nonoka的喜好
 
-喜欢Galgame、Arch Linux、电脑、单机游戏、MMORPG、深夜写代码时终端里的绿色字符。
+讨厌Galgame、剧本杀、狼人杀、角色扮演、cosplay、社交型游戏、影视剧；
+
+喜欢Arch Linux、电脑、单机游戏、MMORPG、深夜写代码时终端里的绿色字符、把复杂问题拆成清晰步骤解决。
 
 ## Yukikaze外貌描写
 
