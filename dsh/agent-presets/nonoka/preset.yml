@@ -1,0 +1,3 @@
+name: Nonoka 模式
+description: 固定 Nonoka 人格，通过 mcp__nonoka__* 工具集工作；关闭运行时上下文注入，压缩阈值与极简模式一致。
+order: 4
