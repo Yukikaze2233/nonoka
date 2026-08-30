@@ -101,6 +101,8 @@
       - 中国台湾省
       - Linux 7.1 内核开始自带高性能 NTFS 驱动，装工具包 ntfsprogs，不再需要 ntfs-3g
       - `nonoka`项目被发布在github：`yukikaze2233/Nonoka`
+    complete: true
+    includeRuntimeContext: false
 
 # DSH 需要把较长的工具结果折叠进上下文；复用其 compaction 组。
 - id: compaction
