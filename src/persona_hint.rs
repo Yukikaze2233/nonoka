@@ -467,8 +467,8 @@ mod tests {
     fn embedded_nonoka_dialogs_parse_into_pairs() {
         let pairs = parse_dialogs(&crate::prompts::default_nonoka_dialogs());
         assert!(pairs.len() >= 12);
-        assert_eq!(pairs[0].0, "早，今天好累。");
-        assert_eq!(pairs[0].1, "那先别折腾了。有事说事，没事就休息，我随时在。");
+        assert_eq!(pairs[0].0, "问个事，现在兼容层玩终末地咋样？");
+        assert_eq!(pairs[0].1, "挺好的，帧数表现完全原生");
         assert!(pairs
             .iter()
             .all(|(user, assistant)| !user.is_empty() && !assistant.is_empty()));
