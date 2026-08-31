@@ -4,8 +4,6 @@
 
 # Nonoka
 
-> 本项目是 [Miyu](https://github.com/SHORiN-KiWATA/Miyu) 的个人复刻版（MIT），上游致谢见文末。
-
 一个活在终端里的二次元少女。开箱即用的开源 AI 助手，支持接入通讯平台。
 
 > 自用学习版，人格与立绘待定
@@ -30,11 +28,11 @@ Nonoka（ほたる・蛍）是住在终端里的二次元少女。具体性格�
 
 `nonoka` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
 
-![](./pics/shell-init.png)
+> 📷 截图待补：`shell-init.png`
 
 有终端交互模式
 
-![](./pics/REPL.png)
+> 📷 截图待补：`REPL.png`
 
 自带了 TUI 方便修改配置。
 
@@ -42,15 +40,15 @@ Nonoka（ほたる・蛍）是住在终端里的二次元少女。具体性格�
 nonoka config
 ```
 
-![](./pics/tui.png)
+> 📷 截图待补：`tui.png`
 
 还有 WebUI 
 
-![](./pics/webui.png)
+> 📷 截图待补：`webui.png`
 
 还可以接入 QQ，远程操作电脑；亦或是加入群聊，陪网友吹水，帮助你管理群聊。
 
-![](./pics/qq私聊.png)
+> 📷 截图待补：`qq私聊.png`
 
 
 ## 如何安装？
@@ -131,7 +129,7 @@ nonoka import nonoka-export-*.tar.gz
   
   表情包毫无疑问是聊天时最重要的部分，在对话时，Nonoka 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
 
-  ![](./pics/nvidiafuckyou.png)
+  > 📷 截图待补：`nvidiafuckyou.png`
 
   Nonoka 自带了一些表情，存放在`/usr/share/nonoka`，对应的用户空间目录位于`~/.nonoka/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 Nonoka 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。Nonoka 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
 
@@ -141,9 +139,9 @@ nonoka import nonoka-export-*.tar.gz
   
   算命就像看天气预报一般稀松平常。Nonoka 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
 
-  ![](./pics/玄学.png)
+  > 📷 截图待补：`玄学.png`
 
-  ![](./pics/吉凶占.png)
+  > 📷 截图待补：`吉凶占.png`
 
 - 投骰子
 
@@ -151,7 +149,7 @@ nonoka import nonoka-export-*.tar.gz
 
   闲来无事可以和 AI 比比大小。
 
-  ![](./pics/骰子.png)
+  > 📷 截图待补：`骰子.png`
 
 - 闹钟
 
@@ -159,7 +157,7 @@ nonoka import nonoka-export-*.tar.gz
   
   Nonoka 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
 
-  ![](./pics/set_alarm.png)
+  > 📷 截图待补：`set_alarm.png`
 
 - 知识库
 
@@ -167,7 +165,7 @@ nonoka import nonoka-export-*.tar.gz
 
   当然，你也可以通过 `nonoka kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
 
-  ![](./pics/kb.png)
+  > 📷 截图待补：`kb.png`
 
 - ProtonDB 查询
 
@@ -179,13 +177,13 @@ nonoka import nonoka-export-*.tar.gz
 
   这是桌面端使用 Linux 的日经问题，Nonoka 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
 
-  ![](./pics/gaming.png)
+  > 📷 截图待补：`gaming.png`
 
 - 网络搜索
 
   即使不配置网络搜索 API，Nonoka 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
 
-  ![](./pics/web-search-config.png)
+  > 📷 截图待补：`web-search-config.png`
 
 - 搜图
 
@@ -193,7 +191,7 @@ nonoka import nonoka-export-*.tar.gz
 
   >NSFW 禁止！
 
-  ![](./pics/搜图.png)
+  > 📷 截图待补：`搜图.png`
 
 - 生图
 
@@ -201,19 +199,19 @@ nonoka import nonoka-export-*.tar.gz
 
   >这个功能默认用不了，要自己在插件设置里开启并配置 API
 
-  ![](./pics/生图.png)
+  > 📷 截图待补：`生图.png`
 
 - 天气查询
 
   查询天气是每天的必做活动，当然少不了。
 
-  ![](./pics/weather.png)
+  > 📷 截图待补：`weather.png`
 
 - 汇率查询
 
   国际社会，查个汇率也很合理吧？
 
-  ![](./pics/汇率.png)
+  > 📷 截图待补：`汇率.png`
 
 - Man 手册查询
 
@@ -221,7 +219,7 @@ nonoka import nonoka-export-*.tar.gz
 
   专门的手册查询工具，虽然网络搜索也能做到，但这值得做成单独的插件。
   
-  ![](./pics/man.png)
+  > 📷 截图待补：`man.png`
 
 - Arch Linux相关
 
@@ -233,7 +231,7 @@ nonoka import nonoka-export-*.tar.gz
 
     AUR 的状态是日用 Arch 时的重要信息之一，不访问网站就能查询的话，在 AUR 安装出现异常时查起来会方便很多。
 
-    ![](./pics/aur-status.png)
+    > 📷 截图待补：`aur-status.png`
 
   - AUR 包查询
 
@@ -243,13 +241,13 @@ nonoka import nonoka-export-*.tar.gz
 
     作为 “Linux 圣经”，查询 Arch Wiki 不仅能提高日用 Arch 的体验，对其他发行版也大有裨益。
 
-    ![](./pics/archwiki.png)
+    > 📷 截图待补：`archwiki.png`
 
   - PKGBUILD 审查
 
     AUR 投毒的事件搞得人心惶惶，但现在，Nonoka 可以帮忙审查 PKGBUILD 啦！
 
-    ![](./pics/pkgbuild审核.png)
+    > 📷 截图待补：`pkgbuild审核.png`
 
 - 文件操作
 
@@ -261,7 +259,7 @@ nonoka import nonoka-export-*.tar.gz
 
   为了计算结果的准确性，Nonoka 自带了科学计算器和哈希编解码的能力。
 
-  ![](./pics/hash.png)
+  > 📷 截图待补：`hash.png`
 
 - 记忆系统
 
@@ -271,7 +269,7 @@ nonoka import nonoka-export-*.tar.gz
 
   `/reset` 只清理当前会话，不删除人格记忆；终端或 WebUI 的 `/reset all` 会清空当前人格的短期日记、长期日记、知识点、修订记录和待整理状态。主体记忆在一个事务中清理，淘汰上下文随后独立清理。即使后台模型当时正在整理，旧结果也会因数据库身份或记忆代数变化而被拒绝，不能在清理后重新写回；重置前已经启动的其他会话也不能再写入旧日记。
 
-  ![](./pics/记忆.png)
+  > 📷 截图待补：`记忆.png`
 
 - 深度研究
 
@@ -279,7 +277,7 @@ nonoka import nonoka-export-*.tar.gz
 
   重量级插件。对于一个命题，Nonoka 可以引经据典，有理有据地进行深度研究并写出研究报告。
 
-  ![](./pics/深度研究.png)
+  > 📷 截图待补：`深度研究.png`
 
 - Linux 输入法问题诊断
 
@@ -295,6 +293,7 @@ nonoka import nonoka-export-*.tar.gz
 
 #### 功能参考
 
+- [Miyu](https://github.com/SHORiN-KiWATA/Miyu)（本项目的基础上游）
 - [Opencode](https://github.com/anomalyco/opencode) 
 - [Claude Code](https://github.com/anthropics/claude-code)
 - [Pi](https://github.com/earendil-works/pi)
