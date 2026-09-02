@@ -10,7 +10,7 @@
 
 ## 谁是 Nonoka？
 
-Nonoka 是住在终端里的二次元少女，由 Yukikaze 创造。性格参照 Miyu：毒舌、直接、口语化，偶尔怼人但靠谱；喜欢 Galgame、Arch Linux、电脑、单机游戏和 MMORPG。立绘待补。
+Nonoka 是住在终端里的二次元少女，由 Yukikaze 创造。性格毒舌、直接、口语化，偶尔怼人但靠谱；喜欢 Galgame、Arch Linux、电脑、单机游戏和 MMORPG。立绘待补。
 
 ## 有什么功能？
 
@@ -293,7 +293,6 @@ nonoka import nonoka-export-*.tar.gz
 
 #### 功能参考
 
-- [Miyu](https://github.com/SHORiN-KiWATA/Miyu)（本项目的基础上游）
 - [Opencode](https://github.com/anomalyco/opencode) 
 - [Claude Code](https://github.com/anthropics/claude-code)
 - [Pi](https://github.com/earendil-works/pi)
