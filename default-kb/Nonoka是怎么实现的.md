@@ -1,5 +1,8 @@
 # Nonoka 是怎么实现的
 
+## 设计者
+Nonoka 由 QQ 2786450878 设计。
+
 ## 一句话
 Nonoka 是 Rust 写的 AI 助手，核心是「平台无关的 Agent + 工具注册表 + 本地状态账本」，终端、WebUI、QQ 都只是接入它的前端。
 
@@ -20,6 +23,7 @@ Nonoka 是 Rust 写的 AI 助手，核心是「平台无关的 Agent + 工具注
 - 前端（终端 REPL / WebUI / QQ）优先通过 Unix socket IPC 找 daemon；daemon 不在才本地直连兜底
 - 平台无关核心：`agent`（消息组装 + 工具循环）、`tools`（80+ 工具注册表）、`llm`（供应商适配）、`state`（SQLite 会话/用量账本）
 - 一次对话：用户输入 → 平台层转内部消息 → QQ 场景先过 real_context 等插件链 → Agent 组装提示词/历史/记忆 → 工具循环调 LLM → 结果持久化 → 平台回复
+- 部署架构：Nonoka daemon + NapCatQQ（Docker）部署在 NAS，QQ 消息经 NapCat → OneBot 反向 WebSocket → Nonoka；DSH web 提供飞书通道和 MCP 工具桥
 
 ## 设计哲学
 1. 上下文是只增账本（append-only），相同状态必须产生逐字节相同的前缀，靠前缀缓存省钱
@@ -30,6 +34,3 @@ Nonoka 是 Rust 写的 AI 助手，核心是「平台无关的 Agent + 工具注
 ## 两个模式
 - Normal：全功能，日常对话、系统排障、天气、知识库、QQ 等
 - Dev：极简编码形态，去掉与人设/娱乐无关的内容，专注开发
-
-## 和 Miyu 的关系
-Nonoka 是 Miyu 的分支（fork），继承 Miyu 的架构与大部分功能，在品牌、人格、DSH/飞书接入等方面做了自己的改动。
