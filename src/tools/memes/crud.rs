@@ -54,7 +54,11 @@ pub(crate) struct RiskGates {
     pub(crate) unsafe_or_abusive: bool,
 }
 
-pub(crate) async fn add_meme(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Result<String> {
+pub(crate) async fn add_meme(
+    args: Value,
+    config: &AppConfig,
+    paths: &NonokaPaths,
+) -> Result<String> {
     let library = selected_library(&args, config);
     let library_lock = library_lock(&library);
     let _guard = library_lock.lock().await;

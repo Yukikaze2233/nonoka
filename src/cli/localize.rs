@@ -270,7 +270,11 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
             "Erase all conversation history, memory, group contexts and their artifacts",
             "抹掉所有会话历史、记忆、群聊上下文和其产物",
         ),
-        ("web", "Open the local Nonoka WebUI", "访问本地 Nonoka WebUI"),
+        (
+            "web",
+            "Open the local Nonoka WebUI",
+            "访问本地 Nonoka WebUI",
+        ),
         (
             "daemon",
             "Manage the unified Nonoka background service",

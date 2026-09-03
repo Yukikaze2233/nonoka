@@ -8,11 +8,11 @@
 mod agent;
 mod alarm;
 mod args;
+pub(crate) mod backend;
 mod cli;
 mod clipboard;
 mod config;
 mod config_tui;
-pub(crate) mod backend;
 mod daemon;
 mod default_kb;
 mod default_models;

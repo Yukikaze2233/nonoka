@@ -91,7 +91,10 @@ pub(in crate::cli) fn daemon_web_access_urls(info: &ipc::DaemonInfo) -> Vec<Stri
     ipc::web_access_urls_for(bind, info.web_port)
 }
 
-pub(in crate::cli) async fn run_daemon_command(paths: &NonokaPaths, args: DaemonArgs) -> Result<()> {
+pub(in crate::cli) async fn run_daemon_command(
+    paths: &NonokaPaths,
+    args: DaemonArgs,
+) -> Result<()> {
     let command = args.command.unwrap_or(DaemonCommand::Start);
     if args.port.is_some() && !matches!(command, DaemonCommand::Start | DaemonCommand::Restart) {
         bail!(
@@ -170,7 +173,10 @@ pub(in crate::cli) async fn stop_daemon(paths: &NonokaPaths) -> Result<()> {
             ipc::shutdown_daemon(paths, &info).await?;
             println!("{}", t("Nonoka daemon stopped", "Nonoka daemon 已停止"));
         }
-        None => println!("{}", t("Nonoka daemon is not running", "Nonoka daemon 未运行")),
+        None => println!(
+            "{}",
+            t("Nonoka daemon is not running", "Nonoka daemon 未运行")
+        ),
     }
     // info 文件只指向最后一次 start 的进程:历史上多次 start 互相覆盖,会留
     // 下仍占 8300 的孤儿 daemon——stop 谎报成功,后续测试全打在旧代码上,新
@@ -538,7 +544,10 @@ pub(in crate::cli) async fn request_config_reload_at(
 
 pub(in crate::cli) async fn run_reload(paths: &NonokaPaths) -> Result<()> {
     if ipc::daemon_info(paths).await.is_none() {
-        bail!("{}", t("Nonoka daemon is not running", "Nonoka daemon 未运行"));
+        bail!(
+            "{}",
+            t("Nonoka daemon is not running", "Nonoka daemon 未运行")
+        );
     }
     retry_config_reload(RELOAD_MAX_ATTEMPTS, RELOAD_RETRY_INTERVAL, || {
         request_config_reload(paths)

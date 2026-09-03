@@ -888,7 +888,10 @@ fn real_config_window_source() {
         return;
     };
     let paths = crate::paths::NonokaPaths::new().unwrap();
-    println!("\n  NONOKA_HOME = {}", std::path::Path::new(&home).display());
+    println!(
+        "\n  NONOKA_HOME = {}",
+        std::path::Path::new(&home).display()
+    );
     let config = AppConfig::load(&paths).unwrap();
     crate::models_cache::ensure_active_metadata(&paths, &config);
 

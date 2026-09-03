@@ -28,7 +28,11 @@ pub struct ImportReport {
     pub cleared_workspaces: usize,
 }
 
-pub fn import(paths: &NonokaPaths, archive: &Path, options: &ImportOptions) -> Result<ImportReport> {
+pub fn import(
+    paths: &NonokaPaths,
+    archive: &Path,
+    options: &ImportOptions,
+) -> Result<ImportReport> {
     let root = nonoka_home(paths)?;
     let manifest = read_manifest(archive)?;
     check_versions(&manifest)?;

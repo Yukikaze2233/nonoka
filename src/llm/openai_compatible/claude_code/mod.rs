@@ -218,7 +218,8 @@ impl OpenAiCompatibleClient {
         let tool_capable = matches!(self.request_scope, "chat" | "subagent");
         let native_on =
             tool_capable && scope_allows(&runtime.native_tools, self.claude_code_dev_mode);
-        let nonoka_on = tool_capable && scope_allows(&runtime.nonoka_tools, self.claude_code_dev_mode);
+        let nonoka_on =
+            tool_capable && scope_allows(&runtime.nonoka_tools, self.claude_code_dev_mode);
         {
             // 整体替换默认系统提示词:人格/开发提示词原样过去,同时甩掉
             // Claude Code 自带的 CLI 身份与 CLAUDE.md 注入。工具开启时追加

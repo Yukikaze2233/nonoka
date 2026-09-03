@@ -50,7 +50,11 @@ pub(in crate::llm::openai_compatible) fn hidden_start_after(
     if kind == ChatStreamKind::Content {
         starts.push(target[offset..].find(THINKING_TAG_PREFIX));
     }
-    starts.into_iter().flatten().map(|index| offset + index).min()
+    starts
+        .into_iter()
+        .flatten()
+        .map(|index| offset + index)
+        .min()
 }
 
 pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(

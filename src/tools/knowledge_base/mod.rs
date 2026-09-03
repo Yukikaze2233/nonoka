@@ -176,7 +176,11 @@ impl KnowledgeBase {
     }
 }
 
-async fn tool_search_readonly(args: Value, config: AppConfig, paths: NonokaPaths) -> Result<String> {
+async fn tool_search_readonly(
+    args: Value,
+    config: AppConfig,
+    paths: NonokaPaths,
+) -> Result<String> {
     ensure_enabled(&config)?;
     let query = args
         .get("query")

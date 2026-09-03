@@ -83,7 +83,11 @@ fn render_goal_human(title: &str, goal: &GoalRecord, session_id: &str) -> String
 /// 对话，模型该看到的是目标本身（它自己调 `get_goal`）。返回 `Result` 是给
 /// web 层的：它要靠成败决定后续动作（比如 edit 成功后给正在跑的续轮排变更
 /// 通知），拒绝文案和成功回执混成一个字符串就判不了。
-pub fn try_execute_goal_command(paths: &NonokaPaths, session_id: &str, raw: &str) -> Result<String> {
+pub fn try_execute_goal_command(
+    paths: &NonokaPaths,
+    session_id: &str,
+    raw: &str,
+) -> Result<String> {
     let store = super::store(paths)?;
     let raw = raw.trim();
     let (verb, rest) = match raw.split_once(char::is_whitespace) {

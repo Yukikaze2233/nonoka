@@ -159,7 +159,10 @@ pub fn spawn_background_refresh_active(
     });
 }
 
-pub fn ensure_active_metadata(paths: &crate::paths::NonokaPaths, config: &crate::config::AppConfig) {
+pub fn ensure_active_metadata(
+    paths: &crate::paths::NonokaPaths,
+    config: &crate::config::AppConfig,
+) {
     if !is_loaded() {
         try_load_active(paths, config);
     }

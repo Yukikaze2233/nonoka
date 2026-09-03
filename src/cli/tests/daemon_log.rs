@@ -24,9 +24,10 @@ fn config_reload_response_uses_codes_and_supports_legacy_busy_errors() {
 
 #[test]
 fn daemon_log_formatter_parses_targets_and_preserves_multiline_content() {
-    let parsed =
-        parse_daemon_log_line("2026-07-29T12:34:56.789Z  INFO nonoka::qq: listener ready port=8090")
-            .unwrap();
+    let parsed = parse_daemon_log_line(
+        "2026-07-29T12:34:56.789Z  INFO nonoka::qq: listener ready port=8090",
+    )
+    .unwrap();
     assert_eq!(parsed.level, "INFO");
     assert_eq!(parsed.module, "nonoka::qq");
     assert_eq!(parsed.message, "listener ready port=8090");

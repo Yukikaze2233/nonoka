@@ -224,7 +224,8 @@ fn chat_stream_hides_inline_thinking_tags_from_content_chunks() {
     assert_eq!(visible, "开答案");
     assert!(!chunks.iter().any(|chunk| chunk.text.contains("<think")));
 
-    let result = finalize_stream_result(content, reasoning, usage, tool_calls.finish(), false).unwrap();
+    let result =
+        finalize_stream_result(content, reasoning, usage, tool_calls.finish(), false).unwrap();
     assert_eq!(result.content, "开答案");
     assert_eq!(result.reasoning.as_deref(), Some("先想一下"));
 }

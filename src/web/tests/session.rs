@@ -287,7 +287,10 @@ fn persona_identity_uses_default_and_custom_values() {
     let prompts = PromptDocuments::default();
     let default = persona_identity(&config, &prompts);
     assert_eq!(default.name, "Nonoka");
-    assert_eq!(default.avatar_url.as_deref(), Some("/assets/nonoka-logo.png"));
+    assert_eq!(
+        default.avatar_url.as_deref(),
+        Some("/assets/nonoka-logo.png")
+    );
 
     config.prompt.active_persona = "Alice.md".to_string();
     let prompts = PromptDocuments {

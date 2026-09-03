@@ -66,7 +66,9 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
     let (_temp, store) = test_store();
     store.adopt_sessions_for_persona("nonoka").unwrap();
     let current = store.session_id().to_string();
-    let local = store.create_session("nonoka", "local", "user", None).unwrap();
+    let local = store
+        .create_session("nonoka", "local", "user", None)
+        .unwrap();
     let second = store
         .create_session("nonoka", "second", "user", None)
         .unwrap();
@@ -91,7 +93,12 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
         .create_session("nonoka", "child", "subagent", Some(&local.session_id))
         .unwrap();
     let second_child = store
-        .create_session("nonoka", "second-child", "subagent", Some(&second.session_id))
+        .create_session(
+            "nonoka",
+            "second-child",
+            "subagent",
+            Some(&second.session_id),
+        )
         .unwrap();
 
     let sessions = [

@@ -160,7 +160,11 @@ pub(crate) fn index_mtime(path: &Path) -> Option<SystemTime> {
         .ok()
 }
 
-pub(crate) fn find_meme(paths: &NonokaPaths, library: &str, id: &str) -> Result<Option<LoadedMeme>> {
+pub(crate) fn find_meme(
+    paths: &NonokaPaths,
+    library: &str,
+    id: &str,
+) -> Result<Option<LoadedMeme>> {
     find_meme_in(load_library(paths, library)?, id)
 }
 

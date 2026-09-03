@@ -43,7 +43,10 @@ pub fn init(paths: &NonokaPaths, cli_debug: bool) -> Result<LoggingGuard> {
     let targets = Targets::new()
         .with_default(LevelFilter::OFF)
         .with_target("nonoka", level)
-        .with_target("nonoka::qq", qq_level(level, cli_debug, env_value.is_some()));
+        .with_target(
+            "nonoka::qq",
+            qq_level(level, cli_debug, env_value.is_some()),
+        );
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_target(true)

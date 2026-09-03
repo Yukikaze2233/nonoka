@@ -10,7 +10,9 @@
 use crate::cli::*;
 
 pub(in crate::cli) async fn run_mcp_serve(paths: &NonokaPaths) -> Result<()> {
-    let session = std::env::var("NONOKA_SESSION").ok().filter(|s| !s.is_empty());
+    let session = std::env::var("NONOKA_SESSION")
+        .ok()
+        .filter(|s| !s.is_empty());
     // 与 claude 原生重复的工具由拉起方经 env 点名剔除(原生优先):目录里
     // 不出现、调用被拒,两边同源。
     let excluded: std::collections::HashSet<String> = std::env::var("NONOKA_MCP_EXCLUDE")

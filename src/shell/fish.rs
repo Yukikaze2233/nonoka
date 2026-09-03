@@ -63,7 +63,10 @@ fn completion_entries() -> [(&'static str, &'static str); 16] {
         ("kb", t("Manage the local knowledge base", "管理本地知识库")),
         (
             "update-default-kb",
-            t("Update the default knowledge base", "更新 Nonoka 默认知识库"),
+            t(
+                "Update the default knowledge base",
+                "更新 Nonoka 默认知识库",
+            ),
         ),
         (
             "memory",

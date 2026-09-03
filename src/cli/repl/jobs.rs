@@ -287,7 +287,9 @@ pub(in crate::cli) type JobsOverviewSnapshot = (
     Vec<(String, String, String)>,
 );
 
-pub(in crate::cli) async fn fetch_jobs_overview(paths: &NonokaPaths) -> Result<JobsOverviewSnapshot> {
+pub(in crate::cli) async fn fetch_jobs_overview(
+    paths: &NonokaPaths,
+) -> Result<JobsOverviewSnapshot> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
     ipc::send(&mut stream, &IpcRequest::new(IpcCommand::JobsOverview)).await?;
     match ipc::receive::<IpcFrame>(&mut stream).await? {

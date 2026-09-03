@@ -11,7 +11,10 @@ use crate::cli::repl::input::*;
 use crate::cli::repl::tail::*;
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_remote_repl(paths: &NonokaPaths, mut mode: AgentMode) -> Result<()> {
+pub(in crate::cli) async fn run_remote_repl(
+    paths: &NonokaPaths,
+    mut mode: AgentMode,
+) -> Result<()> {
     let _cursor_restore = ReplCursorRestore;
     ipc::ensure_daemon(paths, None).await?;
     let refreshed = NonokaPaths::new()?;

@@ -9,7 +9,10 @@
 
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_daemon_logs(paths: &NonokaPaths, args: DaemonLogsArgs) -> Result<()> {
+pub(in crate::cli) async fn run_daemon_logs(
+    paths: &NonokaPaths,
+    args: DaemonLogsArgs,
+) -> Result<()> {
     match args.topic.as_deref().map(str::trim) {
         None => {}
         Some("request" | "requests") => return run_request_monitor(paths).await,
@@ -44,7 +47,10 @@ pub(in crate::cli) async fn run_daemon_logs(paths: &NonokaPaths, args: DaemonLog
     // runs are therefore consumed by follow instead of being skipped.
     let cursor = snapshot.cursor;
     let Some(daemon) = ipc::daemon_info(paths).await else {
-        bail!("{}", t("Nonoka daemon is not running", "Nonoka daemon 未运行"));
+        bail!(
+            "{}",
+            t("Nonoka daemon is not running", "Nonoka daemon 未运行")
+        );
     };
     follow_daemon_log(paths, ansi, cursor, daemon.pid).await
 }

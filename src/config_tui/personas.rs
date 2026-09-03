@@ -587,7 +587,11 @@ pub(in crate::config_tui) fn edit_nonoka_persona_extras(
 ) -> Result<()> {
     let (hint, dialogs) = crate::persona_hint::nonoka_aux_prefill(config, paths);
     let mut fields = persona_aux_fields(hint, dialogs, true);
-    if !run_form(stdout, t(" NONOKA EXTRAS ", " Nonoka 人格附加 "), &mut fields)? {
+    if !run_form(
+        stdout,
+        t(" NONOKA EXTRAS ", " Nonoka 人格附加 "),
+        &mut fields,
+    )? {
         return Ok(());
     }
     write_persona_aux(paths, config, "default", &fields[0].value, &fields[1].value)

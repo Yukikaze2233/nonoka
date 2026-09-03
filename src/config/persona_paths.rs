@@ -22,7 +22,11 @@ impl AppConfig {
         self.system_prompt_for(paths, PromptAudience::Owner)
     }
 
-    pub fn system_prompt_for(&self, paths: &NonokaPaths, audience: PromptAudience) -> Result<String> {
+    pub fn system_prompt_for(
+        &self,
+        paths: &NonokaPaths,
+        audience: PromptAudience,
+    ) -> Result<String> {
         let mut prompt = self.base_system_prompt(paths)?;
         if audience.includes_user_identity() {
             let user_identity = self.user_identity_prompt(paths)?;

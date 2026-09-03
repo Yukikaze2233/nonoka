@@ -322,14 +322,17 @@ fn platform_plugin_json_is_shared_across_personas_and_supports_deletion() {
 
     // Pinned stores represent independent persona sessions but share the
     // external-conversation plugin scope.
-    let nonoka_session = store.create_session("nonoka", "nonoka", "user", None).unwrap();
+    let nonoka_session = store
+        .create_session("nonoka", "nonoka", "user", None)
+        .unwrap();
     let other_session = store
         .create_session("other", "other", "user", None)
         .unwrap();
     let nonoka_store = store.pinned(&nonoka_session.session_id);
     let other_store = store.pinned(&other_session.session_id);
-    let from_nonoka: Option<Vec<String>> =
-        nonoka_store.plugin_get_json(&scope, "recent_images").unwrap();
+    let from_nonoka: Option<Vec<String>> = nonoka_store
+        .plugin_get_json(&scope, "recent_images")
+        .unwrap();
     let from_other: Option<Vec<String>> = other_store
         .plugin_get_json(&scope, "recent_images")
         .unwrap();

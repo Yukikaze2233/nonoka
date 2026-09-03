@@ -40,7 +40,9 @@ pub(in crate::cli) async fn run_tool_call(paths: &NonokaPaths, args: ToolCallArg
         // NONOKA_TURN_MODE 环境变量定模式(run_command 并不注入它),dev 会话
         // 里 --list 展示普通人格全量目录,实测逐个调用全报 unknown tool。
         if ipc::daemon_info(paths).await.is_some() {
-            let session = std::env::var("NONOKA_SESSION").ok().filter(|s| !s.is_empty());
+            let session = std::env::var("NONOKA_SESSION")
+                .ok()
+                .filter(|s| !s.is_empty());
             let (_, data) = send_ipc_admin(
                 paths,
                 IpcCommand::ToolCatalog {
@@ -154,7 +156,9 @@ pub(in crate::cli) async fn run_tool_call(paths: &NonokaPaths, args: ToolCallArg
     } else {
         args.arguments.clone().unwrap_or_else(|| "{}".to_string())
     };
-    let session = std::env::var("NONOKA_SESSION").ok().filter(|s| !s.is_empty());
+    let session = std::env::var("NONOKA_SESSION")
+        .ok()
+        .filter(|s| !s.is_empty());
     let origin = std::env::var("NONOKA_TURN_ORIGIN")
         .ok()
         .filter(|s| !s.is_empty());

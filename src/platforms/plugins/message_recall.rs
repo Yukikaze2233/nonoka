@@ -276,7 +276,11 @@ impl MessageRecallPlugin {
                 &error,
                 id,
                 target.source,
-                if own_message { "nonoka" } else { "group_member" },
+                if own_message {
+                    "nonoka"
+                } else {
+                    "group_member"
+                },
             );
         }
         if own_message {
@@ -755,8 +759,8 @@ mod tests {
             assert_eq!(target.source, TargetSource::Argument);
         }
         // 非批量仍旧由引用说了算
-        let target = resolve_target(None, Some("model-guess".to_string()), Some("quoted".into()))
-            .unwrap();
+        let target =
+            resolve_target(None, Some("model-guess".to_string()), Some("quoted".into())).unwrap();
         assert_eq!(target.message_id, "quoted");
         assert_eq!(target.source, TargetSource::Reply);
     }

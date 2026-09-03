@@ -194,16 +194,16 @@ pub async fn ensure_daemon(
     let mut current = daemon_info(&active_paths).await;
     if current.is_none() {
         let previous_paths = active_paths.clone();
-        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths before daemon startup")
-        {
-            Ok(paths) => paths,
-            Err(error) => {
-                if let Some(launch) = &pending_launch {
-                    abandon_daemon_launch_candidate(&previous_paths, launch);
+        active_paths =
+            match NonokaPaths::new().context("refreshing Nonoka paths before daemon startup") {
+                Ok(paths) => paths,
+                Err(error) => {
+                    if let Some(launch) = &pending_launch {
+                        abandon_daemon_launch_candidate(&previous_paths, launch);
+                    }
+                    return Err(error);
                 }
-                return Err(error);
-            }
-        };
+            };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }
@@ -226,16 +226,16 @@ pub async fn ensure_daemon(
             }
             return Err(error);
         }
-        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown")
-        {
-            Ok(paths) => paths,
-            Err(error) => {
-                if let Some(launch) = &pending_launch {
-                    abandon_daemon_launch_candidate(&previous_paths, launch);
+        active_paths =
+            match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown") {
+                Ok(paths) => paths,
+                Err(error) => {
+                    if let Some(launch) = &pending_launch {
+                        abandon_daemon_launch_candidate(&previous_paths, launch);
+                    }
+                    return Err(error);
                 }
-                return Err(error);
-            }
-        };
+            };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }
@@ -262,16 +262,16 @@ pub async fn ensure_daemon(
             return Err(error);
         }
         drop(starter);
-        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown")
-        {
-            Ok(paths) => paths,
-            Err(error) => {
-                if let Some(launch) = &pending_launch {
-                    abandon_daemon_launch_candidate(&previous_paths, launch);
+        active_paths =
+            match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown") {
+                Ok(paths) => paths,
+                Err(error) => {
+                    if let Some(launch) = &pending_launch {
+                        abandon_daemon_launch_candidate(&previous_paths, launch);
+                    }
+                    return Err(error);
                 }
-                return Err(error);
-            }
-        };
+            };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }

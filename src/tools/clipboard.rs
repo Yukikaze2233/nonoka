@@ -115,7 +115,10 @@ fn text_result() -> Result<String> {
     empty_result()
 }
 
-fn image_binary_result(img: crate::clipboard::ClipboardImage, paths: &NonokaPaths) -> Result<String> {
+fn image_binary_result(
+    img: crate::clipboard::ClipboardImage,
+    paths: &NonokaPaths,
+) -> Result<String> {
     let mime = img.mime.clone();
     let bytes = img.data.len();
     let path = img.write_temp_file(&paths.cache_dir, 0)?;

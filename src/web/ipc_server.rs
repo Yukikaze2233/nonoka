@@ -842,7 +842,11 @@ pub(in crate::web) async fn handle_ipc_turn(
         .is_err()
     {
         finish_run(&state.manager, &run_id, None);
-        ipc::send(stream, &IpcFrame::error("Nonoka core worker is unavailable")).await?;
+        ipc::send(
+            stream,
+            &IpcFrame::error("Nonoka core worker is unavailable"),
+        )
+        .await?;
         return Ok(());
     }
     let mut run_guard = IpcRunGuard {
