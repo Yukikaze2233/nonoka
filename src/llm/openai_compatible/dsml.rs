@@ -28,33 +28,52 @@ pub(in crate::llm::openai_compatible) const SYSTEM_REMINDER_PREFIX: &str = "<sys
 
 pub(in crate::llm::openai_compatible) const SYSTEM_REMINDER_UNDERSCORE_PREFIX: &str = "<system_reminder";
 
-pub(in crate::llm::openai_compatible) fn hidden_start_after(target: &str, offset: usize) -> Option<usize> {
-    [
+/// Some gateways return the reasoning stream inline as `<thinking>...</thinking>`
+/// (or `<think>...</think>`) inside the plain `content` delta. The stream is
+/// already being delivered to platform listeners chunk-by-chunk, so the final
+/// `clean_response_content` split happens too late: QQ/Feishu would receive the
+/// raw chain-of-thought. Treat the tag pair as another hidden prefix for
+/// Content chunks; the finalizer still recovers it into `reasoning`.
+pub(in crate::llm::openai_compatible) const THINKING_TAG_PREFIX: &str = "<think";
+
+pub(in crate::llm::openai_compatible) fn hidden_start_after(
+    target: &str,
+    offset: usize,
+    kind: ChatStreamKind,
+) -> Option<usize> {
+    let mut starts = vec![
         target[offset..].find(DSML_ANY_PREFIX),
         target[offset..].find(SYSTEM_REMINDER_PREFIX),
         target[offset..].find(SYSTEM_REMINDER_UNDERSCORE_PREFIX),
-    ]
-    .into_iter()
-    .flatten()
-    .map(|index| offset + index)
-    .min()
+    ];
+    if kind == ChatStreamKind::Content {
+        starts.push(target[offset..].find(THINKING_TAG_PREFIX));
+    }
+    starts.into_iter().flatten().map(|index| offset + index).min()
 }
 
-pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(value: &str) -> bool {
-    DSML_ANY_PREFIX.starts_with(value)
+pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(value: &str, kind: ChatStreamKind) -> bool {
+    let mut hidden = DSML_ANY_PREFIX.starts_with(value)
         || SYSTEM_REMINDER_PREFIX.starts_with(value)
         || SYSTEM_REMINDER_UNDERSCORE_PREFIX.starts_with(value)
         || value.starts_with(DSML_ANY_PREFIX)
         || value.starts_with(SYSTEM_REMINDER_PREFIX)
-        || value.starts_with(SYSTEM_REMINDER_UNDERSCORE_PREFIX)
+        || value.starts_with(SYSTEM_REMINDER_UNDERSCORE_PREFIX);
+    if kind == ChatStreamKind::Content {
+        hidden = hidden
+            || THINKING_TAG_PREFIX.starts_with(value)
+            || value.starts_with(THINKING_TAG_PREFIX);
+    }
+    hidden
 }
 
-pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(value: &str) -> usize {
+pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(value: &str, kind: ChatStreamKind) -> usize {
     let max_len = value.len().min(
         DSML_ANY_PREFIX
             .len()
             .max(SYSTEM_REMINDER_PREFIX.len())
-            .max(SYSTEM_REMINDER_UNDERSCORE_PREFIX.len()),
+            .max(SYSTEM_REMINDER_UNDERSCORE_PREFIX.len())
+            .max(THINKING_TAG_PREFIX.len()),
     );
     for len in (1..=max_len).rev() {
         if !value.is_char_boundary(value.len() - len) {
@@ -64,6 +83,7 @@ pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(value: &str) 
         if DSML_ANY_PREFIX.starts_with(suffix)
             || SYSTEM_REMINDER_PREFIX.starts_with(suffix)
             || SYSTEM_REMINDER_UNDERSCORE_PREFIX.starts_with(suffix)
+            || (kind == ChatStreamKind::Content && THINKING_TAG_PREFIX.starts_with(suffix))
         {
             return len;
         }
@@ -71,7 +91,11 @@ pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(value: &str) 
     0
 }
 
-pub(in crate::llm::openai_compatible) fn hidden_end_after(target: &str, offset: usize) -> Option<usize> {
+pub(in crate::llm::openai_compatible) fn hidden_end_after(
+    target: &str,
+    offset: usize,
+    kind: ChatStreamKind,
+) -> Option<usize> {
     let remaining = &target[offset..];
     if remaining.starts_with(DSML_ANY_PREFIX) {
         return remaining
@@ -85,6 +109,18 @@ pub(in crate::llm::openai_compatible) fn hidden_end_after(target: &str, offset: 
             return remaining
                 .find(&close)
                 .map(|index| offset + index + close.len());
+        }
+    }
+    if kind == ChatStreamKind::Content {
+        if remaining.starts_with("<thinking>") {
+            return remaining
+                .find("</thinking>")
+                .map(|index| offset + index + "</thinking>".len());
+        }
+        if remaining.starts_with("<think>") {
+            return remaining
+                .find("</think>")
+                .map(|index| offset + index + "</think>".len());
         }
     }
     None

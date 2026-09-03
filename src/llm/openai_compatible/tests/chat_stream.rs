@@ -161,6 +161,75 @@ fn chat_stream_announces_question_tool_before_arguments() {
 }
 
 #[test]
+fn chat_stream_hides_inline_thinking_tags_from_content_chunks() {
+    // 便宜中转会把 reasoning 内联成 content 里的 `<thinking>...</thinking>`。
+    // 平台(QQ/飞书)按 assistant.delta 收集正文，因此标签必须在线流式阶段就
+    // 从 Content 块里隐藏，不能等 finalize 再拆——否则思维链原样发给用户。
+    fn line(text: &str) -> String {
+        let body = serde_json::json!({
+            "choices": [{"delta": {"content": text}}]
+        })
+        .to_string();
+        format!("data: {body}")
+    }
+    let mut content = String::new();
+    let mut content_emitted = 0usize;
+    let mut reasoning = String::new();
+    let mut reasoning_emitted = 0usize;
+    let mut reasoning_part_active = false;
+    let mut finish_reason = None;
+    let mut usage = None;
+    let mut tool_calls = ToolCallAccumulator::default();
+    let mut chunks = Vec::new();
+    let mut on_chunk = |chunk| {
+        chunks.push(chunk);
+        Ok(())
+    };
+
+    // 标签被拆在多个 SSE delta 上，模拟真实流。
+    for delta in ["开<thin", "king>先想一", "下</thinking>答", "案"] {
+        handle_sse_line(
+            &line(delta),
+            &mut content,
+            &mut content_emitted,
+            &mut reasoning,
+            &mut reasoning_emitted,
+            &mut reasoning_part_active,
+            &mut finish_reason,
+            &mut usage,
+            &mut tool_calls,
+            &mut on_chunk,
+        )
+        .unwrap();
+    }
+    handle_sse_line(
+        "data: [DONE]",
+        &mut content,
+        &mut content_emitted,
+        &mut reasoning,
+        &mut reasoning_emitted,
+        &mut reasoning_part_active,
+        &mut finish_reason,
+        &mut usage,
+        &mut tool_calls,
+        &mut on_chunk,
+    )
+    .unwrap();
+
+    let visible = chunks
+        .iter()
+        .filter(|chunk| chunk.kind == ChatStreamKind::Content)
+        .map(|chunk| chunk.text.as_str())
+        .collect::<String>();
+    assert_eq!(visible, "开答案");
+    assert!(!chunks.iter().any(|chunk| chunk.text.contains("<think")));
+
+    let result = finalize_stream_result(content, reasoning, usage, tool_calls.finish(), false).unwrap();
+    assert_eq!(result.content, "开答案");
+    assert_eq!(result.reasoning.as_deref(), Some("先想一下"));
+}
+
+#[test]
 fn chat_stream_surfaces_sse_error_objects() {
     let mut content = String::new();
     let mut content_emitted = 0usize;

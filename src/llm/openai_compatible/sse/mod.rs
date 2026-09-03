@@ -282,8 +282,8 @@ where
 {
     while *emitted < target.len() {
         let remaining = &target[*emitted..];
-        if starts_hidden_prefix(remaining) {
-            if let Some(end) = hidden_end_after(target, *emitted) {
+        if starts_hidden_prefix(remaining, kind) {
+            if let Some(end) = hidden_end_after(target, *emitted, kind) {
                 *emitted = end;
                 continue;
             }
@@ -292,11 +292,11 @@ where
             }
             return Ok(());
         }
-        let hidden_start = hidden_start_after(target, *emitted);
+        let hidden_start = hidden_start_after(target, *emitted, kind);
         let mut safe_end = hidden_start.unwrap_or(target.len());
         if hidden_start.is_none() && !final_flush {
-            safe_end =
-                safe_end.saturating_sub(partial_hidden_suffix_len(&target[*emitted..safe_end]));
+            safe_end = safe_end
+                .saturating_sub(partial_hidden_suffix_len(&target[*emitted..safe_end], kind));
         }
         if safe_end <= *emitted {
             return Ok(());
