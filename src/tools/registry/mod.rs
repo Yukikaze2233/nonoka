@@ -2,11 +2,10 @@ mod lazy;
 mod spec;
 pub use lazy::empty_parameters;
 pub(crate) use lazy::*;
-pub use spec::{
-    GuardCtx, ToolFuture, ToolGuard, ToolPermission, ToolProgress, ToolProgressEvent,
-    ToolSpec,
-};
 pub(crate) use spec::*;
+pub use spec::{
+    GuardCtx, ToolFuture, ToolGuard, ToolPermission, ToolProgress, ToolProgressEvent, ToolSpec,
+};
 
 use crate::llm::{FunctionDefinition, ToolDefinition};
 use crate::tools::tool_descriptions::{self, LoadPolicy};
@@ -58,9 +57,7 @@ impl ToolRegistry {
     }
 
     fn guard_denial(&self, tool: &ToolSpec, args: &Value, ctx: &GuardCtx) -> Option<String> {
-        self.guards
-            .iter()
-            .find_map(|guard| guard(tool, args, ctx))
+        self.guards.iter().find_map(|guard| guard(tool, args, ctx))
     }
 
     fn effective_timeout(&self, tool: &ToolSpec) -> Option<std::time::Duration> {
@@ -509,10 +506,10 @@ impl ToolRegistry {
                 .join(", ");
             let summary = tool_descriptions::group_summary(&group);
             targets.push(format!(
-                "  <target>\n    <name>group:{}</name>\n    <type>group</type>\n    <summary>{}</summary>\n    <tools>{}</tools>\n  </target>",
+                "  <target name=\"group:{}\" type=\"group\" tools=\"{}\">{}</target>",
                 xml_escape(&group),
-                xml_escape(&summary),
                 xml_escape(&members),
+                xml_escape(&summary),
             ));
         }
 
@@ -540,7 +537,7 @@ impl ToolRegistry {
             .collect::<Vec<_>>()
             .join(", ");
         format!(
-            "<script_summary>\n  <total>{}</total>\n  <always_loaded>{}</always_loaded>\n  <lazy>{}</lazy>\n  <unregistered>{}</unregistered>\n  <registered_names>{names}</registered_names>\n</script_summary>",
+            "<script_summary total=\"{}\" always_loaded=\"{}\" lazy=\"{}\" unregistered=\"{}\" registered_names=\"{names}\"/>",
             scripts.len(),
             always_loaded,
             scripts.len() - always_loaded,
@@ -656,7 +653,10 @@ mod tests {
         registry.add_guard(crate::tools::aur_review_install_guard());
 
         let (sender, _receiver) = mpsc::unbounded_channel();
-        let used = vec!["review_aur_package".to_string(), "install_aur_package".to_string()];
+        let used = vec![
+            "review_aur_package".to_string(),
+            "install_aur_package".to_string(),
+        ];
         let denied = registry
             .call_with_progress_future(
                 "install_aur_package",
@@ -695,7 +695,7 @@ mod tests {
             |_| async { Ok("ran".to_string()) },
         ));
         registry.add_guard(crate::tools::command_deny_guard(vec![
-            "rm -rf /".to_string(),
+            "rm -rf /".to_string()
         ]));
 
         let denied = registry
@@ -747,7 +747,10 @@ mod tests {
         assert_eq!(summary.chars().count(), SUMMARY_MAX_CHARS + 1);
 
         // 只取第一行。
-        assert_eq!(load_target_summary("首行摘要。\n第二行细节。"), "首行摘要。");
+        assert_eq!(
+            load_target_summary("首行摘要。\n第二行细节。"),
+            "首行摘要。"
+        );
     }
 
     /// 模型把结构化参数序列化成字符串再传是常态,08-17 一天踩到三次:

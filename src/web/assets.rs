@@ -57,8 +57,14 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
     // serve a stale app.js/styles.css after an upgrade.
     static VERSIONED_INDEX: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
         INDEX_HTML
-            .replace("href=\"/styles.css\"", concat!("href=\"/styles.css?v=", env!("NONOKA_BUILD_ID"), "\""))
-            .replace("src=\"/app.js\"", concat!("src=\"/app.js?v=", env!("NONOKA_BUILD_ID"), "\""))
+            .replace(
+                "href=\"/styles.css\"",
+                concat!("href=\"/styles.css?v=", env!("NONOKA_BUILD_ID"), "\""),
+            )
+            .replace(
+                "src=\"/app.js\"",
+                concat!("src=\"/app.js?v=", env!("NONOKA_BUILD_ID"), "\""),
+            )
             .replace(
                 "src=\"/commands.js\"",
                 concat!("src=\"/commands.js?v=", env!("NONOKA_BUILD_ID"), "\""),
@@ -77,14 +83,26 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
             )
             .replace(
                 "href=\"/vendor/katex/katex.min.css\"",
-                concat!("href=\"/vendor/katex/katex.min.css?v=", env!("NONOKA_BUILD_ID"), "\""),
+                concat!(
+                    "href=\"/vendor/katex/katex.min.css?v=",
+                    env!("NONOKA_BUILD_ID"),
+                    "\""
+                ),
             )
             .replace(
                 "src=\"/vendor/katex/katex.min.js\"",
-                concat!("src=\"/vendor/katex/katex.min.js?v=", env!("NONOKA_BUILD_ID"), "\""),
+                concat!(
+                    "src=\"/vendor/katex/katex.min.js?v=",
+                    env!("NONOKA_BUILD_ID"),
+                    "\""
+                ),
             )
     });
-    embedded_asset(&headers, VERSIONED_INDEX.as_bytes(), "text/html; charset=utf-8")
+    embedded_asset(
+        &headers,
+        VERSIONED_INDEX.as_bytes(),
+        "text/html; charset=utf-8",
+    )
 }
 
 pub(in crate::web) async fn styles_asset(headers: HeaderMap) -> Response {
@@ -92,7 +110,11 @@ pub(in crate::web) async fn styles_asset(headers: HeaderMap) -> Response {
 }
 
 pub(in crate::web) async fn app_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, APP_JS.as_bytes(), "application/javascript; charset=utf-8")
+    embedded_asset(
+        &headers,
+        APP_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
 }
 
 pub(in crate::web) async fn commands_js_asset(headers: HeaderMap) -> Response {
@@ -132,14 +154,21 @@ pub(in crate::web) async fn logo_asset(headers: HeaderMap) -> Response {
 }
 
 pub(in crate::web) async fn katex_js_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, KATEX_JS.as_bytes(), "text/javascript; charset=utf-8")
+    embedded_asset(
+        &headers,
+        KATEX_JS.as_bytes(),
+        "text/javascript; charset=utf-8",
+    )
 }
 
 pub(in crate::web) async fn katex_css_asset(headers: HeaderMap) -> Response {
     embedded_asset(&headers, KATEX_CSS.as_bytes(), "text/css; charset=utf-8")
 }
 
-pub(in crate::web) async fn katex_font_asset(headers: HeaderMap, Path(font): Path<String>) -> Response {
+pub(in crate::web) async fn katex_font_asset(
+    headers: HeaderMap,
+    Path(font): Path<String>,
+) -> Response {
     match KATEX_FONTS.iter().find(|(name, _)| *name == font) {
         Some((_, bytes)) => embedded_asset(&headers, bytes, "font/woff2"),
         None => StatusCode::NOT_FOUND.into_response(),
@@ -295,11 +324,17 @@ pub(in crate::web) fn binary_asset(content: &'static [u8], content_type: &'stati
     asset_response(content, content_type)
 }
 
-pub(in crate::web) fn asset_response(content: &'static [u8], content_type: &'static str) -> Response {
+pub(in crate::web) fn asset_response(
+    content: &'static [u8],
+    content_type: &'static str,
+) -> Response {
     finish_asset_response(content.into_response(), content_type)
 }
 
-pub(in crate::web) fn finish_asset_response(mut response: Response, content_type: &'static str) -> Response {
+pub(in crate::web) fn finish_asset_response(
+    mut response: Response,
+    content_type: &'static str,
+) -> Response {
     response
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static(content_type));
@@ -497,7 +532,10 @@ pub(in crate::web) async fn artifact_asset(
     Ok(response)
 }
 
-pub(in crate::web) fn resolve_persona_asset_path(paths: &NonokaPaths, value: &str) -> Option<PathBuf> {
+pub(in crate::web) fn resolve_persona_asset_path(
+    paths: &NonokaPaths,
+    value: &str,
+) -> Option<PathBuf> {
     let value = value.trim();
     if persona_asset_uses_managed_namespace(value) {
         return managed_persona_asset_path(paths, value);
@@ -513,7 +551,10 @@ pub(in crate::web) fn resolve_persona_asset_path(paths: &NonokaPaths, value: &st
     })
 }
 
-pub(in crate::web) fn managed_persona_asset_path(paths: &NonokaPaths, value: &str) -> Option<PathBuf> {
+pub(in crate::web) fn managed_persona_asset_path(
+    paths: &NonokaPaths,
+    value: &str,
+) -> Option<PathBuf> {
     let value = value.trim();
     if value.contains('\\') || value.chars().any(char::is_control) {
         return None;
@@ -551,7 +592,10 @@ pub(in crate::web) fn persona_asset_uses_managed_namespace(value: &str) -> bool 
         })
 }
 
-pub(in crate::web) fn validate_managed_persona_asset_file(paths: &NonokaPaths, path: &FilePath) -> Result<()> {
+pub(in crate::web) fn validate_managed_persona_asset_file(
+    paths: &NonokaPaths,
+    path: &FilePath,
+) -> Result<()> {
     let root_path = paths.persona_avatars_dir();
     let root_metadata = std::fs::symlink_metadata(&root_path)?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {

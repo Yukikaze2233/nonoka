@@ -7,7 +7,7 @@ use ranking::*;
 
 use super::{vision, ToolProgress, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, ProviderConfig, VisionPluginConfig};
-use crate::i18n::{text as t};
+use crate::i18n::text as t;
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
 use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
@@ -31,8 +31,6 @@ static PROVIDER_COOLDOWNS: LazyLock<Mutex<HashMap<&'static str, Instant>>> =
 static IMAGE_DECODE_PERMITS: LazyLock<std::sync::Arc<Semaphore>> =
     LazyLock::new(|| std::sync::Arc::new(Semaphore::new(4)));
 static CACHE_PUBLISH_LOCK: AsyncMutex<()> = AsyncMutex::const_new(());
-
-
 
 pub fn register(
     registry: &mut ToolRegistry,
@@ -286,31 +284,6 @@ async fn search_images(
     })
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -339,7 +312,7 @@ mod tests {
             api_key: None,
             models: vec!["vision-model".to_string()],
             model_context_window: HashMap::new(),
-model_temperature: HashMap::new(),
+            model_temperature: HashMap::new(),
             model_modalities: HashMap::new(),
             model_costs: HashMap::new(),
             default_model: "vision-model".to_string(),

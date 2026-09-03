@@ -106,7 +106,10 @@ pub(in crate::web) async fn persona_avatar(
     Ok(response)
 }
 
-pub(in crate::web) fn persona_identity(config: &AppConfig, prompts: &PromptDocuments) -> PersonaIdentity {
+pub(in crate::web) fn persona_identity(
+    config: &AppConfig,
+    prompts: &PromptDocuments,
+) -> PersonaIdentity {
     let active = config.prompt.active_persona.trim();
     if active.is_empty() {
         return PersonaIdentity {
@@ -261,7 +264,10 @@ pub(in crate::web) fn validate_prompt_documents(
     Ok(())
 }
 
-pub(in crate::web) fn reconcile_qq_persona_references(config: &mut AppConfig, prompts: &PromptDocuments) {
+pub(in crate::web) fn reconcile_qq_persona_references(
+    config: &mut AppConfig,
+    prompts: &PromptDocuments,
+) {
     let renames = prompts
         .personas
         .iter()
@@ -362,7 +368,10 @@ pub(in crate::web) fn validate_prompt_document_list(
     Ok(())
 }
 
-pub(in crate::web) fn validate_prompt_document_name(name: &str, kind: &str) -> std::result::Result<(), ApiError> {
+pub(in crate::web) fn validate_prompt_document_name(
+    name: &str,
+    kind: &str,
+) -> std::result::Result<(), ApiError> {
     let valid = name == name.trim()
         && name.ends_with(".md")
         && name.len() <= 240
@@ -383,7 +392,10 @@ pub(in crate::web) fn validate_prompt_document_name(name: &str, kind: &str) -> s
     Ok(())
 }
 
-pub(in crate::web) fn read_prompt_documents(config: &AppConfig, paths: &NonokaPaths) -> Result<PromptDocuments> {
+pub(in crate::web) fn read_prompt_documents(
+    config: &AppConfig,
+    paths: &NonokaPaths,
+) -> Result<PromptDocuments> {
     Ok(PromptDocuments {
         personas: read_prompt_document_dir(&config.prompts_dir_path(paths), true)?,
         identities: read_prompt_document_dir(&config.identities_dir_path(paths), false)?,
@@ -436,19 +448,27 @@ pub(in crate::web) fn read_prompt_metadata(path: &FilePath) -> Option<PersonaMet
     serde_json::from_str(&raw).ok()
 }
 
-pub(in crate::web) fn prompt_configuration_changed(current: &AppConfig, candidate: &AppConfig) -> bool {
+pub(in crate::web) fn prompt_configuration_changed(
+    current: &AppConfig,
+    candidate: &AppConfig,
+) -> bool {
     serde_json::to_value(&current.prompt).ok() != serde_json::to_value(&candidate.prompt).ok()
         || current.system_prompt_file != candidate.system_prompt_file
         || current.system_prompt != candidate.system_prompt
 }
 
-pub(in crate::web) fn prompt_documents_changed(current: &PromptDocuments, candidate: &PromptDocuments) -> bool {
+pub(in crate::web) fn prompt_documents_changed(
+    current: &PromptDocuments,
+    candidate: &PromptDocuments,
+) -> bool {
     canonical_prompt_documents(&current.personas) != canonical_prompt_documents(&candidate.personas)
         || canonical_prompt_documents(&current.identities)
             != canonical_prompt_documents(&candidate.identities)
 }
 
-pub(in crate::web) fn canonical_prompt_documents(documents: &[PromptDocument]) -> Vec<(String, String)> {
+pub(in crate::web) fn canonical_prompt_documents(
+    documents: &[PromptDocument],
+) -> Vec<(String, String)> {
     let mut values = documents
         .iter()
         .map(|document| (document.name.clone(), document.content.clone()))
@@ -470,7 +490,10 @@ pub(in crate::web) struct PersonaDbRenameGuard {
 }
 
 impl PersonaDbRenameGuard {
-    pub(in crate::web) fn new(state: StateStore, changes: &[(String, Option<String>)]) -> Result<Self> {
+    pub(in crate::web) fn new(
+        state: StateStore,
+        changes: &[(String, Option<String>)],
+    ) -> Result<Self> {
         let renames = changes
             .iter()
             .filter_map(|(old_name, new_name)| {
@@ -507,7 +530,10 @@ impl Drop for PersonaDbRenameGuard {
     }
 }
 
-pub(in crate::web) fn migrate_persona_db_scopes(state: &StateStore, renames: &[(String, String)]) -> Result<()> {
+pub(in crate::web) fn migrate_persona_db_scopes(
+    state: &StateStore,
+    renames: &[(String, String)],
+) -> Result<()> {
     let staged = renames
         .iter()
         .map(|(old, new)| {

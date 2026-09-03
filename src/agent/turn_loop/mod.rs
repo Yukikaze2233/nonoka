@@ -12,7 +12,10 @@
 
 mod parallel;
 mod redo;
+mod repeat_gate;
 mod stream;
+
+use repeat_gate::{ToolRepeatGate, REPEAT_FUSE_THRESHOLD, REPEAT_SKIP_THRESHOLD};
 
 use crate::agent::*;
 
@@ -62,8 +65,11 @@ impl Agent {
                 .any(|name| name == "create_artifact");
         let mut artifact_candidates = Vec::<AutoArtifactCandidate>::new();
         let mut artifact_published = false;
+        let mut repeat_gate = ToolRepeatGate::new();
+        let mut repeat_fused = false;
         loop {
-            let tool_limit_reached = self.max_tool_rounds > 0 && tool_round >= self.max_tool_rounds;
+            let tool_limit_reached =
+                (self.max_tool_rounds > 0 && tool_round >= self.max_tool_rounds) || repeat_fused;
 
             if self.config.skills.enabled {
                 if self.mode == AgentMode::Normal {
@@ -270,6 +276,7 @@ impl Agent {
                                     source: self.usage_source(),
                                     provider: compact_result.provider_id.as_deref(),
                                     model: None,
+                                    kind: None,
                                 },
                             )?;
                             // Splice the rebuilt (compacted) history prefix in
@@ -390,8 +397,7 @@ impl Agent {
                     .clone()
                     .or_else(|| result.usage.clone())
                     .unwrap_or_else(|| {
-                        let prompt =
-                            overflow::estimate_messages_tokens(&request_messages) as u64;
+                        let prompt = overflow::estimate_messages_tokens(&request_messages) as u64;
                         let completion = estimate_result_tokens(&result) as u64;
                         Usage {
                             prompt_tokens: prompt,
@@ -404,6 +410,8 @@ impl Agent {
                     round: Box::new(round),
                     turn: TurnTokens::from_usage(Some(&turn_usage)),
                     estimated: usage_accumulator.estimated,
+                    provider_id: result.provider_id.clone(),
+                    model: result.model.clone(),
                 })?;
             }
             last_round_completed_at = Some(Instant::now());
@@ -492,20 +500,33 @@ impl Agent {
             }
             if tool_limit_reached {
                 let mut result = result;
-                let warning = format!(
-                    "Tool calls reached the limit of {} rounds; the remaining tool calls were not executed. Set `tools.max_rounds` to 0 to allow unlimited tool rounds.",
-                    self.max_tool_rounds
-                );
-                let warning_chunk = if result.content.trim().is_empty() {
-                    warning.clone()
+                // 复读保险丝收束:不产任何警告文本(08-24 用户裁定),模型在
+                // 无工具轮已有机会正常成文,这里只收尾。真 max_rounds 上限
+                // 保留原提示,但只给所有者受众;平台正文=群消息,拼进去就是
+                // 把系统文本发到群里(08-24 实录)。
+                if repeat_fused {
+                    tracing::warn!("tool repeat fuse: loop closed without a text answer");
+                } else if self.prompt_audience == PromptAudience::External {
+                    tracing::warn!(
+                        "tool calls reached the round limit of {}",
+                        self.max_tool_rounds
+                    );
                 } else {
-                    format!("\n\n{warning}")
-                };
-                result.content.push_str(&warning_chunk);
-                on_event(AgentEvent::Chunk(ChatStreamChunk {
-                    kind: ChatStreamKind::Content,
-                    text: warning_chunk,
-                }))?;
+                    let warning = format!(
+                        "Tool calls reached the limit of {} rounds; the remaining tool calls were not executed. Set `tools.max_rounds` to 0 to allow unlimited tool rounds.",
+                        self.max_tool_rounds
+                    );
+                    let warning_chunk = if result.content.trim().is_empty() {
+                        warning.clone()
+                    } else {
+                        format!("\n\n{warning}")
+                    };
+                    result.content.push_str(&warning_chunk);
+                    on_event(AgentEvent::Chunk(ChatStreamChunk {
+                        kind: ChatStreamKind::Content,
+                        text: warning_chunk,
+                    }))?;
+                }
                 result.tool_calls.clear();
                 if let Some(usage) = usage_accumulator.usage() {
                     let round_usage = result.usage.take();
@@ -517,6 +538,19 @@ impl Agent {
                 }
                 return Ok(result);
             }
+            // 同参复读闸(见 repeat_gate.rs):连续相同轮先跳过执行回灌错误,
+            // 到保险丝阈值置 repeat_fused——下一轮请求不再带工具,逼模型用
+            // 已有结果正常成文(硬截断+英文警告拼正文会把机器文本漏到 QQ,
+            // 08-24 线上翻车实录)。
+            let round_repeats = repeat_gate.observe(&result.tool_calls);
+            if round_repeats >= REPEAT_FUSE_THRESHOLD && !repeat_fused {
+                repeat_fused = true;
+                tracing::warn!(
+                    repeats = round_repeats,
+                    "tool repeat fuse blown; withholding tools so the model answers with existing results"
+                );
+            }
+            let repeat_skip = round_repeats >= REPEAT_SKIP_THRESHOLD;
             tool_round += 1;
             let next_responses_continuation = result.responses_continuation.clone();
             push_assistant_message_with_reasoning(
@@ -581,7 +615,7 @@ impl Agent {
             let defer_sibling_tools = question_call_count == 1 && result.tool_calls.len() > 1;
             // Multiple `task` calls in one batch run concurrently (subagents
             // are independent by design); everything else stays serial.
-            let mut parallel_task_outputs = if defer_sibling_tools {
+            let mut parallel_task_outputs = if defer_sibling_tools || repeat_skip {
                 std::collections::HashMap::new()
             } else {
                 self.execute_parallel_task_calls(&result.tool_calls, &loaded_tools, on_event)
@@ -612,6 +646,20 @@ impl Agent {
                     name: event_name.clone(),
                     arguments: call.function.arguments.clone(),
                 })?;
+                if repeat_skip {
+                    // 同参复读:不再真执行,回灌上一轮的真实结果字节。不注入
+                    // 指令文本——故障态模型看不见输入增量,提示无用(08-24)。
+                    let output =
+                        repeat_gate.cached_output(&call.function.name, &call.function.arguments);
+                    on_event(AgentEvent::ToolResult {
+                        call_id: call_id.clone(),
+                        name: event_name.clone(),
+                        ok: tool_output_succeeded(&output),
+                        output: output.clone(),
+                    })?;
+                    messages.push(ChatMessage::tool(call.id, output));
+                    continue;
+                }
                 if question_call_count > 1 {
                     let output = "tool error: only one ask_question call is allowed per tool batch; combine all questions into one call".to_string();
                     on_event(AgentEvent::ToolResult {
@@ -801,21 +849,18 @@ impl Agent {
                 } else {
                     None
                 };
-                let mut model_output = self
+                let model_output = self
                     .spill_tool_output(current_turn_id, &call.id, &call.function.name, &output)
                     .unwrap_or_else(|| output.clone());
-                // 重复调用观察:成功/失败/被拒都计数(反复撞拒绝正是要打断
-                // 的循环)。提醒**折进工具结果字节**而不是独立消息——
-                // derive_tool_flow 只持久化 assistant/tool 消息,独立提醒
-                // 下一轮回放即消失,前缀在此掰断(缓存调研 08-16,deepseek
-                // 报告 P0-2 实证同一处)。folded 形态活体=回放,永远同源。
-                if let Some(reminder) = self
-                    .repeat_chain
-                    .observe(&call.function.name, &call.function.arguments)
-                {
-                    model_output.push_str("\n\n");
-                    model_output.push_str(&reminder);
-                }
+                // 复读闸记账:下一轮同参跳过时按键回灌这份字节。(dsh 式
+                // advisory 重复提醒于 08-24 整体退役:222 连发与 08-23/24
+                // 两次故障实录证明提示文本对故障态模型无效,防线全部交给
+                // 结构化的 repeat_gate。)
+                repeat_gate.record_output(
+                    &call.function.name,
+                    &call.function.arguments,
+                    &model_output,
+                );
                 messages.push(ChatMessage::tool(call.id.clone(), model_output));
                 if tool_succeeded && call.function.name == "load_tools" {
                     let loaded = loaded_items_from_output(&output);
@@ -1045,7 +1090,6 @@ impl Agent {
     }
 }
 
-
 impl Agent {
     /// 把收集到的中转侧工具活动折成一条 remote 轮,附到 tool_flow 尾部。
     /// 检查点与最终写入共用;drain 语义幂等(检查点后新活动继续累积)。
@@ -1073,7 +1117,9 @@ fn record_remote_tool_chunk(
     let parse = |text: &str| serde_json::from_str::<serde_json::Value>(text).ok();
     match chunk.kind {
         ChatStreamKind::RemoteToolStarted => {
-            let Some(value) = parse(&chunk.text) else { return };
+            let Some(value) = parse(&chunk.text) else {
+                return;
+            };
             let field = |key: &str| {
                 value
                     .get(key)
@@ -1092,7 +1138,9 @@ fn record_remote_tool_chunk(
             });
         }
         ChatStreamKind::RemoteToolFinished => {
-            let Some(value) = parse(&chunk.text) else { return };
+            let Some(value) = parse(&chunk.text) else {
+                return;
+            };
             let id = value
                 .get("id")
                 .and_then(serde_json::Value::as_str)

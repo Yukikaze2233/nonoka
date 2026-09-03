@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-const SHORIN_WIKI_REMOTE: &str = "https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide.git";
+const SHORIN_WIKI_REMOTE: &str = "https://github.com/SHORiN-KiWATA/Yukikaze-ArchLinux-Guide.git";
 const UPDATE_CHECK_INTERVAL_SECS: i64 = 24 * 60 * 60;
 /// `git ls-remote` 的预算。正常连 GitHub 约 0.4 秒，5 秒是 12 倍余量。
 ///
@@ -23,7 +23,7 @@ const SPARSE_CHECKOUT_PATTERN: &str = "*.md";
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DefaultKbState {
     pub release_hash: String,
-    pub shorin_wiki_commit: String,
+    pub yukikaze_wiki_commit: String,
     pub remote_commit: String,
     pub update_available: bool,
     pub last_checked_at: String,
@@ -135,7 +135,7 @@ pub async fn check_update_if_due(paths: &NonokaPaths) -> Result<()> {
     if let Ok(remote) = remote_head().await {
         state.remote_commit = remote.clone();
         state.update_available =
-            !state.shorin_wiki_commit.is_empty() && state.shorin_wiki_commit != remote;
+            !state.yukikaze_wiki_commit.is_empty() && state.yukikaze_wiki_commit != remote;
     }
     save_state(paths, &state)
 }
@@ -197,7 +197,7 @@ where
     on_progress(UpdateStage::SavingState);
     let mut state = load_state(paths)?;
     state.release_hash = release_hash;
-    state.shorin_wiki_commit = commit.clone();
+    state.yukikaze_wiki_commit = commit.clone();
     state.remote_commit = commit;
     state.update_available = false;
     state.last_checked_at = Utc::now().to_rfc3339();
@@ -217,7 +217,7 @@ fn import_snapshot(
     kb.replace_default_files(source)?;
     let mut state = load_state(paths)?;
     state.release_hash = release_hash.to_string();
-    state.shorin_wiki_commit = read_to_string(source.join("manifest/shorinwiki.commit"));
+    state.yukikaze_wiki_commit = read_to_string(source.join("manifest/yukikazewiki.commit"));
     state.last_imported_at = Utc::now().to_rfc3339();
     save_state(paths, &state)
 }
@@ -235,11 +235,11 @@ fn state_file(paths: &NonokaPaths) -> PathBuf {
 fn update_repo_dir(paths: &NonokaPaths) -> PathBuf {
     paths
         .cache_dir
-        .join("default-kb/shorin-archlinux-guide.git")
+        .join("default-kb/yukikaze-archlinux-guide.git")
 }
 
 fn legacy_update_repo_dir(paths: &NonokaPaths) -> PathBuf {
-    paths.cache_dir.join("default-kb/shorinwiki.git")
+    paths.cache_dir.join("default-kb/yukikazewiki.git")
 }
 
 fn update_source_dir(paths: &NonokaPaths) -> PathBuf {
@@ -282,7 +282,7 @@ fn rebuild_update_repo(
     let parent = repo.parent().context("update repository has no parent")?;
     std::fs::create_dir_all(parent)?;
     let staging = tempfile::Builder::new()
-        .prefix("shorin-archlinux-guide-")
+        .prefix("yukikaze-archlinux-guide-")
         .tempdir_in(parent)?;
     let staging_arg = staging.path().display().to_string();
     run_git(
@@ -465,13 +465,13 @@ fn build_update_source(paths: &NonokaPaths, repo: &Path) -> Result<PathBuf> {
     }
     let wiki = repo.join("wiki");
     let wiki_source = if wiki.is_dir() { wiki.as_path() } else { repo };
-    std::fs::create_dir_all(dest.join("shorinwiki"))?;
+    std::fs::create_dir_all(dest.join("yukikazewiki"))?;
     for file in collect_markdown(wiki_source)? {
         let rel = file.strip_prefix(wiki_source)?;
         if excluded(rel) {
             continue;
         }
-        let target = dest.join("shorinwiki").join(rel);
+        let target = dest.join("yukikazewiki").join(rel);
         if let Some(parent) = target.parent() {
             std::fs::create_dir_all(parent)?;
         }

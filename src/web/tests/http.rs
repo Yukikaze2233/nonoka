@@ -11,6 +11,48 @@ fn artifact_tools_are_scoped_to_local_webui_requests() {
     assert!(!is_local_webui_request(PromptAudience::External, true));
 }
 
+/// 清空 token 统计明细:删的是 usage-history.jsonl,累计正账 usage.json
+/// 必须留着(它是"一生用了多少"的唯一记录)。08-26 新增按钮的后端契约。
+#[test]
+fn clearing_usage_history_keeps_the_cumulative_ledger() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let store = crate::state::StateStore::new(&paths).unwrap();
+    store.init_files().unwrap();
+    let usage = crate::llm::Usage {
+        prompt_tokens: 1_000,
+        completion_tokens: 100,
+        total_tokens: 1_100,
+        ..crate::llm::Usage::default()
+    };
+    store
+        .add_auxiliary_usage(
+            &usage,
+            crate::state::UsageMeta {
+                source: "agent",
+                provider: Some("p"),
+                model: Some("m"),
+                kind: None,
+            },
+        )
+        .unwrap();
+    assert!(store.usage_history_file().exists());
+    let before = store.usage_snapshot().unwrap().total_tokens;
+    assert!(before > 0, "累计账应已记上");
+
+    store.clear_usage_history().unwrap();
+    assert!(!store.usage_history_file().exists(), "明细应被清空");
+    assert_eq!(
+        store.usage_snapshot().unwrap().total_tokens,
+        before,
+        "累计正账不得被清"
+    );
+    let stats = store
+        .usage_stats(crate::state::UsageRange::All, None)
+        .unwrap();
+    assert_eq!(stats.totals.requests, 0, "统计页数据应归零");
+}
+
 #[tokio::test]
 async fn persona_asset_store_is_atomic_and_rejects_corrupt_cache_entries() {
     let temp = tempfile::tempdir().unwrap();
@@ -252,13 +294,24 @@ fn origin_tty_gates_and_writeback_against_real_pty() {
     // 拿到 None 就 panic —— 报错指向 Rust 侧,真凶却在字符串里。改这里之后
     // 务必单独跑一遍本用例。
     let script = r#"
-import os, pty, signal, sys
+import os, pty, signal, sys, time
 pid, master = pty.fork()
 if pid == 0:
     os.execvp("sleep", ["sleep", "60"])
 # 子进程是会话首进程,ctty=slave,前台进程组=自己 —— 正是 shell 停在提示符的形状。
 # slave 路径从 /proc/child/fd/0 反查,不依赖 ptsname。
-slave = os.readlink(f"/proc/{pid}/fd/0")
+# 竞态(08-21 验收实测):fork 返回时子进程可能还没做完 login_tty 的 dup,
+# 这一瞬 fd/0 还是继承的管道——读早了就把错误路径一次性交给 Rust,后面
+# 怎么重试都救不回。等到它真变成 pts 再上报。
+slave = ""
+for _ in range(500):
+    try:
+        slave = os.readlink(f"/proc/{pid}/fd/0")
+    except OSError:
+        slave = ""
+    if slave.startswith("/dev/pts/"):
+        break
+    time.sleep(0.01)
 print(pid, slave, flush=True)
 sys.stdin.readline()  # 等 Rust 侧写完
 data = b""
@@ -302,10 +355,19 @@ sys.stdin.readline()  # 等 Rust 侧完成死后判定
         shell_pid: pid.parse().unwrap(),
     };
 
-    assert!(
-        origin_shell_at_prompt(&origin),
-        "pty.fork 出的会话首进程应判定为「在提示符」"
-    );
+    // pty.fork 的父进程拿到 pid 时,子进程的 login_tty(setsid+TIOCSCTTY+dup)
+    // 可能还没执行——那一瞬 /proc 里 pgrp≠tpgid、fd/0 也不是 slave,判定为假
+    // 是正确行为。重负载下这个窗口放大成闪失败(08-21 验收实测),轮询等子进
+    // 程就位再断言;判定函数本身零改动。
+    let mut at_prompt = false;
+    for _ in 0..200 {
+        if origin_shell_at_prompt(&origin) {
+            at_prompt = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert!(at_prompt, "pty.fork 出的会话首进程应判定为「在提示符」");
     // 走生产写线程:Write 分片 + Finish(flush + SIGWINCH),与流式回写同路。
     {
         use std::os::unix::fs::OpenOptionsExt;

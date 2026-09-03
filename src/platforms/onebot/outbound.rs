@@ -18,7 +18,10 @@ pub(in crate::platforms::onebot) const MAX_OUTBOUND_IMAGE_DECODE_ALLOC: u64 = 25
 /// 校验字节可解码为图片(解码结果仅校验即丢)。带解码限额:几十 KB 的
 /// 30000×30000 像素炸弹解压时会分配数 GB,分配失败直接 abort 全进程。
 /// 同步解码放 spawn_blocking,不占 actor 单线程 runtime。
-pub(in crate::platforms::onebot) async fn validate_outbound_image(bytes: Vec<u8>, path: PathBuf) -> Result<Vec<u8>> {
+pub(in crate::platforms::onebot) async fn validate_outbound_image(
+    bytes: Vec<u8>,
+    path: PathBuf,
+) -> Result<Vec<u8>> {
     tokio::task::spawn_blocking(move || {
         let mut reader = image::ImageReader::new(std::io::Cursor::new(&bytes))
             .with_guessed_format()
@@ -79,7 +82,10 @@ pub(in crate::platforms::onebot) fn append_text_chunks(
     }
 }
 
-pub(in crate::platforms::onebot) fn partial_send_error(error: anyhow::Error, receipt: SendReceipt) -> anyhow::Error {
+pub(in crate::platforms::onebot) fn partial_send_error(
+    error: anyhow::Error,
+    receipt: SendReceipt,
+) -> anyhow::Error {
     if receipt.has_delivery() {
         anyhow::Error::new(PartialSendError::new(error, receipt))
     } else {
@@ -129,7 +135,10 @@ pub(in crate::platforms::onebot) fn image_segment(bytes: &[u8]) -> Value {
     })
 }
 
-pub(in crate::platforms::onebot) async fn read_file_capped(path: &std::path::Path, cap: usize) -> Result<Vec<u8>> {
+pub(in crate::platforms::onebot) async fn read_file_capped(
+    path: &std::path::Path,
+    cap: usize,
+) -> Result<Vec<u8>> {
     let file = tokio::fs::File::open(path)
         .await
         .with_context(|| format!("opening attachment: {}", path.display()))?;
@@ -247,8 +256,12 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
             if matched_delivered_image && image_count == 0 && unresolved_image_count == 0 {
                 outcome.final_reply_already_sent = true;
             }
-            let readable =
-                crate::platforms::format_platform_final_reply_log(&outcome, context, &reply_text, image_count);
+            let readable = crate::platforms::format_platform_final_reply_log(
+                &outcome,
+                context,
+                &reply_text,
+                image_count,
+            );
             if !reply_text.trim().is_empty() {
                 segments.insert(0, OutboundSegment::Markdown(reply_text));
             }
@@ -276,7 +289,9 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
     Ok(true)
 }
 
-pub(in crate::platforms::onebot) fn final_reply_text(outcome: &crate::platforms::TurnOutcome) -> String {
+pub(in crate::platforms::onebot) fn final_reply_text(
+    outcome: &crate::platforms::TurnOutcome,
+) -> String {
     crate::platforms::cut_suppressed_ranges(&outcome.text, &outcome.suppressed_reply_ranges)
 }
 

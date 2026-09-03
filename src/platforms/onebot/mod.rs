@@ -11,11 +11,12 @@
 
 mod adapter;
 mod admission;
-mod caches;
-mod dispatch;
 mod builtin_commands;
+mod caches;
 mod connection;
+mod dispatch;
 mod files;
+mod forward;
 mod group_join;
 mod identity;
 mod images;
@@ -27,15 +28,13 @@ mod send;
 mod turn;
 use adapter::*;
 use admission::*;
-use caches::*;
-use dispatch::*;
 use builtin_commands::*;
+use caches::*;
 use connection::*;
+use dispatch::*;
 // 这三样 onebot 之外也要用（platforms 持有注册表与监听器，web 复用端口），
 // 子模块本身是私有的，得显式再导出一层
 pub(crate) use connection::{onebot_ws_on_web_port, ConnectionRegistry, QqListenerManager};
-pub(crate) use proactive::send_direct_text;
-pub(crate) use turn::wake_conversation_for_job;
 use files::*;
 use group_join::*;
 use identity::*;
@@ -43,6 +42,8 @@ use images::*;
 use inbound::*;
 use notices::*;
 use outbound::*;
+pub(crate) use proactive::send_direct_text;
+pub(crate) use turn::wake_conversation_for_job;
 use turn::*;
 
 use super::access_control::{has_dynamic_access, AccessPermission};

@@ -9,14 +9,12 @@ mod ask_question;
 mod awacy_query;
 mod calculator;
 mod caniplayonlinux_query;
-mod claude_code;
 mod clipboard;
 mod deep_research;
 mod deepseek_status;
 mod default_tools;
 pub(crate) use default_tools::TOOL_SUMMARY_PREFIX;
 mod diagnostics;
-mod edit_replace;
 mod exchange_rate;
 mod fcitx_wiki;
 pub mod goal;
@@ -36,7 +34,6 @@ mod package_advisor;
 mod patch_preview;
 mod protondb_query;
 mod registry;
-pub(crate) mod repeat_reminder;
 mod scripts;
 mod skills;
 mod subagent_runner;
@@ -50,7 +47,6 @@ mod weather;
 mod web;
 mod web_images;
 pub mod workspace;
-mod write;
 mod xuanxue;
 
 use crate::agent::AgentMode;
@@ -188,7 +184,10 @@ fn readable_load_target_name(name: &str) -> String {
 /// already get their own timed block.
 pub fn preparing_phase(name: &str) -> Option<&'static str> {
     Some(match name {
-        "apply_patch"
+        "edit"
+        | "artifact"
+        | "kb"
+        | "apply_patch"
         | "apply_artifact_patch"
         | "create_artifact"
         | "write_file"
@@ -221,15 +220,16 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
     Some(match name {
         "run_command" => t("Run command", "运行命令"),
         "job" => t("Background jobs", "后台任务"),
-        "apply_patch" => t("Edit files", "编辑文件"),
-        "apply_artifact_patch" => t("Edit preview file", "修改预览文件"),
+        "edit" | "apply_patch" => t("Edit files", "编辑文件"),
+        "kb" => t("Edit knowledge base", "编辑知识库"),
+        "artifact" | "apply_artifact_patch" => t("Edit preview file", "修改预览文件"),
         "create_artifact" => t("Create preview file", "创建预览文件"),
         "read_artifact" => t("Read preview file", "读取预览文件"),
         "present_artifact" => t("Preview file", "预览文件"),
         "ask_question" => t("Ask user", "询问用户"),
         "task" => t("Subagent", "子代理"),
         "claude_code" => t("Claude Code", "Claude Code"),
-        "read_file" => t("Read file", "读取文件"),
+        "read" | "read_file" => t("Read file", "读取文件"),
         "write_file" => t("Write file", "写入文件"),
         "edit_file" => t("Edit file", "编辑文件"),
         "edit_string" => t("Edit string", "字符串编辑"),
@@ -247,7 +247,8 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "web_fetch" => t("Fetch webpage", "读取网页"),
         "fcitx5_input_method_wiki_qurey" => t("Query Fcitx5 Wiki", "查询 Fcitx5 Wiki"),
         "search_web_images" => t("Search images", "搜索图片"),
-        "analyze_image" | "vision_analyze" => t("Analyze image", "分析图片"),
+        "share_file" => t("Share file", "分享文件"),
+        "analyze_image" | "vision_analyze" => t("Visual analysis", "视觉分析"),
         "print_image" => t("Display image", "显示图片"),
         "generate_image" => t("Generate image", "生成图片"),
         "use_meme" => t("Meme", "表情包"),
@@ -284,6 +285,10 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "weather" | "get_weather" => t("Weather", "天气查询"),
         "game_compat" => t("Game compatibility", "游戏兼容性"),
         "divine" => t("Divination", "占卜"),
+        "divine:zhouyi" => t("I Ching", "六十四卦"),
+        "divine:tarot" => t("Tarot", "塔罗牌"),
+        "divine:fortune" => t("Fortune", "吉凶占"),
+        "divine:dice" => t("Dice roll", "掷骰子"),
         "load_skill" => t("Load skill", "加载技能"),
         "manage_skill" => t("Manage skills", "管理技能"),
         "load_tools" => t("Load", "加载"),
@@ -381,7 +386,12 @@ pub fn builtin_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry
     let mut registry = ToolRegistry::new();
     registry.set_default_timeout_secs(config.tools.default_timeout_secs);
     install_builtin_guards(&mut registry, config);
-    default_tools::register(&mut registry, config.skills.allow_command_execution);
+    default_tools::register(
+        &mut registry,
+        config.skills.allow_command_execution,
+        config,
+        paths,
+    );
     jobs::register_management(&mut registry);
     usage_query::register(
         &mut registry,
@@ -450,11 +460,7 @@ pub fn builtin_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry
     if config.memory_config().enabled {
         memory::register(&mut registry, config.clone(), paths.clone());
     }
-    // 只进本机 owner 底座;平台受限表不注册,turn 装配层对复用 normal 底座
-    // 的平台管理员会话再摘一次(§09)。
-    if config.claude_code_enabled() {
-        claude_code::register(&mut registry, config.plugins.claude_code.clone(), paths.clone());
-    }
+    // claude_code 委托工具已移除(08-21 用户裁定);中转供应商那条线不受影响。
     let task_tools = registry.clone();
     task::register(&mut registry, config.clone(), paths.clone(), task_tools);
     scripts::register(&mut registry, paths);
@@ -580,10 +586,6 @@ pub fn dev_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry {
         // dev 独立记忆:同一套工具,库切到保留人格 "dev" 的命名空间,
         // 与默认人格的记忆互不可见(验收问题一:开发模式也要有记忆)。
         memory::register(&mut registry, config.dev_scoped(), paths.clone());
-    }
-    // dev 本来就只有 owner 面,照常随插件开关注册(§09)。
-    if config.claude_code_enabled() {
-        claude_code::register(&mut registry, config.plugins.claude_code.clone(), paths.clone());
     }
     let task_tools = registry.clone();
     task::register(&mut registry, config.clone(), paths.clone(), task_tools);
@@ -981,29 +983,22 @@ mod tests {
         let paths = test_paths(temp.path());
         let config = AppConfig::default();
         let mut registry = builtin_registry(&config, &paths);
-        assert!(!registry.contains("create_artifact"));
         assert!(!registry.contains("present_artifact"));
 
+        // Edit/Read 统一后 WebUI 附加的只剩发布动作;创建/读取/打补丁走
+        // edit/read 的 artifact: 命名空间。
         register_webui_artifact_tools(&mut registry, &paths, "sess_webui");
-        for name in [
-            "create_artifact",
-            "read_artifact",
-            "apply_artifact_patch",
-            "present_artifact",
-        ] {
-            assert_eq!(
-                registry.permission(name).unwrap(),
-                ToolPermission::Presentation,
-                "{name}"
-            );
-        }
+        assert_eq!(
+            registry.permission("present_artifact").unwrap(),
+            ToolPermission::Presentation,
+        );
         let definitions = registry.definitions();
         assert!(definitions
             .iter()
-            .any(|definition| definition.function.name == "create_artifact"));
-        assert!(definitions
-            .iter()
             .any(|definition| definition.function.name == "present_artifact"));
+        assert!(!definitions
+            .iter()
+            .any(|definition| definition.function.name == "create_artifact"));
     }
 
     #[tokio::test]
@@ -1016,9 +1011,11 @@ mod tests {
             .call("load_tools", r#"{"names":["group:divination"]}"#)
             .await
             .unwrap();
-        let value: serde_json::Value = serde_json::from_str(&output).unwrap();
-        let loaded = value["loaded_tools"].as_array().unwrap();
-        assert!(loaded.iter().any(|name| name == "divine"));
+        let loaded = output
+            .lines()
+            .find_map(|line| line.strip_prefix("loaded_tools:"))
+            .expect("loaded_tools line");
+        assert!(loaded.split(',').any(|name| name.trim() == "divine"));
     }
 }
 
@@ -1075,5 +1072,56 @@ mod tier_schema_probe {
             .description
             .contains("balanced=[mini-a, mini-b]"));
         assert!(task.function.description.contains("strong=["));
+    }
+
+    /// 量尺：`cargo test --lib token_diet_baseline -- --ignored --nocapture`
+    ///
+    /// token 瘦身专项的基线：三套 registry 在 stub（默认发送形态）与 full
+    /// （懒加载展开上限）两种形态下，发给 LLM 的 tools 数组的真实 o200k
+    /// token 数，附逐工具排行。默认 AppConfig，不含平台插件回合注册的工具。
+    #[test]
+    #[ignore]
+    fn token_diet_baseline_probe() {
+        use crate::tools::tests::test_paths;
+        use crate::tools::{
+            builtin_registry, dev_registry, restricted_platform_registry, AppConfig,
+        };
+        let temp = tempfile::tempdir().unwrap();
+        let paths = test_paths(temp.path());
+        let config = AppConfig::default();
+        for (label, registry) in [
+            ("normal", builtin_registry(&config, &paths)),
+            ("dev", dev_registry(&config, &paths)),
+            ("restricted", restricted_platform_registry(&config, &paths)),
+        ] {
+            for (variant, defs) in [
+                ("stub", registry.stub_definitions()),
+                ("full", registry.definitions()),
+            ] {
+                let whole = serde_json::to_string(&defs).unwrap();
+                let tokens = crate::token_counter::count(&whole);
+                eprintln!(
+                    "[{label}/{variant}] tools={} bytes={} tokens={}",
+                    defs.len(),
+                    whole.len(),
+                    tokens
+                );
+                let mut rows: Vec<(String, usize, usize)> = defs
+                    .iter()
+                    .map(|d| {
+                        let s = serde_json::to_string(d).unwrap();
+                        (
+                            d.function.name.clone(),
+                            s.len(),
+                            crate::token_counter::count(&s),
+                        )
+                    })
+                    .collect();
+                rows.sort_by_key(|r| std::cmp::Reverse(r.2));
+                for (name, bytes, toks) in rows {
+                    eprintln!("  {toks:>6} tok {bytes:>6} B  {name}");
+                }
+            }
+        }
     }
 }

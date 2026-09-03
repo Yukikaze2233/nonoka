@@ -19,60 +19,60 @@ use crate::question::{self, QuestionAnswers};
 // daemon 运行时的共享状态已下沉到 runtime：web 只是它的消费者之一，IPC 与
 // 平台适配是另外两个。放在 web 里会让平台层反过来依赖 HTTP 服务。
 mod actor;
-mod dto;
-mod qq_history;
-mod tty;
 mod assets;
 mod attachments;
-mod commands_api;
-mod config_api;
-mod persona;
-mod prompt_files;
-mod security;
-mod server;
-mod shared_files;
 mod bridge_progress;
 mod bridge_question;
-mod session_cmds;
-mod sessions;
-mod turns;
+mod commands_api;
+mod config_api;
+mod dto;
 mod event_map;
 mod goal_driver;
+mod persona;
+mod prompt_files;
+mod qq_history;
+mod security;
+mod server;
+mod session_cmds;
+mod sessions;
+mod shared_files;
 #[cfg(test)]
 mod tests;
+mod tty;
+mod turns;
 // 叫 ipc_server 而不是 ipc：`web::ipc` 会把 `crate::ipc` 遮住，本文件里几十处
 // `ipc::send` 会突然解析到子模块上——编译期就报，但报错信息（找不到 send）
 // 离真正的原因很远。
 mod ipc_server;
 
 use actor::*;
-use dto::*;
-use qq_history::*;
-use tty::*;
 use assets::*;
 use attachments::*;
-use commands_api::*;
-use config_api::*;
-use persona::*;
-use prompt_files::*;
-use security::*;
-use shared_files::*;
-pub(crate) use server::run;
-use server::*;
 use bridge_progress::*;
 use bridge_question::*;
-use session_cmds::*;
-use sessions::*;
-use turns::*;
+use commands_api::*;
+use config_api::*;
+use dto::*;
 use event_map::*;
 use goal_driver::*;
 use ipc_server::*;
+use persona::*;
+use prompt_files::*;
+use qq_history::*;
+use security::*;
+pub(crate) use server::run;
+use server::*;
+use session_cmds::*;
+use sessions::*;
+use shared_files::*;
+use tty::*;
+use turns::*;
 
 use crate::runtime::{
-    cold_context, enqueue_turn_update, finish_run, random_id, random_token, release_admin, reset_platform_persona_state,
-    safe_error_message, validate_content, ActorCommand, AdminFailure, AnswerFailure, ApiError,
-    ContextSnapshot, DaemonState, EventHub, EventRecord, IpcRunGuard, LoginFailure, ManagerState,
-    PlatformPersonaResetError, PromptDocument, PromptDocuments,
+    cold_context, enqueue_turn_update, finish_run, random_id, random_token, release_admin,
+    reset_platform_persona_state, safe_error_message, validate_content, ActorCommand, AdminFailure,
+    AnswerFailure, ApiError, ContextSnapshot, DaemonState, EventHub, EventRecord, IpcRunGuard,
+    LoginFailure, ManagerState, PlatformPersonaResetError, PromptDocument, PromptDocuments,
     QuestionBroker, RedoWebPrompt, RunInfo, RunOperation, SafeQueuedPrompt, SafeUserAttachment,
     ThinkingVariantUpdate, TurnEngineState, TurnResourceCache, TurnUpdateMode, TurnUpdateRequest,
     WebAuth,
@@ -136,26 +136,86 @@ const SHARED_JS: &str = include_str!("../../web/shared.js");
 const KATEX_JS: &str = include_str!("../../web/vendor/katex/katex.min.js");
 const KATEX_CSS: &str = include_str!("../../web/vendor/katex/katex.min.css");
 static KATEX_FONTS: &[(&str, &[u8])] = &[
-    ("KaTeX_AMS-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_AMS-Regular.woff2")),
-    ("KaTeX_Caligraphic-Bold.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Caligraphic-Bold.woff2")),
-    ("KaTeX_Caligraphic-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Caligraphic-Regular.woff2")),
-    ("KaTeX_Fraktur-Bold.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Fraktur-Bold.woff2")),
-    ("KaTeX_Fraktur-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Fraktur-Regular.woff2")),
-    ("KaTeX_Main-Bold.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Bold.woff2")),
-    ("KaTeX_Main-BoldItalic.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-BoldItalic.woff2")),
-    ("KaTeX_Main-Italic.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Italic.woff2")),
-    ("KaTeX_Main-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Regular.woff2")),
-    ("KaTeX_Math-BoldItalic.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Math-BoldItalic.woff2")),
-    ("KaTeX_Math-Italic.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Math-Italic.woff2")),
-    ("KaTeX_SansSerif-Bold.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Bold.woff2")),
-    ("KaTeX_SansSerif-Italic.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Italic.woff2")),
-    ("KaTeX_SansSerif-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Regular.woff2")),
-    ("KaTeX_Script-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Script-Regular.woff2")),
-    ("KaTeX_Size1-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size1-Regular.woff2")),
-    ("KaTeX_Size2-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size2-Regular.woff2")),
-    ("KaTeX_Size3-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size3-Regular.woff2")),
-    ("KaTeX_Size4-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size4-Regular.woff2")),
-    ("KaTeX_Typewriter-Regular.woff2", include_bytes!("../../web/vendor/katex/fonts/KaTeX_Typewriter-Regular.woff2")),
+    (
+        "KaTeX_AMS-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_AMS-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Caligraphic-Bold.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Caligraphic-Bold.woff2"),
+    ),
+    (
+        "KaTeX_Caligraphic-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Caligraphic-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Fraktur-Bold.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Fraktur-Bold.woff2"),
+    ),
+    (
+        "KaTeX_Fraktur-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Fraktur-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Main-Bold.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Bold.woff2"),
+    ),
+    (
+        "KaTeX_Main-BoldItalic.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-BoldItalic.woff2"),
+    ),
+    (
+        "KaTeX_Main-Italic.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Italic.woff2"),
+    ),
+    (
+        "KaTeX_Main-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Main-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Math-BoldItalic.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Math-BoldItalic.woff2"),
+    ),
+    (
+        "KaTeX_Math-Italic.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Math-Italic.woff2"),
+    ),
+    (
+        "KaTeX_SansSerif-Bold.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Bold.woff2"),
+    ),
+    (
+        "KaTeX_SansSerif-Italic.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Italic.woff2"),
+    ),
+    (
+        "KaTeX_SansSerif-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_SansSerif-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Script-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Script-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Size1-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size1-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Size2-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size2-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Size3-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size3-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Size4-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Size4-Regular.woff2"),
+    ),
+    (
+        "KaTeX_Typewriter-Regular.woff2",
+        include_bytes!("../../web/vendor/katex/fonts/KaTeX_Typewriter-Regular.woff2"),
+    ),
 ];
 // 这两张是 `pics/` 里原图的**显示尺寸副本**，不是原图。原图 1254×1254 和
 // 3344×1882，而 WebUI 里头像只显示 38/64 px、看板图最大 330×178 px——浏览器
@@ -165,25 +225,6 @@ static KATEX_FONTS: &[(&str, &[u8])] = &[
 // 重新生成见 `scripts/gen_web_assets.py`。
 const NONOKA_LOGO: &[u8] = include_bytes!("../../web/assets/nonoka-logo.png");
 const NONOKA_WALLPAPER: &[u8] = include_bytes!("../../web/assets/nonokawallpaper.png");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 impl From<QueuedPrompt> for SafeQueuedPrompt {
     fn from(prompt: QueuedPrompt) -> Self {
@@ -214,7 +255,6 @@ impl From<UserAttachment> for SafeUserAttachment {
         }
     }
 }
-
 
 // ── spawn_actor ──
 
@@ -254,7 +294,7 @@ impl DaemonState {
                 boot_id: Arc::from("boot-test"),
                 web_port,
                 web_public: false,
-            web_bind: IpAddr::V4(Ipv4Addr::LOCALHOST),
+                web_bind: IpAddr::V4(Ipv4Addr::LOCALHOST),
                 paths,
                 manager,
                 state_store,

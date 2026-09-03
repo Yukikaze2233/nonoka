@@ -28,7 +28,11 @@ pub(in crate::platforms::plugins::real_context) fn history_query_limit(configure
     configured.saturating_add(1).min(200)
 }
 
-pub(in crate::platforms::plugins::real_context) fn prepare_history(messages: &mut Vec<HistoryMessage>, message_id: &str, maximum: usize) {
+pub(in crate::platforms::plugins::real_context) fn prepare_history(
+    messages: &mut Vec<HistoryMessage>,
+    message_id: &str,
+    maximum: usize,
+) {
     if !message_id.is_empty() {
         messages.retain(|message| message.message_id != message_id);
     }
@@ -37,7 +41,11 @@ pub(in crate::platforms::plugins::real_context) fn prepare_history(messages: &mu
     }
 }
 
-pub(in crate::platforms::plugins::real_context) fn restraint_adjustments(enabled: bool, strength: &str, heat: f64) -> (f64, f64) {
+pub(in crate::platforms::plugins::real_context) fn restraint_adjustments(
+    enabled: bool,
+    strength: &str,
+    heat: f64,
+) -> (f64, f64) {
     if !enabled {
         return (0.0, 0.0);
     }
@@ -88,7 +96,8 @@ pub(super) fn format_history(
 
 pub(in crate::platforms::plugins::real_context) struct FormattedHistory {
     pub(in crate::platforms::plugins::real_context) text: String,
-    pub(in crate::platforms::plugins::real_context) images: Vec<crate::platforms::PlatformContextImageRef>,
+    pub(in crate::platforms::plugins::real_context) images:
+        Vec<crate::platforms::PlatformContextImageRef>,
     pub(in crate::platforms::plugins::real_context) files: Vec<PlatformContextFileRef>,
     pub(in crate::platforms::plugins::real_context) message_count: usize,
 }
@@ -257,10 +266,14 @@ pub(in crate::platforms::plugins::real_context) fn format_history_internal(
                 safe_prompt_field(reply_to)
             ));
         }
+        // 历史块暂不标 [you]:自己发的消息本来就有 [you] 前缀,这里再用同
+        // 一个记号表示"被提到"会撞义,而且要把本机账号一路穿进来。先只在
+        // 当前消息块上做。
         if let Some(mentions) = format_mentioned_users(
             &message.content.mentioned_users,
             &message.content.mentioned_user_ids,
             show_user_ids,
+            None,
         ) {
             line.push_str(&format!("\n  @mentions: {mentions}"));
         }
@@ -320,7 +333,7 @@ pub(in crate::platforms::plugins::real_context) fn format_history_time(timestamp
     chrono::DateTime::<chrono::Utc>::from_timestamp(timestamp, 0)
         .map(|time| {
             time.with_timezone(&chrono::Local)
-                .format("%H:%M:%S")
+                .format("%H:%M")
                 .to_string()
         })
         .unwrap_or_else(|| timestamp.to_string())
@@ -337,7 +350,9 @@ pub(in crate::platforms::plugins::real_context) fn media_label(kind: MediaKind) 
     }
 }
 
-pub(in crate::platforms::plugins::real_context) fn outbound_text(message: &OutboundMessage) -> String {
+pub(in crate::platforms::plugins::real_context) fn outbound_text(
+    message: &OutboundMessage,
+) -> String {
     let mut parts = Vec::new();
     match &message.body {
         OutboundBody::Segments(segments) => append_segment_text(&mut parts, segments),
@@ -350,7 +365,10 @@ pub(in crate::platforms::plugins::real_context) fn outbound_text(message: &Outbo
     parts.join("\n").trim().to_string()
 }
 
-pub(in crate::platforms::plugins::real_context) fn append_segment_text(parts: &mut Vec<String>, segments: &[OutboundSegment]) {
+pub(in crate::platforms::plugins::real_context) fn append_segment_text(
+    parts: &mut Vec<String>,
+    segments: &[OutboundSegment],
+) {
     for segment in segments {
         match segment {
             OutboundSegment::Markdown(text) | OutboundSegment::Text(text) => {
@@ -364,7 +382,10 @@ pub(in crate::platforms::plugins::real_context) fn append_segment_text(parts: &m
     }
 }
 
-pub(in crate::platforms::plugins::real_context) fn truncate_utf8(value: &str, maximum_bytes: usize) -> &str {
+pub(in crate::platforms::plugins::real_context) fn truncate_utf8(
+    value: &str,
+    maximum_bytes: usize,
+) -> &str {
     if value.len() <= maximum_bytes {
         return value;
     }
@@ -375,7 +396,10 @@ pub(in crate::platforms::plugins::real_context) fn truncate_utf8(value: &str, ma
     &value[..end]
 }
 
-pub(in crate::platforms::plugins::real_context) fn truncate_utf8_tail(value: &str, maximum_bytes: usize) -> &str {
+pub(in crate::platforms::plugins::real_context) fn truncate_utf8_tail(
+    value: &str,
+    maximum_bytes: usize,
+) -> &str {
     if value.len() <= maximum_bytes {
         return value;
     }

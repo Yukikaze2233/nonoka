@@ -103,7 +103,10 @@ Options:
     }
 }
 
-pub(in crate::cli) fn apply_localized_help_flags(mut command: clap::Command, root: bool) -> clap::Command {
+pub(in crate::cli) fn apply_localized_help_flags(
+    mut command: clap::Command,
+    root: bool,
+) -> clap::Command {
     command = command.disable_help_flag(true).arg(
         Arg::new("help")
             .short('h')
@@ -267,7 +270,7 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
             "Erase all conversation history, memory, group contexts and their artifacts",
             "抹掉所有会话历史、记忆、群聊上下文和其产物",
         ),
-                                                ("web", "Open the local Nonoka WebUI", "访问本地 Nonoka WebUI"),
+        ("web", "Open the local Nonoka WebUI", "访问本地 Nonoka WebUI"),
         (
             "daemon",
             "Manage the unified Nonoka background service",
@@ -322,8 +325,7 @@ pub(in crate::cli) fn localize_subcommands(mut command: clap::Command) -> clap::
     .into_iter()
     .enumerate()
     {
-        command = command
-            .mut_subcommand(name, move |subcommand| subcommand.display_order(index));
+        command = command.mut_subcommand(name, move |subcommand| subcommand.display_order(index));
     }
     command = command
         .mut_subcommand("ask", localize_ask_command)
@@ -363,10 +365,7 @@ pub(in crate::cli) fn localize_export_command(command: clap::Command) -> clap::C
             ))
         })
         .mut_arg("platforms", |arg| {
-            arg.help(t(
-                "Include chat-platform history",
-                "包含通讯平台的聊天历史",
-            ))
+            arg.help(t("Include chat-platform history", "包含通讯平台的聊天历史"))
         })
         .mut_arg("no_secrets", |arg| {
             arg.help(t(
@@ -388,7 +387,10 @@ pub(in crate::cli) fn localize_export_command(command: clap::Command) -> clap::C
 pub(in crate::cli) fn localize_import_command(command: clap::Command) -> clap::Command {
     command
         .mut_arg("archive", |arg| {
-            arg.help(t("Archive produced by `nonoka export`", "nonoka export 生成的归档"))
+            arg.help(t(
+                "Archive produced by `nonoka export`",
+                "nonoka export 生成的归档",
+            ))
         })
         .mut_arg("force", |arg| {
             arg.help(t(

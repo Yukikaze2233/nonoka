@@ -35,7 +35,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-WAIVER_FILE = ROOT / "scripts" / "arch-dep-waivers.json"
+# 白名单跟脚本走,不认目录名——目录改名(scripts → test_scripts)后硬编码路径
+# 会静默失效:找不到基线时每一条既有引用都被当成新增,门禁全红(08-26)。
+WAIVER_FILE = Path(__file__).resolve().parent / "arch-dep-waivers.json"
 
 FORBIDDEN = {
     "llm": {"web", "cli", "config_tui", "platforms"},

@@ -246,9 +246,11 @@ fn apply_migrations(conn: &mut Connection, current: i64, migrations: &[Migration
 }
 
 fn foreign_key_violations(conn: &Connection) -> Result<i64> {
-    Ok(conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |row| {
-        row.get(0)
-    })?)
+    Ok(
+        conn.query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |row| {
+            row.get(0)
+        })?,
+    )
 }
 
 fn user_version(conn: &Connection) -> Result<i64> {
@@ -355,8 +357,8 @@ mod tests {
             },
         }];
 
-        let error = apply_migrations(&mut conn, latest, &bad)
-            .expect_err("迁移把引用完整性搞坏了却提交了");
+        let error =
+            apply_migrations(&mut conn, latest, &bad).expect_err("迁移把引用完整性搞坏了却提交了");
         assert!(
             format!("{error}").contains("introduced"),
             "报错要说清是这个迁移新增的：{error}"

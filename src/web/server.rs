@@ -368,6 +368,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route("/api/jobs", get(list_jobs_http))
         .route("/api/usage/stats", get(usage_stats_web))
         .route("/api/usage/details", get(usage_details_web))
+        .route("/api/usage/clear", post(usage_clear_web))
         .route("/api/jobs/{job_id}", delete(stop_job_http))
         // OneBot v11 reverse-WS endpoint: NapCat connects here as a WS
         // client. Gated by platforms.qq config, not web auth.
@@ -636,6 +637,21 @@ pub(in crate::web) async fn usage_stats_web(
         .map_err(ApiError::internal)?
         .map_err(ApiError::internal)?;
     Ok(Json(json!({ "ok": true, "stats": stats })).into_response())
+}
+
+/// 清空 token 统计明细。只删 usage-history.jsonl(图表与最近调用的数据源),
+/// 累计正账 usage.json 保留——那是"一生用了多少"的唯一记录,删了找不回来。
+pub(in crate::web) async fn usage_clear_web(
+    State(state): State<DaemonState>,
+    headers: HeaderMap,
+) -> std::result::Result<Response, ApiError> {
+    require_mutation(&headers, &state)?;
+    let store = state.state_store.clone();
+    tokio::task::spawn_blocking(move || store.clear_usage_history())
+        .await
+        .map_err(ApiError::internal)?
+        .map_err(ApiError::internal)?;
+    Ok(Json(json!({ "ok": true })).into_response())
 }
 
 pub(in crate::web) async fn usage_details_web(

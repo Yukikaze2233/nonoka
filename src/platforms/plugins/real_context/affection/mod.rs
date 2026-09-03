@@ -622,6 +622,7 @@ async fn run_update(job: AffectionUpdateJob) -> Result<()> {
             source: &job.platform,
             provider: result.provider_id.as_deref(),
             model: result.model.as_deref(),
+            kind: Some(crate::state::USAGE_KIND_AFFECTION),
         };
         if let Err(error) = job.state_store.add_auxiliary_usage(usage, meta) {
             tracing::warn!(target: "nonoka::qq", error = %error, "{}", crate::i18n::text("recording affection update usage failed", "记录好感度更新用量失败"));

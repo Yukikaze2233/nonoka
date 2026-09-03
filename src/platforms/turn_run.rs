@@ -190,6 +190,13 @@ pub(crate) async fn run_platform_turn(
                 text.clear();
                 reply_suppression.model_started();
             }
+            // 端点重试(08-22 复读取证第 4 条):上一 attempt 已流出的半截正文
+            // 作废,不丢弃就会与重试的完整正文拼接,经 split_reply 变成
+            // "变体复读"。语义同 reasoning.start,但绝不 flush——半截正文
+            // 正是要丢的东西。
+            "reasoning.reset" => {
+                start_model_reply(&mut text, &mut reply_suppression);
+            }
             "tool.started" => {
                 let readable = format_platform_tool_started_log(&run_id, &data);
                 tracing::info!(target: "nonoka::qq", "\n{readable}");

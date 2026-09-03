@@ -88,7 +88,7 @@ impl LiveReplTail {
         let terminal_rows = terminal_rows.max(1);
         let editor_rows = repl_input_rendered_rows(
             &self.editor.input,
-            self.editor.is_pasted,
+            self.editor.raw_pasted_lines,
             false,
             usize::from(cols),
         );
@@ -169,7 +169,7 @@ impl LiveReplTail {
             self.editor.mode,
             &self.editor.input,
             self.editor.cursor,
-            self.editor.is_pasted,
+            self.editor.raw_pasted_lines,
             &self.footer,
             false,
         )?;

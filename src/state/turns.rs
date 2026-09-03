@@ -266,7 +266,8 @@ impl StateStore {
         &self,
         turn_ids: &[String],
     ) -> Result<crate::state::ToolFootprint> {
-        self.conv_db.load_merged_footprint(&self.session(), turn_ids)
+        self.conv_db
+            .load_merged_footprint(&self.session(), turn_ids)
     }
 
     #[allow(dead_code)]

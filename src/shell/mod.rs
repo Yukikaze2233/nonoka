@@ -8,7 +8,7 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const BASH_BEGIN_MARKER: &str = "# >>> nonoka bash hook >>>";
 const BASH_END_MARKER: &str = "# <<< nonoka bash hook <<<";
@@ -451,11 +451,34 @@ fn is_shell_keyword_or_builtin(command: &str, shell_name: &str) -> bool {
             ))
 }
 
+/// 显式写出的路径要**真的可执行**才算命令。
+///
+/// 原先只看形状(以 `/`、`./`、`../`、`~/` 开头就算),而紧挨着的
+/// `command_exists_in_path` 对光名字反倒要验 `is_executable_file`——裸名字
+/// 严格、显式路径反而照单全收,这个不对称正是病灶:把
+/// `/home/yukikaze/Downloads/1.png` 粘在多行输入的头一行,整段就被判成 shell
+/// 命令交给 fish 逐行执行,图片路径各报一次"存在,但不是一个可执行文件",
+/// 只有末尾那句中文漏进 Nonoka,图全丢了(08-26 用户实测)。
+///
+/// 这条判定只在**多行**缓冲区上被问到(单行走 fish 自己的
+/// `fish_command_not_found`),所以路径不存在时判成"给 Nonoka"是安全的:多行且
+/// 首个 token 是个不可执行的路径,基本只可能是粘进来的内容。
 fn is_explicit_command_path(command: &str) -> bool {
-    command.starts_with('/')
+    let shaped = command.starts_with('/')
         || command.starts_with("./")
         || command.starts_with("../")
-        || command.starts_with("~/")
+        || command.starts_with("~/");
+    if !shaped {
+        return false;
+    }
+    let expanded = match command.strip_prefix("~/") {
+        Some(rest) => match env::var_os("HOME") {
+            Some(home) => PathBuf::from(home).join(rest),
+            None => return false,
+        },
+        None => PathBuf::from(command),
+    };
+    is_executable_file(&expanded)
 }
 
 fn command_exists_in_path(command: &str) -> bool {
@@ -478,6 +501,7 @@ fn is_executable_file(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::PermissionsExt;
 
     #[test]
     fn detects_safe_natural_language() {
@@ -519,7 +543,9 @@ mod tests {
         assert!(is_shell_command("cd /tmp", "fish"));
         assert!(is_shell_command("FOO=bar cargo check", "fish"));
         assert!(is_shell_command("# comment\nls", "fish"));
-        assert!(is_shell_command("./target/release/nonoka hi", "fish"));
+        // 真实存在且可执行的显式路径。原来写的是 ./target/release/nonoka,
+        // 依赖本机有没有 release 产物,换成必然存在的系统命令。
+        assert!(is_shell_command("/bin/sh -c true", "fish"));
         assert!(is_shell_command("for item in a b", "fish"));
         assert!(is_shell_command("time cargo check", "fish"));
         assert!(is_shell_command(
@@ -544,5 +570,38 @@ mod tests {
             "fish"
         ));
         assert!(!is_shell_command(r"A\=是真的\这个短语", "fish"));
+    }
+
+    /// 多行粘贴里首个 token 是不可执行的路径时必须交给 Nonoka(08-26 实测:
+    /// 粘两张图路径加一句中文,整段被 fish 逐行执行,图全丢了)。
+    /// 红检:把可执行判定停用改成恒真,这条立刻报红。
+    #[test]
+    fn explicit_paths_must_be_executable_to_count_as_commands() {
+        let temp = tempfile::tempdir().unwrap();
+        let image = temp.path().join("1.png");
+        std::fs::write(&image, b"not a program").unwrap();
+        let script = temp.path().join("run.sh");
+        std::fs::write(&script, b"#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        let pasted = format!(
+            "{}\n{}\n把这两张图按顺序上下拼接",
+            image.display(),
+            image.display()
+        );
+        assert!(
+            !is_shell_command(&pasted, "fish"),
+            "不可执行的路径不该被当成命令"
+        );
+        // 真能执行的显式路径仍然是命令。
+        assert!(is_shell_command(
+            &format!("{} --flag\nsecond line", script.display()),
+            "fish"
+        ));
+        // 路径根本不存在时同样交给 Nonoka。
+        assert!(!is_shell_command(
+            &format!("{}/nope --flag\nsecond line", temp.path().display()),
+            "fish"
+        ));
     }
 }

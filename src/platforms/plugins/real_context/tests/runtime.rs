@@ -2,10 +2,6 @@
 
 use crate::platforms::plugins::real_context::*;
 
-
-
-
-
 #[test]
 fn inactive_session_runtime_cache_has_a_hard_soft_limit() {
     let now = Instant::now();
@@ -50,6 +46,7 @@ fn active_reply_decision_log_is_structured_for_humans() {
         short_message_threshold_adjustment: 0.01,
         moderation: &moderation,
         reason: "当前消息延续了上一轮问题。",
+        endpoint: Some("opencodego / mimo-v2.5"),
     };
     let rendered = format_active_reply_decision_log_for(&log, Locale::Zh);
 
@@ -57,6 +54,7 @@ fn active_reply_decision_log_is_structured_for_humans() {
     assert!(rendered.contains("会话：群聊 20000（机器人 QQ 10000）"));
     assert!(rendered.contains("发送者：测试用户（QQ 30000）"));
     assert!(rendered.contains("@机器人：否"));
+    assert!(rendered.contains("模型：opencodego / mimo-v2.5"));
     assert!(rendered.contains("消息：引用上一条消息 继续讨论"));
     assert!(rendered.contains("触发：自然续聊 (continuation)"));
     assert!(rendered.contains("结果：回复"));

@@ -34,10 +34,17 @@ impl AdaptiveResponseTargetPolicy {
         }
     }
 
+    /// `last_message_is_own`:会话里最后一条是不是她自己刚发的。
+    ///
+    /// 08-29 用户点名:连发时两条定向线索会一起哑火。艾特要"隔了时间**且**
+    /// 别人说过话",引用要"隔了几条别人的消息";她回完 A 立刻回 B,B 那条
+    /// 两个条件都不满足,于是既不引用也不艾特——而上一条还是她自己的,读的
+    /// 人分不清她在跟谁说话。真人在群里连着说话也会靠引用分流。
     pub(crate) fn resolve(
         self,
         mut target: ResponseTarget,
         current: Option<PlatformMessagePosition>,
+        last_message_is_own: bool,
         now: Instant,
     ) -> Option<ResponseTarget> {
         let other_messages = self.position.zip(current).map(|(start, current)| {
@@ -48,7 +55,8 @@ impl AdaptiveResponseTargetPolicy {
             total.saturating_sub(same_sender)
         });
         if target.quote {
-            target.quote = self.quote_after_other_messages == 0
+            target.quote = last_message_is_own
+                || self.quote_after_other_messages == 0
                 || other_messages.is_some_and(|count| count >= self.quote_after_other_messages);
         }
         if target.mention {
@@ -77,6 +85,74 @@ pub(crate) fn apply_resolved_response_target(
     if message.response_target.as_ref() == Some(original) {
         message.response_target = resolved.cloned();
     }
+}
+
+/// 剥掉模型漏进正文通道的工具调用模板(08-23 线上取证:mimo 系复读退化
+/// 时把 `<tool_call><function=...>` 当文本吐出,中转解析器不认就落进
+/// content,QQ 分段投递原样发到群里)。返回 true = 有段被改写或移除;剥完
+/// 没有任何文本/媒体段的消息由调用方整条抑制。
+pub(crate) fn strip_tool_call_leaks(message: &mut OutboundMessage) -> bool {
+    let OutboundBody::Segments(segments) = &mut message.body else {
+        return false;
+    };
+    let mut changed = false;
+    segments.retain_mut(|segment| match segment {
+        OutboundSegment::Markdown(part) | OutboundSegment::Text(part) => {
+            let Some(stripped) = strip_leak_spans(part) else {
+                return true;
+            };
+            changed = true;
+            if stripped.trim().is_empty() {
+                false
+            } else {
+                *part = stripped;
+                true
+            }
+        }
+        _ => true,
+    });
+    changed
+}
+
+/// 剥完后还有没有值得投递的内容(纯 Mention 不算)。
+pub(crate) fn message_has_deliverable_content(message: &OutboundMessage) -> bool {
+    let OutboundBody::Segments(segments) = &message.body else {
+        return true;
+    };
+    segments.iter().any(|segment| match segment {
+        OutboundSegment::Markdown(part) | OutboundSegment::Text(part) => !part.trim().is_empty(),
+        OutboundSegment::Mention(_) => false,
+        _ => true,
+    })
+}
+
+/// 移除文本里的 `<tool_call>…</tool_call>` 与裸 `<function=…</function>`
+/// span(缺闭合标签=剥到结尾,流式截断的残模板就是这个形态)。
+/// None = 文本干净没动。
+fn strip_leak_spans(text: &str) -> Option<String> {
+    const SPANS: [(&str, &str); 2] = [
+        ("<tool_call>", "</tool_call>"),
+        ("<function=", "</function>"),
+    ];
+    let mut output = text.to_string();
+    let mut changed = false;
+    loop {
+        let Some((start, open, close)) = SPANS
+            .iter()
+            .filter_map(|(open, close)| output.find(open).map(|at| (at, *open, *close)))
+            .min_by_key(|(at, _, _)| *at)
+        else {
+            break;
+        };
+        let _ = open;
+        let end = output[start..]
+            .find(close)
+            .map(|at| start + at + close.len())
+            .unwrap_or(output.len());
+        output.replace_range(start..end, "");
+        changed = true;
+    }
+    changed.then_some(output)
 }
 
 pub(crate) fn message_is_parenthetical_only(message: &OutboundMessage) -> bool {
@@ -253,7 +329,11 @@ pub(crate) async fn flush_intermediate_reply(
         ))
         .await
     {
-        Ok(_) => tracing::info!(
+        // 投递成功才进幂等闸登记(失败就登记会把之后的正当重发也拦掉):
+        // 模型下一轮若用工具重发同段(端点故障日的重演惯犯),send 侧被拒。
+        Ok(_) => {
+            context.record_delivered_reply_text(visible);
+            tracing::info!(
             target: "nonoka::qq",
             chars = visible.chars().count(),
             "{}",
@@ -261,7 +341,8 @@ pub(crate) async fn flush_intermediate_reply(
                 "sent an intermediate platform reply",
                 "已发送平台中间消息",
             )
-        ),
+            );
+        }
         Err(error) => tracing::warn!(
             target: "nonoka::qq",
             error = %error,

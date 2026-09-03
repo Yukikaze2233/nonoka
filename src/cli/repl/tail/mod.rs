@@ -660,11 +660,8 @@ impl LiveReplTail {
         if row >= rows {
             return Ok(());
         }
-        let line = crate::cli::footer::repl_footer_line(
-            self.editor.mode,
-            &self.footer,
-            usize::from(cols),
-        );
+        let line =
+            crate::cli::footer::repl_footer_line(self.editor.mode, &self.footer, usize::from(cols));
         let input_cursor = self.input_cursor;
         synchronized_terminal_update(CursorAfterUpdate::Preserve, || {
             let mut stdout = io::stdout();
@@ -674,7 +671,6 @@ impl LiveReplTail {
             Ok(())
         })
     }
-
 }
 
 pub(in crate::cli) struct LiveRawMode {

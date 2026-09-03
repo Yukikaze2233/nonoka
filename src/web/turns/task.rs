@@ -200,34 +200,26 @@ async fn run_turn_task_inner(
             .lock()
             .map_err(|_| anyhow::anyhow!("turn resource cache is poisoned"))?
             .get_or_build(&config, &paths)?;
-        let restricted = platform_context.is_some_and(|context| !context.host_tools_allowed());
-        let mut normal_tools = if restricted {
-            resources.restricted_tools.clone()
-        } else {
-            resources.normal_tools.clone()
-        };
-        let mut dev_tools = if restricted {
-            resources.restricted_tools.clone()
-        } else {
-            resources.dev_tools.clone()
-        };
-        if !restricted {
-            if let Some(context) = platform_context {
-                tools::rescope_platform_memory_tools(
-                    &mut normal_tools,
-                    &config,
-                    &paths,
-                    context,
-                    false,
-                );
-            }
-        }
-        if platform_context.is_some() {
-            // claude_code 只属于本机 owner 面(§09):host_tools_allowed 的
-            // 平台管理员会话复用 normal/dev 底座,也一并摘掉——订阅额度和
-            // 本机代理权限不跟平台身份走。
-            normal_tools.unregister("claude_code");
-            dev_tools.unregister("claude_code");
+        let mut normal_tools = resources.normal_tools.clone();
+        let mut dev_tools = resources.dev_tools.clone();
+        // 平台回合的工具面收口在 tools::apply_platform_turn_scope,与 MCP 桥
+        // (web/session_cmds.rs)共用同一份规则——两边各写一遍正是 08-26 审查
+        // 抓到的权限绕过成因。受限底座沿用缓存,不每轮重建。
+        if let Some(context) = platform_context {
+            platforms::apply_platform_turn_scope(
+                &mut normal_tools,
+                &config,
+                &paths,
+                context,
+                Some(&resources.restricted_tools),
+            );
+            platforms::apply_platform_turn_scope(
+                &mut dev_tools,
+                &config,
+                &paths,
+                context,
+                Some(&resources.restricted_tools),
+            );
         }
         if local_webui && config.tools.enabled {
             tools::register_webui_artifact_tools(&mut normal_tools, &paths, &session_id);
@@ -379,6 +371,14 @@ async fn run_turn_task_inner(
         }
         Ok((agent, control))
     })();
+    // 平台回合期间把上下文登记下来:MCP 桥(claude-code 供应商唯一的工具
+    // 通道)回来问工具时靠它拿到平台工具,见 live_turns 模块头。**必须绑在
+    // 回合任务体上**——绑在上面的 setup 闭包里会随闭包返回立刻掉落,整轮
+    // 都登记不上(08-26 审查抓到,正是"群里调不到管理工具"的真身)。
+    let _live_turn = profile
+        .as_ref()
+        .and_then(|profile| profile.platform.as_ref())
+        .map(|context| platforms::LiveTurnGuard::register(&session_id, context));
     let (mut agent, control) = match setup {
         Ok(setup) => {
             turn_engine.set(TurnEngineState::READY);

@@ -539,6 +539,16 @@ textarea:disabled {
   gap: 6px;
 }
 
+/* 会话名的字重定在 `.session-copy strong`(见下方);当前会话提半档到 500。
+   原来写 600 是想要"略重",但本机字体栈没有 SemiBold 字面,600 会回退到
+   Bold——12.5px 实测字面宽度 400=180.50 / 500=181.34 / 600=182.45 / 700=182.45,
+   600 与 700 一模一样,于是当前会话整行变成真加粗(08-26 用户两次点名)。
+   500 命中 Noto Sans CJK Medium,是真实存在的中间档。特异性要压过下面那条,
+   否则被同特异性、位置更靠后的规则盖掉。 */
+.session-item.active .session-copy strong {
+  font-weight: 500;
+}
+
 .session-default-badge {
   flex: 0 0 auto;
   padding: 0 5px;
@@ -611,7 +621,8 @@ body[data-theme="graphite"] .session-unread-dot {
 
 .session-copy strong {
   font-size: 12.5px;
-  font-weight: 600;
+  /* 语义上是 <strong>,视觉上不该整列粗体:层次交给背景与当前项的 500。 */
+  font-weight: 400;
 }
 
 .session-copy small,
@@ -6716,13 +6727,31 @@ body[data-theme="linen"] {
   font-variant-numeric: tabular-nums; }
 .u-chart-tip .row i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
 
-.u-model-body { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
-.u-donut-wrap { position: relative; width: 188px; height: 188px; flex: none; margin-inline: 6px; }
+.u-model-body { display: flex; align-items: flex-start; gap: 26px; flex-wrap: wrap; }
+/* 来源内细项条(主动回复判断等):整行占满,排在环形图与表格之下。 */
+.u-kind-strip { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+.u-kind-item { display: inline-flex; align-items: baseline; gap: 10px; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
+  font-size: 12px; color: var(--text-faint); }
+.u-kind-item b { font-weight: 600; color: var(--text); }
+.u-kind-item em { font-style: normal; font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums; }
+/* 模型表里的细项行:同模型同色,空心点+徽章表明用途不同。 */
+.u-dot-kind { position: relative; opacity: .5; }
+.u-kind-tag { margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  border: 1px solid var(--border); font-size: 10px; font-weight: 500;
+  color: var(--text-faint); vertical-align: 1px; }
+/* 环形图固定在卡片左上:模型行数一变,居中对齐会让整个环上下漂(08-26
+   用户点名切标签页时饼图位置乱跳)。 */
+.u-donut-wrap { position: relative; width: 188px; height: 188px; flex: none;
+  margin-inline: 6px; align-self: flex-start; margin-top: 6px; }
 .u-donut-wrap svg { width: 100%; height: 100%; display: block; }
 .u-donut-wrap circle { transition: stroke-width .12s; }
 .u-donut-center { position: absolute; inset: 0; display: grid; place-items: center;
   text-align: center; pointer-events: none; }
 .u-donut-center b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.u-donut-center .u-donut-sub { display: block; margin-top: 2px; font-size: 11px;
+  color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .u-donut-center small { color: var(--text-soft); font-size: var(--fs-micro); }
 .u-table-scroll { overflow-x: auto; flex: 1; min-width: 340px; }
 .u-table { width: 100%; border-collapse: collapse; font-size: var(--fs-ui); }
@@ -6751,6 +6780,9 @@ body[data-theme="linen"] {
 .u-type-pill { font-size: var(--fs-micro); padding: 1px 9px; border-radius: 999px; }
 .u-type-pill.t-chat { background: var(--surface-2); color: var(--text-soft); }
 .u-type-pill.t-aux { background: var(--gold-soft); color: var(--gold); }
+/* 细项(主动回复判断等)与普通辅助调用区分:同一栏里"判断"要一眼可辨。 */
+.u-type-pill.t-kind { background: var(--accent-soft);
+  color: var(--md-sys-color-on-primary-container); }
 body[data-theme="linen"] .u-type-pill.t-aux { color: var(--md-sys-color-on-secondary-container); }
 .u-src-pill { font-size: var(--fs-micro); padding: 1px 8px; border-radius: 999px;
   background: var(--surface-2); color: var(--text-soft); }
@@ -6784,6 +6816,9 @@ body[data-theme="linen"] .u-type-pill.t-aux { color: var(--md-sys-color-on-secon
 .u-rec-filters select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* CSP style-src 'self' 拦 HTML 解析期的内联样式:静态标注一律走 class。 */
 .u-refresh { align-self: center; margin-left: -6px; }
+/* 清空排在刷新右边;危险动作用弱化底色,悬停才显红。 */
+.u-clear { align-self: center; margin-left: -2px; color: var(--text-faint); }
+.u-clear:hover { color: var(--danger, #c0392b); }
 .u-heat-days span:nth-child(1) { grid-row: 1; }
 .u-heat-days span:nth-child(2) { grid-row: 3; }
 .u-heat-days span:nth-child(3) { grid-row: 5; }
@@ -7472,4 +7507,45 @@ body.nonoka-paused *,
 body.nonoka-paused *::before,
 body.nonoka-paused *::after {
   animation-play-state: paused !important;
+}
+
+/* 生图点阵占位气泡(08-22):工具芯片隐藏,方形气泡内随机区域的小块点阵
+   若隐若现(补丁元素由 app.js 生成,位置/大小/时长随机);tool.image 到达后
+   原地换成图片;失败时占位变错误态并露出芯片。 */
+.tool-card.image-tool-chip {
+  display: none;
+}
+.image-gen-bubble {
+  position: relative;
+  width: min(320px, 70%);
+  min-width: 220px; /* slim 收缩语境下的形状兜底 */
+  aspect-ratio: 1 / 1;
+  margin: 6px 0;
+  border-radius: 16px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.image-gen-bubble .image-gen-label {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  white-space: nowrap; /* 任何退化宽度下 6 个字也不竖排 */
+  margin: 14px 16px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.image-gen-bubble .dot-patch {
+  position: absolute;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--text-faint) 1.4px, transparent 1.6px);
+  background-size: 11px 11px;
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  opacity: 0;
+  animation: imageGenDotPatch 2.8s ease-in-out forwards;
+}
+@keyframes imageGenDotPatch {
+  0% { opacity: 0; }
+  45% { opacity: 0.55; }
+  100% { opacity: 0; }
 }

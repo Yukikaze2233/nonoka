@@ -39,7 +39,7 @@ def main():
     target.write_text(f"//! {doc}\n\n" + "\n".join(header) + "\n", encoding="utf-8")
 
     result = subprocess.run(
-        ["python3", "scripts/extract_module.py", str(src), str(target)] + items
+        ["python3", str(Path(__file__).resolve().parent / "extract_module.py"), str(src), str(target)] + items
     )
     if result.returncode != 0:
         target.unlink(missing_ok=True)

@@ -279,6 +279,11 @@ pub async fn ensure_daemon(
     let launch = pending_launch
         .map(Ok)
         .unwrap_or_else(|| load_daemon_launch_config(&active_paths))?;
+    // daemon 的 stdout/stderr 全进 daemon.log(见 start_daemon_process)。
+    // 它是所有启动共用的追加文件,所以失败时不能 tail 固定行数——daemon 若
+    // 死在任何输出之前,尾部拿到的是上一次**成功**启动的 "Nonoka WebUI: …",
+    // 用户会以为起来了。记下 spawn 前的字节长度,只读这之后新增的部分。
+    let log_offset = daemon_log_len(&active_paths);
     let mut child = match start_daemon_process(&active_paths, &launch) {
         Ok(child) => child,
         Err(error) => {
@@ -301,7 +306,10 @@ pub async fn ensure_daemon(
         match child.try_wait().context("checking Nonoka daemon process") {
             Ok(Some(status)) => {
                 abandon_daemon_launch_candidate(&active_paths, &launch);
-                bail!("Nonoka daemon exited before becoming ready ({status})");
+                bail!(
+                    "Nonoka daemon exited before becoming ready ({status}){}",
+                    daemon_log_since(&active_paths, log_offset)
+                );
             }
             Ok(None) => {}
             Err(error) => {
@@ -315,7 +323,10 @@ pub async fn ensure_daemon(
             let _ = child.kill();
             let _ = child.wait();
             abandon_daemon_launch_candidate(&active_paths, &launch);
-            bail!("Nonoka daemon did not become ready within 8 seconds");
+            bail!(
+                "Nonoka daemon did not become ready within 8 seconds{}",
+                daemon_log_since(&active_paths, log_offset)
+            );
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
@@ -426,6 +437,47 @@ pub(crate) fn acquire_starter(paths: &NonokaPaths) -> Result<StarterLease> {
     Ok(StarterLease { lock_file })
 }
 
+fn daemon_log_path(paths: &NonokaPaths) -> PathBuf {
+    paths.logs_dir().join("daemon.log")
+}
+
+pub(in crate::ipc) fn daemon_log_len(paths: &NonokaPaths) -> u64 {
+    std::fs::metadata(daemon_log_path(paths))
+        .map(|meta| meta.len())
+        .unwrap_or(0)
+}
+
+/// 本次启动往 daemon.log 里写了什么。只读 `offset` 之后新增的字节——共用
+/// 追加文件,读全文或 tail 固定行数都会把别人的输出算到这次头上。
+///
+/// 08-29 用户反馈:所有需要 daemon 的命令都只吐 "exit status: 1",真正的原因
+/// (`database disk image is malformed`)躺在日志里没人看得到。
+pub(in crate::ipc) fn daemon_log_since(paths: &NonokaPaths, offset: u64) -> String {
+    use std::io::{Read, Seek, SeekFrom};
+    const MAX_BYTES: usize = 4096;
+    let path = daemon_log_path(paths);
+    let appended = (|| -> std::io::Result<String> {
+        let mut file = std::fs::File::open(&path)?;
+        let len = file.metadata()?.len();
+        if len <= offset {
+            return Ok(String::new());
+        }
+        // 只保留末尾一段:启动噪音可能很长,用户要的是最后那几句。
+        let start = offset.max(len.saturating_sub(MAX_BYTES as u64));
+        file.seek(SeekFrom::Start(start))?;
+        let mut buffer = Vec::new();
+        file.take(MAX_BYTES as u64).read_to_end(&mut buffer)?;
+        Ok(String::from_utf8_lossy(&buffer).into_owned())
+    })()
+    .unwrap_or_default();
+    let appended = appended.trim();
+    if appended.is_empty() {
+        // 一个字都没写就死了。指路比沉默强。
+        return format!("\n(daemon 没有留下任何输出；日志：{})", path.display());
+    }
+    format!("\ndaemon 日志（{}）：\n{appended}", path.display())
+}
+
 pub(crate) fn start_daemon_process(
     paths: &NonokaPaths,
     launch: &DaemonLaunchConfig,
@@ -465,7 +517,10 @@ pub(crate) fn spawn_daemon_reaper(mut child: std::process::Child) {
     });
 }
 
-pub(crate) fn append_daemon_process_args(command: &mut std::process::Command, launch: &DaemonLaunchConfig) {
+pub(crate) fn append_daemon_process_args(
+    command: &mut std::process::Command,
+    launch: &DaemonLaunchConfig,
+) {
     command.arg("--port").arg(launch.port.to_string());
     if let Some(path) = &launch.password_file {
         command.arg("--password-file").arg(path);

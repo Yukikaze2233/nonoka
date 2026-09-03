@@ -282,7 +282,11 @@ impl MemoryStore {
         self.app_config.embedding.is_configured()
     }
 
-    pub(crate) fn search_evicted_context_existing(&self, query: &str, limit: usize) -> Result<Value> {
+    pub(crate) fn search_evicted_context_existing(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Value> {
         self.search_evicted_context_filtered(query, limit, None, None)
     }
 

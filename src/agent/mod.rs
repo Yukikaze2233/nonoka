@@ -159,6 +159,9 @@ pub enum AgentEvent {
         round: Box<Usage>,
         turn: TurnTokens,
         estimated: bool,
+        /// 刚结束这次请求实际应答的端点,供日志/前端标注(08-24 需求)。
+        provider_id: Option<String>,
+        model: Option<String>,
     },
     SpinnerTick,
     CompactStart,
@@ -261,10 +264,8 @@ pub struct Agent {
     /// `request_messages`,永不进 `messages`,因此不化石化、不落库——
     /// 见 persona_hint 模块头注释。
     persona_reminder: Option<String>,
-    /// 重复调用链(advisory 防死循环,见 tools::repeat_reminder 模块头)。
     /// 人类新输入(新回合/排队插话)重置;注入的提醒只进本轮工作消息,
     /// 不进化石。
-    repeat_chain: crate::tools::repeat_reminder::RepeatChain,
     /// 预设对话(begin_dialogs):system 之后、真实历史之前的 user/assistant
     /// 示例对,每请求注入、永不落库。构造时从当前人格 scope 的
     /// dialogs/<scope>.md 加载。
@@ -413,6 +414,7 @@ impl Agent {
                 source: self.usage_source(),
                 provider: compact.provider_id.as_deref(),
                 model: None,
+                kind: None,
             },
         )?;
         Ok(Some(ChatResult {
@@ -525,6 +527,7 @@ impl Agent {
                 source: self.usage_source(),
                 provider: compact.provider_id.as_deref(),
                 model: None,
+                kind: None,
             },
         )?;
         Ok(Some(ChatResult {

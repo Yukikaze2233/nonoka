@@ -1,7 +1,7 @@
 //! 思考变体的保存、迁移与线路映射。
 
-use crate::llm::openai_compatible::*;
 use super::shared::*;
+use crate::llm::openai_compatible::*;
 
 #[test]
 fn reasoning_failover_visibility_only_follows_reasoning_display() {

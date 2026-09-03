@@ -265,7 +265,14 @@ impl MemoryStore {
         limit: usize,
         include_forgotten: bool,
     ) -> Result<Vec<MemoryHit>> {
-        self.search_table(conn, "facts", MemoryKind::Fact, query, limit, include_forgotten)
+        self.search_table(
+            conn,
+            "facts",
+            MemoryKind::Fact,
+            query,
+            limit,
+            include_forgotten,
+        )
     }
 
     pub(crate) fn search_episodes(

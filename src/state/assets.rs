@@ -334,7 +334,11 @@ impl StateStore {
         Ok(())
     }
 
-    pub(crate) fn reconcile_managed_artifacts_for_turn(&self, session_id: &str, turn_id: &str) -> Result<()> {
+    pub(crate) fn reconcile_managed_artifacts_for_turn(
+        &self,
+        session_id: &str,
+        turn_id: &str,
+    ) -> Result<()> {
         use std::path::Component;
 
         let mut components = Path::new(session_id).components();

@@ -20,7 +20,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use std::time::SystemTime;
 
-
 static MEME_LIBRARY_CACHE: OnceLock<RwLock<Option<MemeLibraryCache>>> = OnceLock::new();
 static MEME_LIBRARY_LOCKS: OnceLock<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> =
     OnceLock::new();
@@ -30,16 +29,6 @@ pub(crate) struct MemeRef {
     pub(crate) library: String,
     pub(crate) id: String,
 }
-
-
-
-
-
-
-
-
-
-
 
 pub(crate) fn auto_meme_reminder(
     config: &AppConfig,
@@ -67,8 +56,6 @@ pub(crate) fn auto_meme_reminder(
             .to_string(),
     )
 }
-
-
 
 /// 表情包分两个工具：读路径 `use_meme`，写路径 `manage_meme`。
 ///
@@ -112,7 +99,11 @@ fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: NonokaPat
                 let config = config.clone();
                 let paths = paths.clone();
                 async move {
-                    match args.get("action").and_then(Value::as_str).unwrap_or_default() {
+                    match args
+                        .get("action")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                    {
                         "search" => search_meme(args, &config, &paths).await,
                         "show" => show_meme(args, &config, &paths, progress).await,
                         other => bail!("unknown action: {other}; expected search or show"),
@@ -141,7 +132,11 @@ fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: Nonoka
                     let config = config.clone();
                     let paths = paths.clone();
                     async move {
-                        match args.get("action").and_then(Value::as_str).unwrap_or_default() {
+                        match args
+                            .get("action")
+                            .and_then(Value::as_str)
+                            .unwrap_or_default()
+                        {
                             "add" => add_meme(args, &config, &paths).await,
                             "update" => update_meme(args, &config, &paths).await,
                             "delete" => delete_meme(args, &config, &paths).await,
@@ -186,26 +181,29 @@ async fn search_meme(args: Value, config: &AppConfig, paths: &NonokaPaths) -> Re
         // 字符里,origin 采集元数据占 20.2%、score 全精度浮点 5.4%、
         // source 4.3%、name.en 约 5%,对选表情包零价值)。tags 照旧参与
         // 上面的 score_meme 排序,只是不再发给模型。
-        .map(|(_score, meme)| {
-            json!({
-                "id": unique_short_id_from_ids(&ids, &meme.item.id),
-                "name": meme.item.name.zh,
-                "description": meme.item.description,
-                "usage": meme.item.usage,
-                "avoid": meme.item.avoid,
-                "animated": meme.item.animated,
-            })
-        })
+        .map(|(_score, meme)| meme)
         .collect::<Vec<_>>();
-    if limit == 1 {
-        return Ok(json!({
-            "success": true,
-            "library": library,
-            "result": results.into_iter().next(),
-        })
-        .to_string());
+    // 08-21 token-diet:候选列表改为行格式,不再逐条 JSON 重复键名。
+    let mut output = format!("library {library}: {} candidate(s)\n", results.len());
+    for meme in &results {
+        let mut line = format!(
+            "- id={} {}",
+            unique_short_id_from_ids(&ids, &meme.item.id),
+            meme.item.name.zh
+        );
+        if !meme.item.description.is_empty() {
+            line.push_str(&format!(" — {}", meme.item.description));
+        }
+        if !meme.item.usage.is_empty() {
+            line.push_str(&format!(" | usage: {}", meme.item.usage));
+        }
+        if meme.item.animated {
+            line.push_str(" [animated]");
+        }
+        output.push_str(&line);
+        output.push('\n');
     }
-    Ok(json!({ "success": true, "library": library, "results": results }).to_string())
+    Ok(output)
 }
 
 async fn show_meme(
@@ -229,43 +227,15 @@ async fn show_meme(
             vision::print_image_file(&meme.path, size).await?;
         }
     }
-    Ok(json!({
-        "success": true,
-        "id": unique_short_id_from_ids(&ids, &meme.item.id),
-        "description": meme.item.description,
-    })
-    .to_string())
+    // 文本形态;compact_sent_meme_report(agent/reports.rs)对新旧两种形态
+    // 都能解析。
+    let short_id = unique_short_id_from_ids(&ids, &meme.item.id);
+    if meme.item.description.is_empty() {
+        Ok(format!("sent meme {short_id}"))
+    } else {
+        Ok(format!("sent meme {short_id}: {}", meme.item.description))
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -307,7 +277,6 @@ mod tests {
             animated: false,
             description: "戴墨镜的企鹅抱着终端".to_string(),
             usage: "适合 Linux 话题".to_string(),
-            avoid: String::new(),
             tags: vec!["Linux".to_string(), "企鹅".to_string()],
             origin: None,
         };
@@ -440,7 +409,10 @@ mod tests {
         assert_eq!(origin.sender_name, "测试群友");
         assert_eq!(origin.sent_at, "2026-08-10T12:00:00+00:00");
         assert!(!origin.collected_at.is_empty(), "collected_at stamped");
-        println!("E2E origin: {}", serde_json::to_string_pretty(origin).unwrap());
+        println!(
+            "E2E origin: {}",
+            serde_json::to_string_pretty(origin).unwrap()
+        );
     }
 
     #[test]
@@ -606,7 +578,6 @@ mod tests {
                 animated: false,
                 description: "测试表情".to_string(),
                 usage: "测试".to_string(),
-                avoid: String::new(),
                 tags: Vec::new(),
                 origin: None,
             },
@@ -618,6 +589,8 @@ mod tests {
     fn accepted_classification() -> MemeClassification {
         MemeClassification {
             save: true,
+            // 兼容字段:模型仍可能吐 avoid,收下即丢(见 crud.rs 的说明)
+            avoid: String::new(),
             confidence: 100,
             positive_gates: PositiveGates {
                 chat_reaction: true,
@@ -641,7 +614,6 @@ mod tests {
             },
             description: "一只卡通猫开心地挥手。".to_string(),
             usage: "适合轻松打招呼。".to_string(),
-            avoid: "严肃场景不要使用。".to_string(),
             tags: vec!["开心".to_string(), "猫".to_string()],
         }
     }
@@ -805,6 +777,9 @@ mod register_tests {
             .call("use_meme", &json!({"action": "delete"}).to_string())
             .await
             .expect_err("use_meme 不该认 delete");
-        assert!(error.to_string().contains("search or show"), "实际：{error}");
+        assert!(
+            error.to_string().contains("search or show"),
+            "实际：{error}"
+        );
     }
 }

@@ -182,7 +182,10 @@ pub(in crate::cli) fn print_chat_token_usage(
     Ok(())
 }
 
-pub(in crate::cli) fn result_context_window(config: &AppConfig, result: &crate::llm::ChatResult) -> Option<usize> {
+pub(in crate::cli) fn result_context_window(
+    config: &AppConfig,
+    result: &crate::llm::ChatResult,
+) -> Option<usize> {
     if config.active_provider_model_choices().len() > 1 {
         return None;
     }

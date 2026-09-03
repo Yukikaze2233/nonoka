@@ -47,7 +47,7 @@ impl OpenAiCompatibleClient {
             .first()
             .with_context(|| "no active provider/model endpoint is configured")?;
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, &first.provider);
-        let claude_code = claude_code_runtime(&endpoints, config, paths);
+        let claude_code = claude_code_runtime(&endpoints, config);
         let mut client = Self {
             client: first.client.clone(),
             provider: first.provider.clone(),
@@ -136,7 +136,7 @@ impl OpenAiCompatibleClient {
             ),
         };
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, &first.provider);
-        let claude_code = claude_code_runtime(&endpoints, config, paths);
+        let claude_code = claude_code_runtime(&endpoints, config);
         let mut client = Self {
             client: first.client.clone(),
             provider: first.provider.clone(),
@@ -197,7 +197,7 @@ impl OpenAiCompatibleClient {
         };
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, provider);
         let endpoints = vec![endpoint];
-        let claude_code = claude_code_runtime(&endpoints, config, paths);
+        let claude_code = claude_code_runtime(&endpoints, config);
         let mut client = Self {
             client,
             provider: provider.clone(),
@@ -373,7 +373,6 @@ impl OpenAiCompatibleClient {
 pub(in crate::llm::openai_compatible) fn claude_code_runtime(
     endpoints: &[LlmEndpoint],
     config: &AppConfig,
-    paths: &NonokaPaths,
 ) -> Option<Arc<ClaudeCodeRuntime>> {
     if !endpoints
         .iter()

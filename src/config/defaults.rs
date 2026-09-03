@@ -14,6 +14,8 @@ pub(crate) fn is_default_platform_command_prefix(value: &String) -> bool {
 }
 
 pub(crate) fn default_persona_reminder_interval() -> u32 {
+    // 08-23 工具体制 A/B:interval=5 时探针全过 5/12,=3 时 8/12——提醒
+    // 新鲜度直接决定工具冲刷后的风格保持,别为省几十 token 调大。
     3
 }
 

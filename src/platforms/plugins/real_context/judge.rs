@@ -1,4 +1,5 @@
 use super::store::HistoryMessage;
+use super::targeting::safe_prompt_field;
 use crate::config::RealContextPluginSettings;
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
 use crate::platforms::PlatformTurnContext;
@@ -60,6 +61,8 @@ pub(super) struct JudgeResult {
     pub(super) affection_bias: f64,
     pub(super) reasoning: String,
     pub(super) moderation: ModerationResult,
+    /// 实际应答的端点(provider / model),供决策日志排障(08-24 需求)。
+    pub(super) endpoint: Option<String>,
 }
 
 pub(super) async fn run(
@@ -114,14 +117,26 @@ pub(super) async fn run(
                 source: &context.conversation.platform,
                 provider: result.provider_id.as_deref(),
                 model: result.model.as_deref(),
+                // 主动回复判断:每条群消息都跑,量级足以盖过主线回复——
+                // 统计里必须能单独看见(08-26)。
+                kind: Some(crate::state::USAGE_KIND_JUDGE),
             };
             if let Err(error) = context.state_store.add_auxiliary_usage(usage, meta) {
                 tracing::warn!(error = %error, "{}", crate::i18n::text("recording real-context judge usage failed", "记录真实上下文判断用量失败"));
             }
         }
+        let endpoint = match (result.provider_id.as_deref(), result.model.as_deref()) {
+            (Some(provider), Some(model)) => Some(format!("{provider} / {model}")),
+            (Some(provider), None) => Some(provider.to_string()),
+            (None, Some(model)) => Some(model.to_string()),
+            (None, None) => None,
+        };
         last = result.content;
         if let Ok(value) = parse_json_object(&last) {
-            return normalize_result(settings, &request, &value);
+            return normalize_result(settings, &request, &value).map(|mut judged| {
+                judged.endpoint = endpoint;
+                judged
+            });
         }
     }
     bail!(
@@ -214,11 +229,7 @@ fn build_prompt(
         identity_warning,
         if history.is_empty() { "(none)" } else { &history },
         event_metadata,
-        if request.current_text.trim().is_empty() {
-            "(media-only message)"
-        } else {
-            request.current_text.trim()
-        },
+        signed_current_message(context, request.current_text),
         decoded,
         request.continuation_boost,
         request.system_trigger_boost,
@@ -228,6 +239,51 @@ fn build_prompt(
         request.heat_threshold_boost,
         request.short_message_threshold_boost,
     ))
+}
+
+/// 当前消息的署名行:与群聊记录同格式的 [时间] 发送者 [msg=id]: 正文,
+/// 外加 @提及。裸文本会让弱 judge 把这句话归错话题(08-24 主对话侧同病
+/// 取证);署名前缀来自宿主受信字段,正文照旧按不可信处理。
+fn signed_current_message(context: &PlatformTurnContext, current_text: &str) -> String {
+    let Some(event) = context.inbound_event() else {
+        let trimmed = current_text.trim();
+        return if trimmed.is_empty() {
+            "(media-only message)".to_string()
+        } else {
+            trimmed.to_string()
+        };
+    };
+    let show_ids = context.config.platforms.qq.user_identification;
+    let content = if current_text.trim().is_empty() {
+        "(media-only message)".to_string()
+    } else {
+        current_text.trim().to_string()
+    };
+    let sender = if show_ids {
+        format!(
+            "{}(QQ:{})",
+            safe_prompt_field(&event.sender_display_name),
+            safe_prompt_field(&event.sender_id)
+        )
+    } else {
+        safe_prompt_field(&event.sender_display_name)
+    };
+    let mut line = format!(
+        "[{}] {} [msg={}]: {}",
+        super::history::format_history_time(event.timestamp),
+        sender,
+        safe_prompt_field(&event.message_id),
+        safe_prompt_field(&content)
+    );
+    if let Some(mentions) = super::targeting::format_mentioned_users(
+        &event.mentioned_users,
+        &event.mentioned_user_ids,
+        show_ids,
+        Some(event.conversation.account_id.as_str()),
+    ) {
+        line.push_str(&format!("\n  @mentions: {mentions}"));
+    }
+    line
 }
 
 fn judge_persona_prompt<'a>(
@@ -418,6 +474,7 @@ fn normalize_result(
             .trim()
             .to_string(),
         moderation,
+        endpoint: None,
     })
 }
 

@@ -187,7 +187,8 @@ async fn call_mcp_tool_async(binding: McpToolBinding, args: Value) -> Result<Str
     let deadline = overall_timeout(&binding.server);
     let server_id = binding.server.id.clone();
     let (pid_tx, pid_rx) = std::sync::mpsc::channel();
-    let task = tokio::task::spawn_blocking(move || call_mcp_tool_inner(binding, args, Some(pid_tx)));
+    let task =
+        tokio::task::spawn_blocking(move || call_mcp_tool_inner(binding, args, Some(pid_tx)));
     match tokio::time::timeout(deadline, task).await {
         Ok(joined) => joined.context("MCP worker task failed")?,
         Err(_) => {

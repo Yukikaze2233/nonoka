@@ -20,7 +20,6 @@ pub(in crate::tools) const SUBAGENT_EXCLUDED: &[&str] = &[
     "task",
     "task_agent",
     "deep_research",
-    "claude_code",
     "load_skill",
     "manage_skill",
     "alarm",
@@ -241,26 +240,28 @@ async fn spawn_background_task(
     progress: crate::tools::ToolProgress,
 ) -> Result<String> {
     let description = params.description.clone();
-    crate::tools::jobs::spawn_background_subagent(None, &description, &progress, move |job_id, log_path| {
-        async move {
+    crate::tools::jobs::spawn_background_subagent(
+        None,
+        &description,
+        &progress,
+        move |job_id, log_path| async move {
             let bridge = spawn_subagent_log_bridge(log_path.clone());
             let output = run_task_core(context, bridge, params, anchor).await;
             let state_label = match &output {
                 Ok(json) => serde_json::from_str::<Value>(json)
                     .ok()
-                    .and_then(|value| value.get("state").and_then(Value::as_str).map(str::to_string))
+                    .and_then(|value| {
+                        value
+                            .get("state")
+                            .and_then(Value::as_str)
+                            .map(str::to_string)
+                    })
                     .unwrap_or_else(|| "completed".to_string()),
                 Err(_) => "error".to_string(),
             };
             let tail = match &output {
-                Ok(json) => format!(
-                    "\n{}\n{json}\n",
-                    crate::tools::jobs::SUBAGENT_RESULT_MARKER
-                ),
-                Err(error) => format!(
-                    "\n{}\n{error}\n",
-                    crate::tools::jobs::SUBAGENT_ERROR_MARKER
-                ),
+                Ok(json) => format!("\n{}\n{json}\n", crate::tools::jobs::SUBAGENT_RESULT_MARKER),
+                Err(error) => format!("\n{}\n{error}\n", crate::tools::jobs::SUBAGENT_ERROR_MARKER),
             };
             let _ = std::fs::OpenOptions::new()
                 .append(true)
@@ -277,8 +278,8 @@ async fn spawn_background_task(
                 "timeout" => crate::tools::jobs::JobState::TimedOut,
                 _ => crate::tools::jobs::JobState::Exited { code: None },
             }
-        }
-    })
+        },
+    )
     .await
 }
 
@@ -381,7 +382,7 @@ async fn run_task_core(
                 ));
                 (
                     OpenAiCompatibleClient::from_config(&context.config, &context.paths)?
-                .with_request_scope("subagent"),
+                        .with_request_scope("subagent"),
                     main_pool_choice(&context.config),
                 )
             }
@@ -400,30 +401,30 @@ async fn run_task_core(
     // 子代理不设总时长上限:它自然结束于任务完成或步数预算;逐工具超时
     // (tool_timeout)仍然兜底单步挂死。
     let (result, stats) = match runner.run_with_resume(&prompt, resume_id.as_deref()).await {
-            Ok((result, stats)) => (result, stats),
-            Err(err) => {
-                let output = serde_json::to_string_pretty(&json!({
-                    "ok": false,
-                    "kind": "task",
-                    "tier": tier.label(),
-                    "tier_notice": tier_notice,
-                    "description": description,
-                    "state": "error",
-                    "error": err.to_string(),
-                    "stats": SubagentStats::default().public(),
-                }))?;
-                record_subagent_audit(
-                    &context,
-                    &anchor,
-                    &description,
-                    &prompt,
-                    &output,
-                    None,
-                    &model_choice,
-                );
-                return Ok(output);
-            }
-        };
+        Ok((result, stats)) => (result, stats),
+        Err(err) => {
+            let output = serde_json::to_string_pretty(&json!({
+                "ok": false,
+                "kind": "task",
+                "tier": tier.label(),
+                "tier_notice": tier_notice,
+                "description": description,
+                "state": "error",
+                "error": err.to_string(),
+                "stats": SubagentStats::default().public(),
+            }))?;
+            record_subagent_audit(
+                &context,
+                &anchor,
+                &description,
+                &prompt,
+                &output,
+                None,
+                &model_choice,
+            );
+            return Ok(output);
+        }
+    };
 
     let state = if stats.budget_reached {
         "budget_reached"
@@ -433,16 +434,21 @@ async fn run_task_core(
 
     let final_text = result.content.trim().to_string();
 
-    let output = serde_json::to_string_pretty(&json!({
-        "ok": true,
-        "kind": "task",
-        "tier": tier.label(),
-        "tier_notice": tier_notice,
-        "description": description,
-        "state": state,
-        "result": final_text,
-        "stats": stats.public(),
-    }))?;
+    // 08-21 token-diet:成功路径改文本形态——子代理结论不再被 JSON 转义
+    // (换行/引号转义在长结论上是实打实的浪费)。result: 之后到结尾都是
+    // 结论本体,tool_report.rs 的持久化提取按此约定解析;错误路径保留
+    // ok:false JSON(成败判定的结构即功能)。
+    let mut output = format!("task {state} (tier {}): {description}\n", tier.label());
+    if let Some(notice) = &tier_notice {
+        output.push_str(notice);
+        output.push('\n');
+    }
+    output.push_str(&format!(
+        "stats: {}\n",
+        serde_json::to_string(&stats.public())?
+    ));
+    output.push_str("result:\n");
+    output.push_str(&final_text);
     // Prefer the endpoint that actually produced the final reply (pools
     // load-balance, so the representative pool entry may differ).
     let model_choice = match (&result.provider_id, &result.model) {

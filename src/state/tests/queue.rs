@@ -1,7 +1,7 @@
 //! 排队消息的持久化与清理。
 
-use crate::state::*;
 use super::shared::*;
+use crate::state::*;
 
 #[test]
 fn queued_prompts_persist_and_attach_to_a_turn_in_order() {

@@ -1,22 +1,27 @@
 {
   "name": "vision_analyze",
-  "display_name": "分析图片",
-  "description": "Analyze an image with the current multimodal model. Supports local image paths and http(s) image URLs.",
+  "display_name": "视觉分析",
+  "description": "Analyze images or a video. Pass images (array) to analyze several in one call — much faster than one call per image. Accepts local paths or http(s) URLs. Video (mp4/mpeg/mov/webm) needs a video-capable model; local videos are capped at 24 MB.",
   "parameters": {
     "type": "object",
     "properties": {
       "image": {
         "type": "string",
-        "description": "A local image path or an http(s) image URL."
+        "description": "A single local image/video path or an http(s) URL."
+      },
+      "images": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Several images to analyze in one call (paths or URLs). Overrides image."
       },
       "prompt": {
         "type": "string",
         "description": "Question or instruction for the image analysis. Defaults to a concise description of the image."
       }
     },
-    "required": [
-      "image"
-    ],
+    "required": [],
     "additionalProperties": false
   },
   "permission": "readonly",

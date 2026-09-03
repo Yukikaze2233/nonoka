@@ -47,7 +47,10 @@ pub(in crate::cli) async fn run_web(paths: &NonokaPaths, mut args: WebArgs) -> R
     Ok(())
 }
 
-pub(in crate::cli) fn web_launch_config(paths: &NonokaPaths, args: &WebArgs) -> Result<Option<ipc::DaemonLaunchConfig>> {
+pub(in crate::cli) fn web_launch_config(
+    paths: &NonokaPaths,
+    args: &WebArgs,
+) -> Result<Option<ipc::DaemonLaunchConfig>> {
     if !args.port_explicit
         && args.bind.is_none()
         && args.password.is_none()
@@ -256,9 +259,7 @@ pub(in crate::cli) async fn print_daemon_status(paths: &NonokaPaths) -> Result<(
         t("running", "运行中"),
         info.pid,
     );
-    for line in
-        daemon_web_status_lines(t("WebUI:", "WebUI："), &daemon_web_access_urls(&info))
-    {
+    for line in daemon_web_status_lines(t("WebUI:", "WebUI："), &daemon_web_access_urls(&info)) {
         println!("{line}");
     }
     let engine = data
@@ -335,7 +336,13 @@ pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<(
         .get("file")
         .and_then(serde_json::Value::as_str)
         .map(str::to_string)
-        .unwrap_or_else(|| paths.logs_dir().join("requests-<date>.jsonl").display().to_string());
+        .unwrap_or_else(|| {
+            paths
+                .logs_dir()
+                .join("requests-<date>.jsonl")
+                .display()
+                .to_string()
+        });
     println!(
         "{}",
         t(
@@ -359,7 +366,9 @@ pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<(
             _ = tokio::signal::ctrl_c() => break,
             _ = tokio::time::sleep(Duration::from_millis(300)) => {}
         }
-        let Ok(meta) = std::fs::metadata(&path) else { continue };
+        let Ok(meta) = std::fs::metadata(&path) else {
+            continue;
+        };
         if meta.len() < offset {
             offset = 0; // 跨日换文件或被清空
         }
@@ -367,7 +376,9 @@ pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<(
             continue;
         }
         use std::io::{Read as _, Seek as _};
-        let Ok(mut handle) = std::fs::File::open(&path) else { continue };
+        let Ok(mut handle) = std::fs::File::open(&path) else {
+            continue;
+        };
         if handle.seek(std::io::SeekFrom::Start(offset)).is_err() {
             continue;
         }
@@ -382,7 +393,12 @@ pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<(
             let Ok(entry) = serde_json::from_str::<serde_json::Value>(line.trim()) else {
                 continue;
             };
-            let text = |key: &str| entry.get(key).and_then(serde_json::Value::as_str).unwrap_or("?");
+            let text = |key: &str| {
+                entry
+                    .get(key)
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("?")
+            };
             let body = entry.get("body");
             let messages = body
                 .and_then(|body| body.get("messages").or_else(|| body.get("input")))
@@ -416,7 +432,10 @@ pub(in crate::cli) async fn run_request_monitor(paths: &NonokaPaths) -> Result<(
     Ok(())
 }
 
-pub(in crate::cli) fn tail_file_lines_with_end(path: &Path, limit: usize) -> Result<(Vec<String>, u64)> {
+pub(in crate::cli) fn tail_file_lines_with_end(
+    path: &Path,
+    limit: usize,
+) -> Result<(Vec<String>, u64)> {
     const CHUNK: usize = 8192;
     let mut file = std::fs::File::open(path)?;
     let mut position = file.seek(SeekFrom::End(0))?;
@@ -479,7 +498,9 @@ pub(in crate::cli) enum ConfigReloadResponse {
     Busy,
 }
 
-pub(in crate::cli) fn validate_config_reload_response(frame: Option<IpcFrame>) -> Result<ConfigReloadResponse> {
+pub(in crate::cli) fn validate_config_reload_response(
+    frame: Option<IpcFrame>,
+) -> Result<ConfigReloadResponse> {
     if let Some(IpcFrame::Error { code, message }) = &frame {
         if *code == Some(ipc::ErrorCode::Busy)
             || (code.is_none() && message == ipc::ADMIN_BUSY_MESSAGE)
@@ -491,7 +512,9 @@ pub(in crate::cli) fn validate_config_reload_response(frame: Option<IpcFrame>) -
     Ok(ConfigReloadResponse::Reloaded)
 }
 
-pub(in crate::cli) async fn request_config_reload(paths: &NonokaPaths) -> Result<ConfigReloadResponse> {
+pub(in crate::cli) async fn request_config_reload(
+    paths: &NonokaPaths,
+) -> Result<ConfigReloadResponse> {
     request_config_reload_at(&paths.ipc_socket(), RELOAD_RESPONSE_TIMEOUT).await
 }
 

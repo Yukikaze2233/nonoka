@@ -238,7 +238,8 @@ pub(in crate::config_tui) fn edit_qq(
     let mut selected = 0usize;
     loop {
         let qq = &config.platforms.qq;
-        let options = vec![
+        let parallel = qq.session_parallel;
+        let mut options = vec![
             format!(
                 "{}: {}",
                 t("Enabled", "是否启用"),
@@ -373,9 +374,20 @@ pub(in crate::config_tui) fn edit_qq(
             ),
             format!(
                 "{}: {}",
-                t("Conversation concurrency", "会话并发"),
-                session_limits_label(qq.session_limits)
+                t("In-conversation parallelism", "会话内并行"),
+                enabled_label(qq.session_parallel)
             ),
+        ];
+        // 串行时并行数无处可用,整项不出现(08-26 用户裁定):串行下被挡住的
+        // 消息由「多少秒多少条」限流决定丢弃,不归这里管。
+        if qq.session_parallel {
+            options.push(format!(
+                "{}: {}",
+                t("In-conversation parallel turns", "会话内并行数量"),
+                session_limits_label(qq.session_limits)
+            ));
+        }
+        options.extend([
             format!(
                 "{}: {}",
                 t("Private/group conversation settings", "私聊/群聊专属配置"),
@@ -383,7 +395,7 @@ pub(in crate::config_tui) fn edit_qq(
             ),
             t("QQ plugins", "QQ 插件配置").to_string(),
             t("Advanced settings", "高级设置").to_string(),
-        ];
+        ]);
         draw_menu(
             stdout,
             t(" TENCENT QQ ", " 腾讯 QQ "),
@@ -506,16 +518,24 @@ pub(in crate::config_tui) fn edit_qq(
                         &mut config.platforms.qq.group_chats.non_whitelist_rate_limit,
                     )?;
                 }
-                22 if matches!(key, KeyCode::Enter) => {
+                // 光标就停在开关这一行(22),"并行数量"排在它之后——关掉并行
+                // 时那一项消失也不会把光标落到不存在的行上,无需再钳制。
+                22 => {
+                    config.platforms.qq.session_parallel = !config.platforms.qq.session_parallel;
+                }
+                23 if parallel && matches!(key, KeyCode::Enter) => {
                     edit_platform_session_limits(stdout, &mut config.platforms.qq.session_limits)?
                 }
-                23 if matches!(key, KeyCode::Enter) => {
+                // 尾部三项随"并行数量"是否出现整体顺延一位。
+                index if index == 24 - usize::from(!parallel) && matches!(key, KeyCode::Enter) => {
                     select_platform_model_routes(stdout, paths, config)?
                 }
-                24 if matches!(key, KeyCode::Enter) => {
+                index if index == 25 - usize::from(!parallel) && matches!(key, KeyCode::Enter) => {
                     select_platform_plugins(stdout, paths, config)?
                 }
-                25 if matches!(key, KeyCode::Enter) => edit_qq_advanced(stdout, config)?,
+                index if index == 26 - usize::from(!parallel) && matches!(key, KeyCode::Enter) => {
+                    edit_qq_advanced(stdout, config)?
+                }
                 _ => {}
             },
             _ => {}

@@ -11,13 +11,13 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
+mod association;
 mod evicted;
 mod recall;
-mod write;
-mod association;
 mod schema;
 mod search;
 mod validate;
+mod write;
 pub(crate) use association::*;
 use schema::*;
 use search::*;

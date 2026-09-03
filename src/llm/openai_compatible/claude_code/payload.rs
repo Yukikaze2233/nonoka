@@ -32,7 +32,7 @@ fn text_of(message: &ChatMessage) -> Option<String> {
                 .iter()
                 .filter_map(|part| match part {
                     ChatContentPart::Text { text } => Some(text.as_str()),
-                    ChatContentPart::ImageUrl { .. } => None,
+                    ChatContentPart::ImageUrl { .. } | ChatContentPart::VideoUrl { .. } => None,
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -81,6 +81,12 @@ pub(super) fn render_user_payload(delta: &[ChatMessage]) -> String {
                         }
                         ChatContentPart::ImageUrl { image_url } => {
                             blocks.push(image_block(&image_url.url));
+                        }
+                        ChatContentPart::VideoUrl { .. } => {
+                            blocks.push(json!({
+                                "type": "text",
+                                "text": "[video input omitted: the claude-code relay has no video support]"
+                            }));
                         }
                     }
                 }

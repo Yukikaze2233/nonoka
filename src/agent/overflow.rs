@@ -82,7 +82,8 @@ fn message_tokens(msg: &ChatMessage) -> usize {
             .iter()
             .map(|p| match p {
                 crate::llm::ChatContentPart::Text { text } => text_tokens(text),
-                crate::llm::ChatContentPart::ImageUrl { .. } => IMAGE_TOKEN_ESTIMATE,
+                crate::llm::ChatContentPart::ImageUrl { .. }
+                | crate::llm::ChatContentPart::VideoUrl { .. } => IMAGE_TOKEN_ESTIMATE,
             })
             .sum(),
         None => 0,

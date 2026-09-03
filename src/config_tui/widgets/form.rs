@@ -139,7 +139,11 @@ pub(in crate::config_tui) fn run_form_from(
     // free text where a choice was expected.
     let mut editing = start_editing
         && fields.first().is_some_and(|field| {
-            !field.boolean && !field.textarea && !field.modalities && field.choices.is_empty()
+            !field.boolean
+                && !field.textarea
+                && !field.modalities
+                && field.multi_choices.is_empty()
+                && field.choices.is_empty()
         });
     if editing {
         fcitx.enter_editing();
@@ -169,6 +173,15 @@ pub(in crate::config_tui) fn run_form_from(
                     parse_bool_field(&fields[selected].value)?,
                 )?;
                 fields[selected].value = value.to_string();
+                cursors[selected] = fields[selected].value.chars().count();
+            }
+            KeyCode::Enter if !editing && !fields[selected].multi_choices.is_empty() => {
+                fields[selected].value = select_multi_choice(
+                    stdout,
+                    fields[selected].label,
+                    &fields[selected].value,
+                    &fields[selected].multi_choices.clone(),
+                )?;
                 cursors[selected] = fields[selected].value.chars().count();
             }
             KeyCode::Enter if !editing && fields[selected].modalities => {
@@ -276,6 +289,15 @@ pub(in crate::config_tui) fn run_form_without_buttons(
                     parse_bool_field(&fields[selected].value)?,
                 )?;
                 fields[selected].value = value.to_string();
+                cursors[selected] = fields[selected].value.chars().count();
+            }
+            KeyCode::Enter if !editing && !fields[selected].multi_choices.is_empty() => {
+                fields[selected].value = select_multi_choice(
+                    stdout,
+                    fields[selected].label,
+                    &fields[selected].value,
+                    &fields[selected].multi_choices.clone(),
+                )?;
                 cursors[selected] = fields[selected].value.chars().count();
             }
             KeyCode::Enter if !editing && fields[selected].modalities => {
@@ -652,6 +674,8 @@ pub(in crate::config_tui) struct Field {
     pub(in crate::config_tui) sensitive: bool,
     pub(in crate::config_tui) boolean: bool,
     pub(in crate::config_tui) modalities: bool,
+    /// 非空=回车弹通用多选菜单(Tab 勾选),value 为逗号分隔的选中项。
+    pub(in crate::config_tui) multi_choices: Vec<String>,
     pub(in crate::config_tui) choices: Vec<String>,
     pub(in crate::config_tui) empty_choice_label: &'static str,
     pub(in crate::config_tui) raw_choice_labels: bool,
@@ -667,6 +691,7 @@ impl Field {
             sensitive: false,
             boolean: false,
             modalities: false,
+            multi_choices: Vec::new(),
             choices: Vec::new(),
             empty_choice_label: t("Use current provider", "使用当前 Provider"),
             raw_choice_labels: false,
@@ -682,6 +707,7 @@ impl Field {
             sensitive: false,
             boolean: true,
             modalities: false,
+            multi_choices: Vec::new(),
             choices: Vec::new(),
             empty_choice_label: t("Use current provider", "使用当前 Provider"),
             raw_choice_labels: false,
@@ -697,6 +723,7 @@ impl Field {
             sensitive: false,
             boolean: false,
             modalities: false,
+            multi_choices: Vec::new(),
             choices: Vec::new(),
             empty_choice_label: t("Use current provider", "使用当前 Provider"),
             raw_choice_labels: false,
@@ -715,6 +742,11 @@ impl Field {
         self
     }
 
+    pub(in crate::config_tui) fn multi_choices(mut self, choices: &[&str]) -> Self {
+        self.multi_choices = choices.iter().map(|item| item.to_string()).collect();
+        self
+    }
+
     pub(in crate::config_tui) fn sensitive(mut self) -> Self {
         self.sensitive = true;
         self
@@ -729,6 +761,7 @@ impl Field {
             sensitive: false,
             boolean: false,
             modalities: true,
+            multi_choices: Vec::new(),
             choices: Vec::new(),
             empty_choice_label: t("Use current provider", "使用当前 Provider"),
             raw_choice_labels: false,

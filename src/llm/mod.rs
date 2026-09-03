@@ -1,7 +1,7 @@
 mod cache_log;
 mod openai_compatible;
-pub mod request_log;
 pub(crate) mod provider_capabilities;
+pub mod request_log;
 
 pub(crate) use openai_compatible::{
     forget_claude_code_session, thinking_variant_options_for_model, ThinkingVariantPreferences,
@@ -52,10 +52,19 @@ pub enum ChatContentPart {
     Text { text: String },
     #[serde(rename = "image_url")]
     ImageUrl { image_url: ImageUrlContent },
+    /// 视频输入(08-22):OpenRouter/Qwen 系 openai-chat 约定
+    /// `{"type":"video_url","video_url":{"url":…}}`,仅视频能力模型接受。
+    #[serde(rename = "video_url")]
+    VideoUrl { video_url: VideoUrlContent },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageUrlContent {
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VideoUrlContent {
     pub url: String,
 }
 
@@ -211,6 +220,20 @@ impl ChatMessage {
                 ChatContentPart::ImageUrl {
                     image_url: ImageUrlContent {
                         url: image_url.into(),
+                    },
+                },
+            ])),
+            ..Self::base("user")
+        }
+    }
+
+    pub fn user_with_video(text: impl Into<String>, video_url: impl Into<String>) -> Self {
+        Self {
+            content: Some(ChatContent::Parts(vec![
+                ChatContentPart::Text { text: text.into() },
+                ChatContentPart::VideoUrl {
+                    video_url: VideoUrlContent {
+                        url: video_url.into(),
                     },
                 },
             ])),
@@ -415,24 +438,24 @@ pub fn is_context_overflow_message(message: &str) -> bool {
         return false;
     }
     const PATTERNS: &[&str] = &[
-        "prompt is too long",                     // Anthropic
-        "request_too_large",                      // Anthropic HTTP 413
+        "prompt is too long", // Anthropic
+        "request_too_large",  // Anthropic HTTP 413
         "request entity too large",
-        "input is too long for requested model",  // Bedrock
-        "exceeds the context window",             // OpenAI
-        "maximum context length",                 // OpenAI-compatible / gateways
-        "reduce the length of the messages",      // Groq
-        "context window exceeds limit",           // MiniMax
-        "exceeded model token limit",             // Kimi
-        "but the configured context size",        // DeepSeek
-        "model_context_window_exceeded",          // z.ai
-        "context_length_exceeded",                // OpenAI error code
+        "input is too long for requested model", // Bedrock
+        "exceeds the context window",            // OpenAI
+        "maximum context length",                // OpenAI-compatible / gateways
+        "reduce the length of the messages",     // Groq
+        "context window exceeds limit",          // MiniMax
+        "exceeded model token limit",            // Kimi
+        "but the configured context size",       // DeepSeek
+        "model_context_window_exceeded",         // z.ai
+        "context_length_exceeded",               // OpenAI error code
         "context length exceeded",
-        "prompt too long",                        // Ollama
-        "greater than the context length",        // LM Studio
-        "exceeds the available context size",     // llama.cpp
-        "too many tokens",                        // generic fallback
-        "token limit exceeded",                   // generic fallback
+        "prompt too long",                    // Ollama
+        "greater than the context length",    // LM Studio
+        "exceeds the available context size", // llama.cpp
+        "too many tokens",                    // generic fallback
+        "token limit exceeded",               // generic fallback
     ];
     PATTERNS.iter().any(|pattern| lower.contains(pattern))
 }
@@ -556,12 +579,11 @@ mod continuation_signature_tests {
     #[test]
     fn continuation_unsupported_matches_all_known_wordings() {
         let hit = |text: &str| {
-            super::is_responses_continuation_unsupported_error(&anyhow::anyhow!(
-                "{}",
-                text
-            ))
+            super::is_responses_continuation_unsupported_error(&anyhow::anyhow!("{}", text))
         };
-        assert!(hit("status_code=400, No tool call found for tool output with id x"));
+        assert!(hit(
+            "status_code=400, No tool call found for tool output with id x"
+        ));
         assert!(hit(
             "status_code=400, No tool call found for function call output with call_id call_AhcSn"
         ));

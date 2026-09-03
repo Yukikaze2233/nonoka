@@ -4,6 +4,7 @@
 //! 可判定。记录只增不改——改历史等于毁掉判断依据。
 
 use crate::platforms::plugins::group_management::*;
+use crate::platforms::plugins::real_context::safe_prompt_field;
 
 pub(in crate::platforms::plugins::group_management) const ROLE_KEY: &str =
     "qq_group_management.bot_role";
@@ -363,22 +364,51 @@ pub(in crate::platforms::plugins::group_management) fn query_history_events(
         })
         .map(|event| {
             let status = statuses.get(&event.record_id).cloned();
-            let mut value = serde_json::to_value(&event).unwrap_or_default();
-            if let Some(status) = status {
-                value["status"] = json!(status);
-            }
-            value
+            (event, status)
         })
         .collect::<Vec<_>>();
     if !ascending {
         records.reverse();
     }
     records.truncate(limit(args));
-    json_result(
-        true,
-        "查询成功",
-        json!({ "group_id": group_id, "count": records.len(), "records": records }),
-    )
+    // 08-21 token-diet:逐条 JSON(实测 57% 结构开销)改为行格式;不可信的
+    // 名字/理由/详情过 safe_prompt_field 防伪造记录行。
+    let mut output = format!("group {group_id}: {} management event(s)\n", records.len());
+    for (event, status) in &records {
+        let mut line = format!(
+            "[{}] {} {}(QQ:{})",
+            format_event_time(event.happened_at),
+            event.action,
+            safe_prompt_field(&event.user_name),
+            safe_prompt_field(&event.user_id),
+        );
+        if event.duration > 0 {
+            line.push_str(&format!(" duration={}s", event.duration));
+        }
+        if let Some(status) = status {
+            line.push_str(&format!(" status={status}"));
+        }
+        line.push_str(&format!(" by QQ:{}", safe_prompt_field(&event.operator_id)));
+        if !event.reason.is_empty() {
+            line.push_str(&format!(" reason: {}", safe_prompt_field(&event.reason)));
+        }
+        if !event.detail.is_empty() {
+            line.push_str(&format!(" ({})", safe_prompt_field(&event.detail)));
+        }
+        output.push_str(&line);
+        output.push('\n');
+    }
+    Ok(output)
+}
+
+fn format_event_time(timestamp: i64) -> String {
+    chrono::DateTime::<chrono::Utc>::from_timestamp(timestamp, 0)
+        .map(|time| {
+            time.with_timezone(&chrono::Local)
+                .format("%Y-%m-%d %H:%M")
+                .to_string()
+        })
+        .unwrap_or_else(|| timestamp.to_string())
 }
 
 #[derive(Default, Serialize)]
@@ -463,11 +493,27 @@ pub(in crate::platforms::plugins::group_management) fn query_history_stats(
         items.reverse();
     }
     items.truncate(limit(args));
-    json_result(
-        true,
-        "查询成功",
-        json!({ "group_id": group_id, "count": items.len(), "records": items }),
-    )
+    let mut output = format!(
+        "group {group_id}: {} member(s), sorted by {sort_by}\n",
+        items.len()
+    );
+    for item in &items {
+        output.push_str(&format!(
+            "QQ {} {}: ban×{} total {}s, kick×{}, title×{}, last [{}]",
+            safe_prompt_field(&item.user_id),
+            safe_prompt_field(&item.user_name),
+            item.ban_count,
+            item.total_ban_duration,
+            item.kick_count,
+            item.title_count,
+            format_event_time(item.last_action_at),
+        ));
+        if !item.last_reason.is_empty() {
+            output.push_str(&format!(" {}", safe_prompt_field(&item.last_reason)));
+        }
+        output.push('\n');
+    }
+    Ok(output)
 }
 
 pub(in crate::platforms::plugins::group_management) fn lowercase_keyword(args: &Value) -> String {

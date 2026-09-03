@@ -294,6 +294,7 @@ truth_status 使用 accepted、reported、uncertain、fictional 或 rejected。i
             source: "agent",
             provider: result.provider_id.as_deref(),
             model: result.model.as_deref(),
+            kind: None,
         };
         if let Err(error) = job.state_store.add_auxiliary_usage(usage, meta) {
             tracing::warn!(error = %error, "{}", crate::i18n::text("recording memory organizer usage failed", "记录记忆整理器用量失败"));

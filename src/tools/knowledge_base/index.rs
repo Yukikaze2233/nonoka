@@ -265,7 +265,7 @@ impl KnowledgeBase {
         Ok(indexed)
     }
 
-    pub(in crate::tools::knowledge_base) fn spawn_embedding_reindex(&self) -> Result<()> {
+    pub(in crate::tools) fn spawn_embedding_reindex(&self) -> Result<()> {
         if !self.config.plugins.knowledge_base.embedding_enabled {
             return Ok(());
         }

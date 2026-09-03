@@ -13,21 +13,25 @@ pub(in crate::platforms::onebot) const GROUP_NAME_CACHE_TTL: Duration = Duration
 
 pub(in crate::platforms::onebot) const GROUP_NAME_CACHE_CAPACITY: usize = 1024;
 
-pub(in crate::platforms::onebot) const MENTION_NAME_CACHE_TTL: Duration = Duration::from_secs(10 * 60);
+pub(in crate::platforms::onebot) const MENTION_NAME_CACHE_TTL: Duration =
+    Duration::from_secs(10 * 60);
 
 pub(in crate::platforms::onebot) const MENTION_NAME_CACHE_CAPACITY: usize = 4096;
 
 pub(in crate::platforms::onebot) const MAX_MENTION_NAME_LOOKUPS: usize = 8;
 
-pub(in crate::platforms::onebot) const MENTION_NAME_LOOKUP_TIMEOUT: Duration = Duration::from_secs(3);
+pub(in crate::platforms::onebot) const MENTION_NAME_LOOKUP_TIMEOUT: Duration =
+    Duration::from_secs(3);
 
 pub(in crate::platforms::onebot) const GROUP_MUTE_AVAILABLE_TTL: Duration = Duration::from_secs(30);
 
 pub(in crate::platforms::onebot) const GROUP_MUTE_UNKNOWN_TTL: Duration = Duration::from_secs(10);
 
-pub(in crate::platforms::onebot) const GROUP_MUTE_WHOLE_NOTICE_TTL: Duration = Duration::from_secs(60);
+pub(in crate::platforms::onebot) const GROUP_MUTE_WHOLE_NOTICE_TTL: Duration =
+    Duration::from_secs(60);
 
-pub(in crate::platforms::onebot) const GROUP_MUTE_MAX_TTL: Duration = Duration::from_secs(31 * 24 * 60 * 60);
+pub(in crate::platforms::onebot) const GROUP_MUTE_MAX_TTL: Duration =
+    Duration::from_secs(31 * 24 * 60 * 60);
 
 pub(in crate::platforms::onebot) const GROUP_MUTE_CACHE_CAPACITY: usize = 1024;
 
@@ -50,14 +54,23 @@ pub(in crate::platforms::onebot) struct GroupNameCache {
 }
 
 impl GroupNameCache {
-    pub(in crate::platforms::onebot) fn get(&mut self, key: (i64, i64), now: Instant) -> Option<String> {
+    pub(in crate::platforms::onebot) fn get(
+        &mut self,
+        key: (i64, i64),
+        now: Instant,
+    ) -> Option<String> {
         self.prune(now);
         let entry = self.entries.get_mut(&key)?;
         entry.last_used = now;
         Some(entry.name.clone())
     }
 
-    pub(in crate::platforms::onebot) fn insert(&mut self, key: (i64, i64), name: String, now: Instant) {
+    pub(in crate::platforms::onebot) fn insert(
+        &mut self,
+        key: (i64, i64),
+        name: String,
+        now: Instant,
+    ) {
         self.prune(now);
         if self.entries.len() >= GROUP_NAME_CACHE_CAPACITY && !self.entries.contains_key(&key) {
             if let Some(oldest) = self
@@ -101,14 +114,23 @@ pub(in crate::platforms::onebot) struct MentionNameCache {
 }
 
 impl MentionNameCache {
-    pub(in crate::platforms::onebot) fn get(&mut self, key: &(i64, i64, String), now: Instant) -> Option<String> {
+    pub(in crate::platforms::onebot) fn get(
+        &mut self,
+        key: &(i64, i64, String),
+        now: Instant,
+    ) -> Option<String> {
         self.entries.retain(|_, entry| entry.expires_at > now);
         let entry = self.entries.get_mut(key)?;
         entry.last_used = now;
         Some(entry.name.clone())
     }
 
-    pub(in crate::platforms::onebot) fn insert(&mut self, key: (i64, i64, String), name: String, now: Instant) {
+    pub(in crate::platforms::onebot) fn insert(
+        &mut self,
+        key: (i64, i64, String),
+        name: String,
+        now: Instant,
+    ) {
         self.entries.retain(|_, entry| entry.expires_at > now);
         if self.entries.len() >= MENTION_NAME_CACHE_CAPACITY && !self.entries.contains_key(&key) {
             if let Some(oldest) = self
@@ -148,14 +170,23 @@ pub(in crate::platforms::onebot) struct GroupRoleCache {
 }
 
 impl GroupRoleCache {
-    pub(in crate::platforms::onebot) fn get(&mut self, key: (i64, i64), now: Instant) -> Option<BotGroupRole> {
+    pub(in crate::platforms::onebot) fn get(
+        &mut self,
+        key: (i64, i64),
+        now: Instant,
+    ) -> Option<BotGroupRole> {
         self.entries.retain(|_, entry| entry.expires_at > now);
         let entry = self.entries.get_mut(&key)?;
         entry.last_used = now;
         Some(entry.role)
     }
 
-    pub(in crate::platforms::onebot) fn insert(&mut self, key: (i64, i64), role: BotGroupRole, now: Instant) {
+    pub(in crate::platforms::onebot) fn insert(
+        &mut self,
+        key: (i64, i64),
+        role: BotGroupRole,
+        now: Instant,
+    ) {
         self.entries.retain(|_, entry| entry.expires_at > now);
         if self.entries.len() >= GROUP_ROLE_CACHE_CAPACITY && !self.entries.contains_key(&key) {
             if let Some(oldest) = self
@@ -199,7 +230,11 @@ pub(in crate::platforms::onebot) struct GroupMuteCache {
 }
 
 impl GroupMuteCache {
-    pub(in crate::platforms::onebot) fn get(&mut self, key: (i64, i64), now: Instant) -> Option<BotSendAvailability> {
+    pub(in crate::platforms::onebot) fn get(
+        &mut self,
+        key: (i64, i64),
+        now: Instant,
+    ) -> Option<BotSendAvailability> {
         self.prune(now);
         let entry = self.entries.get_mut(&key)?;
         entry.last_used = now;

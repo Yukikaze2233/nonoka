@@ -3,22 +3,22 @@ mod builder;
 mod chat;
 mod chat_consume;
 mod claude_code;
-mod variants;
 mod dsml;
 mod endpoints;
 mod errors;
 mod lower;
 mod protocol;
 mod sse;
+mod variants;
 mod wire;
-use claude_code::ClaudeCodeRuntime;
 pub(crate) use claude_code::forget_claude_code_session;
+use claude_code::ClaudeCodeRuntime;
 use dsml::*;
 use endpoints::*;
 use errors::*;
 use lower::*;
-use protocol::*;
 pub use protocol::ThinkingVariantOptions;
+use protocol::*;
 pub(crate) use protocol::{thinking_variant_options_for_model, ThinkingVariantPreferences};
 use sse::*;
 use wire::*;
@@ -112,10 +112,7 @@ enum ReasoningVisibility {
     Full,
 }
 
-impl OpenAiCompatibleClient {
-
-}
+impl OpenAiCompatibleClient {}
 
 #[cfg(test)]
 mod tests;
-

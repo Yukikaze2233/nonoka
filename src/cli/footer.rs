@@ -369,10 +369,16 @@ pub(in crate::cli) fn footer_config_for_session(
     session_id: &str,
 ) -> AppConfig {
     let mut config = config.clone();
-    if let Ok(Some(models)) =
-        StateStore::new(paths).and_then(|store| store.session_model_override(session_id))
-    {
-        config.active_provider_models = Some(models);
+    let Ok(store) = StateStore::new(paths) else {
+        return config;
+    };
+    if let Ok(Some(models)) = store.session_model_override(session_id) {
+        // 与 `apply_session_model_override` 同一道守卫:远端 REPL 走的是这条路,
+        // 覆盖指向已删除的模型时曾让 `nonoka normal` 整个起不来(08-28)。
+        match config.usable_model_override(models) {
+            Some(usable) => config.active_provider_models = Some(usable),
+            None => crate::cli::model_cmds::drop_stale_model_override(&store, session_id),
+        }
     }
     config
 }

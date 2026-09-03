@@ -1,8 +1,8 @@
 //! OpenAI Responses 协议的流式与续接。
 
+use super::shared::*;
 use crate::llm::openai_compatible::*;
 use tokio::net::TcpListener;
-use super::shared::*;
 
 #[test]
 fn openai_gpt5_uses_responses_api() {

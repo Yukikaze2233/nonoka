@@ -23,7 +23,7 @@ impl Agent {
         output: &str,
     ) -> Option<String> {
         let cap = self.config.context.tool_output_spill_bytes;
-        if cap == 0 || tool_name == "read_file" || output.len() <= cap {
+        if cap == 0 || tool_name == "read" || tool_name == "read_file" || output.len() <= cap {
             return None;
         }
         fn safe_segment(raw: &str) -> String {

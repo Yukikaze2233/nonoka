@@ -711,7 +711,9 @@ pub(in crate::web) fn restore_config_secrets(
     Ok(())
 }
 
-pub(in crate::web) fn validate_config_candidate(config: &AppConfig) -> std::result::Result<(), ApiError> {
+pub(in crate::web) fn validate_config_candidate(
+    config: &AppConfig,
+) -> std::result::Result<(), ApiError> {
     config.validate().map_err(|error| {
         ApiError::new(
             StatusCode::BAD_REQUEST,

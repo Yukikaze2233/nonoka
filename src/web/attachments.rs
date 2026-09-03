@@ -54,7 +54,12 @@ pub(in crate::web) fn media_mime(path: &std::path::Path) -> Option<&'static str>
 
 /// 解析 `Range: bytes=start-end`(单段)。返回 (start, inclusive_end)。
 pub(in crate::web) fn parse_byte_range(value: &str, total: u64) -> Option<(u64, u64)> {
-    let spec = value.trim().strip_prefix("bytes=")?.split(',').next()?.trim();
+    let spec = value
+        .trim()
+        .strip_prefix("bytes=")?
+        .split(',')
+        .next()?
+        .trim();
     let (start, end) = spec.split_once('-')?;
     if start.is_empty() {
         // 后缀形式 bytes=-N:最后 N 字节
@@ -65,7 +70,11 @@ pub(in crate::web) fn parse_byte_range(value: &str, total: u64) -> Option<(u64, 
         return Some((total.saturating_sub(suffix), total - 1));
     }
     let start: u64 = start.parse().ok()?;
-    let end: u64 = if end.is_empty() { total.saturating_sub(1) } else { end.parse().ok()? };
+    let end: u64 = if end.is_empty() {
+        total.saturating_sub(1)
+    } else {
+        end.parse().ok()?
+    };
     (start <= end && start < total).then(|| (start, end.min(total.saturating_sub(1))))
 }
 
@@ -248,7 +257,9 @@ pub(in crate::web) async fn delete_user_attachment(
     Ok(StatusCode::NO_CONTENT)
 }
 
-pub(in crate::web) fn validate_attachment_id(attachment_id: &str) -> std::result::Result<(), ApiError> {
+pub(in crate::web) fn validate_attachment_id(
+    attachment_id: &str,
+) -> std::result::Result<(), ApiError> {
     if attachment_id.len() <= 96
         && !attachment_id.is_empty()
         && attachment_id
@@ -260,7 +271,9 @@ pub(in crate::web) fn validate_attachment_id(attachment_id: &str) -> std::result
     Err(ApiError::new(StatusCode::NOT_FOUND, "attachment not found"))
 }
 
-pub(in crate::web) fn sanitize_attachment_file_name(value: &str) -> std::result::Result<String, ApiError> {
+pub(in crate::web) fn sanitize_attachment_file_name(
+    value: &str,
+) -> std::result::Result<String, ApiError> {
     let name = value
         .rsplit(['/', '\\'])
         .next()

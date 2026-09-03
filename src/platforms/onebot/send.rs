@@ -240,6 +240,27 @@ impl OneBotAdapter {
         segments: Vec<Value>,
     ) -> Result<Value> {
         let timeout = send_timeout_for(&segments);
+        // 带引用的出站留痕(08-26)。历史库能证明 Nonoka 决定了引用,但发到对端的
+        // 到底长什么样、对端认不认,原先整条链路没有任何 payload 级记录,查
+        // "引用没渲染"时无从下手。只在含 reply 段时记一行,不记正文。
+        let quoted = segments
+            .iter()
+            .find(|segment| segment.get("type").and_then(Value::as_str) == Some("reply"))
+            .and_then(|segment| segment.get("data").and_then(|data| data.get("id")).cloned());
+        // 段类型要在 segments 被移进 params 之前取好。
+        let kinds = quoted.is_some().then(|| {
+            segments
+                .iter()
+                .map(|segment| {
+                    segment
+                        .get("type")
+                        .and_then(Value::as_str)
+                        .unwrap_or("?")
+                        .to_string()
+                })
+                .collect::<Vec<_>>()
+                .join("+")
+        });
         let (action, params) = match self.target {
             Target::Private { user_id } => (
                 "send_private_msg",
@@ -250,9 +271,32 @@ impl OneBotAdapter {
                 json!({ "group_id": group_id, "message": segments }),
             ),
         };
-        self.connection()
+        let result = self
+            .connection()
             .call_api_with_timeout(action, params, timeout)
-            .await
+            .await;
+        if let Some(quoted) = quoted {
+            tracing::info!(
+                target: "nonoka::qq",
+                conversation_id = self.target.conversation_id(),
+                // id 的 JSON 类型是重点嫌疑:group_id 发的是数字,引用段的 id
+                // 发的是字符串,部分实现对此挑剔。
+                reply_id = %quoted,
+                reply_id_json = if quoted.is_string() { "string" } else { "number" },
+                segments = kinds.unwrap_or_default(),
+                sent_message_id = ?result
+                    .as_ref()
+                    .ok()
+                    .and_then(|data| data.get("message_id").and_then(value_id_string)),
+                error = ?result.as_ref().err().map(ToString::to_string),
+                "{}",
+                t(
+                    "OneBot outbound carried a reply segment",
+                    "OneBot 出站消息携带引用段"
+                )
+            );
+        }
+        result
     }
 
     pub(in crate::platforms::onebot) async fn upload_file(

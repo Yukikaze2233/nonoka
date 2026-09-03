@@ -1,7 +1,7 @@
 //! 入站消息解析与各类上限。
 
-use crate::platforms::onebot::*;
 use super::shared::*;
+use crate::platforms::onebot::*;
 
 #[test]
 fn parses_segment_arrays_with_mixed_content() {
@@ -17,9 +17,7 @@ fn parses_segment_arrays_with_mixed_content() {
     assert!(parsed.at_self);
     assert_eq!(parsed.text, " 你好");
     assert_eq!(parsed.images.len(), 2);
-    assert!(
-        matches!(&parsed.images[0], MediaRef::Url(url) if url == "https://img.example/x.jpg")
-    );
+    assert!(matches!(&parsed.images[0], MediaRef::Url(url) if url == "https://img.example/x.jpg"));
     assert!(matches!(&parsed.images[1], MediaRef::Bytes(bytes) if bytes == b"hi"));
     assert_eq!(parsed.files.len(), 1);
     assert_eq!(parsed.files[0].name, "报告.pdf");

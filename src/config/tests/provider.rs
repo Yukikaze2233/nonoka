@@ -954,3 +954,46 @@ fn claude_code_builtin_provider_is_injected_disabled_with_preset_models() {
         1
     );
 }
+
+/// 会话模型覆盖指向已删除的模型时,必须能退回全局池而不是把入口锁死。
+///
+/// 08-28 实录:`opencodego/glm-5.3-flash` 被移出供应商的 models 之后,钉着它
+/// 的会话让 `nonoka normal` 直接报 "no active provider/model endpoint is
+/// configured"——而且尾巴是空的,因为筛掉的原因被静默丢了。用户连 REPL 都进
+/// 不去,也就没机会用 `/model` 换一个。
+#[test]
+fn a_stale_session_override_falls_back_instead_of_locking_the_entry() {
+    let mut config = AppConfig::default();
+    let provider_id = config.providers[0].id.clone();
+    config.providers[0].models = vec!["deepseek-v4-flash-free".to_string()];
+    config.providers[0].default_model = "deepseek-v4-flash-free".to_string();
+
+    // 覆盖里全是已删除的模型 → 无一可用 → 调用方据此退回全局池。
+    let all_stale = vec![ActiveProviderModelConfig {
+        provider_id: provider_id.clone(),
+        model: "glm-5.3-flash".to_string(),
+    }];
+    assert!(config.usable_model_override(all_stale).is_none());
+
+    // 覆盖里指向不存在的供应商同样算不可用。
+    let unknown_provider = vec![ActiveProviderModelConfig {
+        provider_id: "no-such-provider".to_string(),
+        model: "deepseek-v4-flash-free".to_string(),
+    }];
+    assert!(config.usable_model_override(unknown_provider).is_none());
+
+    // 还剩得下的就只保留那些,不因为有坏条目就整份作废。
+    let mixed = vec![
+        ActiveProviderModelConfig {
+            provider_id: provider_id.clone(),
+            model: "glm-5.3-flash".to_string(),
+        },
+        ActiveProviderModelConfig {
+            provider_id: provider_id.clone(),
+            model: "deepseek-v4-flash-free".to_string(),
+        },
+    ];
+    let usable = config.usable_model_override(mixed).expect("还有可用条目");
+    assert_eq!(usable.len(), 1);
+    assert_eq!(usable[0].model, "deepseek-v4-flash-free");
+}

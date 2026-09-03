@@ -202,6 +202,12 @@ pub struct VisionPluginConfig {
     pub vision_provider_id: String,
     #[serde(default)]
     pub vision_model: String,
+    /// 视频分析的显式路由(08-22)。留空=自动挑 models.dev 标了 video 输入
+    /// 能力的启用模型;两项须同时配置才生效。
+    #[serde(default)]
+    pub video_provider_id: String,
+    #[serde(default)]
+    pub video_model: String,
     #[serde(default = "default_vision_response_header_timeout")]
     pub response_header_timeout_seconds: u64,
     #[serde(default = "default_vision_stream_idle_timeout")]
@@ -581,6 +587,8 @@ impl Default for VisionPluginConfig {
             prefer_current_multimodal_model: default_true(),
             vision_provider_id: String::new(),
             vision_model: String::new(),
+            video_provider_id: String::new(),
+            video_model: String::new(),
             response_header_timeout_seconds: default_vision_response_header_timeout(),
             stream_idle_timeout_seconds: default_vision_stream_idle_timeout(),
             image_timeout_seconds: default_vision_image_timeout(),
@@ -706,7 +714,10 @@ impl Default for DiagnosticsPluginConfig {
     }
 }
 
-pub(crate) fn validate_api_quota_accounts(provider: &str, config: &ApiQuotaProviderConfig) -> Result<()> {
+pub(crate) fn validate_api_quota_accounts(
+    provider: &str,
+    config: &ApiQuotaProviderConfig,
+) -> Result<()> {
     if !config.api_key.trim().is_empty() && !config.accounts.is_empty() {
         bail!("plugins.api_quota.{provider} legacy api_key could not be migrated");
     }

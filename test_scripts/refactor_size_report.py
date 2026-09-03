@@ -49,7 +49,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-BASELINE = ROOT / "scripts" / "refactor-size-baseline.json"
+# 基线跟脚本走,不认目录名(见 arch_dep_check.py 同款修法)。
+BASELINE = Path(__file__).resolve().parent / "refactor-size-baseline.json"
 
 TARGET, LIMIT, RED_LINE = 800, 1500, 2000
 # 这道门禁防的是「拆分变成了复制代码」，不是防文件变多。每个新模块要带一段

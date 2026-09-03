@@ -1,12 +1,12 @@
-mod io;
-mod persona_paths;
-mod platform_ops;
-mod provider_ops;
 mod defaults;
+mod io;
 mod paths;
+mod persona_paths;
 mod platform;
+mod platform_ops;
 mod platform_plugins;
 mod provider;
+mod provider_ops;
 mod tool_plugins;
 pub(crate) use defaults::*;
 pub(crate) use paths::*;
@@ -47,7 +47,6 @@ pub enum ContextWindowSource {
     Known,
     Assumed,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -619,9 +618,7 @@ impl Default for ContextConfig {
     }
 }
 
-impl AppConfig {
-
-}
+impl AppConfig {}
 
 #[cfg(test)]
 mod tests;
@@ -671,6 +668,9 @@ mod scaling_probe {
         let each_us = start.elapsed().as_secs_f64() * 1e6 / rounds as f64;
         println!("  单次 clone   {each_us:>8.1} µs");
         println!("  一条消息按 3 次算 {:>6.1} µs", each_us * 3.0);
-        println!("  1000 条/分钟的群 每分钟 {:>6.1} ms", each_us * 3.0 * 1000.0 / 1000.0);
+        println!(
+            "  1000 条/分钟的群 每分钟 {:>6.1} ms",
+            each_us * 3.0 * 1000.0 / 1000.0
+        );
     }
 }

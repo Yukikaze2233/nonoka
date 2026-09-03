@@ -1,7 +1,7 @@
 //! 附件与产物资产。
 
-use crate::state::*;
 use super::shared::*;
+use crate::state::*;
 
 #[test]
 fn user_attachment_moves_from_staged_to_turn_and_cascades() {

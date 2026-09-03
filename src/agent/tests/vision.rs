@@ -289,3 +289,311 @@ fn binary_image_cache_is_isolated_by_platform() {
     assert!(clipboard_path.is_file());
     assert_ne!(platform_path, clipboard_path);
 }
+
+/// Path 形态图片(shell-hook/粘贴路径)在视觉模型在场时内联直读,与
+/// Binary 对齐;路径读不出来则不产 image part,落回纯文本+工具提示。
+/// 退回 input.rs 的 inline_path_urls 前,第一段断言会报红。
+#[tokio::test]
+async fn path_images_are_inlined_when_model_supports_vision() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let mut config = AppConfig::default();
+    let provider = config
+        .providers
+        .iter_mut()
+        .find(|provider| !provider.is_claude_code())
+        .unwrap();
+    provider.model_modalities.insert(
+        provider.default_model.clone(),
+        vec!["text".to_string(), "image".to_string()],
+    );
+    let image_path = temp.path().join("shot.png");
+    std::fs::write(&image_path, b"fake png bytes").unwrap();
+
+    let state = StateStore::new(&paths).unwrap();
+    let client =
+        OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
+    let agent = Agent::new(
+        config,
+        &paths,
+        state,
+        client,
+        ToolRegistry::new(),
+        AgentMode::Normal,
+    )
+    .unwrap();
+
+    let prepared = agent
+        .prepare_user_input(
+            "看看这张图 [Image 1]",
+            &[Some(crate::clipboard::PastedImage::Path(
+                image_path.display().to_string(),
+            ))],
+        )
+        .await
+        .unwrap();
+    let parts = match prepared.message.content.as_ref() {
+        Some(ChatContent::Parts(parts)) => parts,
+        other => panic!("expected parts message, got {other:?}"),
+    };
+    assert!(parts.iter().any(|part| matches!(
+        part,
+        ChatContentPart::ImageUrl { image_url } if image_url.url.starts_with("data:image/png;base64,")
+    )));
+
+    // 路径不存在:不内联,退回纯文本消息。
+    let prepared = agent
+        .prepare_user_input(
+            "看看这张图 [Image 1]",
+            &[Some(crate::clipboard::PastedImage::Path(
+                temp.path().join("missing.png").display().to_string(),
+            ))],
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        prepared.message.content.as_ref(),
+        Some(ChatContent::Text(_))
+    ));
+}
+
+/// 视频当附件内联进主对话(08-27 用户要求"当附件")。
+///
+/// 判据与图片各管各的:模型吃视频才内联,不吃就原样留给 `vision_analyze`——
+/// 而已经内联的那些不该再提示去调工具,否则白烧一次旁路请求。
+#[tokio::test]
+async fn local_video_paths_inline_when_the_model_takes_video() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let video = temp.path().join("clip.mp4");
+    std::fs::write(&video, b"\x00\x00\x00\x18ftypmp42").unwrap();
+    let video_path = video.to_string_lossy().to_string();
+
+    let build = |modalities: Vec<String>| {
+        let mut config = AppConfig::default();
+        let provider_id = config.provider(None).unwrap().id.clone();
+        let model = config.provider(None).unwrap().default_model.clone();
+        for provider in &mut config.providers {
+            if provider.id == provider_id {
+                provider
+                    .model_modalities
+                    .insert(model.clone(), modalities.clone());
+            }
+        }
+        config.active_provider_models = Some(vec![crate::config::ActiveProviderModelConfig {
+            provider_id,
+            model,
+        }]);
+        config
+    };
+
+    let video_parts = |prepared: &crate::agent::PreparedUserInput| match &prepared.message.content {
+        Some(crate::llm::ChatContent::Parts(parts)) => parts
+            .iter()
+            .filter(|part| matches!(part, crate::llm::ChatContentPart::VideoUrl { .. }))
+            .count(),
+        _ => 0,
+    };
+
+    // 吃视频:内联,且不再提示走工具。
+    let config = build(vec!["text".into(), "image".into(), "video".into()]);
+    let state = StateStore::new(&paths).unwrap();
+    let client =
+        OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
+    let mut agent = Agent::new(
+        config,
+        &paths,
+        state,
+        client,
+        ToolRegistry::new(),
+        AgentMode::Normal,
+    )
+    .unwrap();
+    let images = vec![Some(PastedImage::Path(video_path.clone()))];
+    let prepared = agent.prepare_user_input("看看这段", &images).await.unwrap();
+    assert_eq!(video_parts(&prepared), 1, "吃视频的模型应当内联视频块");
+    let hints = format!("{:?}", prepared.hints);
+    assert!(!hints.contains("本地视频路径"), "已内联就别再叫它调工具");
+
+    // 只因为带了视频就走进内联分支时,图片这一份仍要单独受视觉能力约束:
+    // `prefer_current_multimodal_model` 关掉后,图片本该由视觉插件描述进正文,
+    // 再把原图塞进 parts 就是同一批图处理两遍,还发给了刚判定"不该收图"的
+    // 模型(08-27 自审抓到)。
+    let mut config = build(vec!["text".into(), "image".into(), "video".into()]);
+    config.plugins.vision.prefer_current_multimodal_model = false;
+    let state = StateStore::new(&paths).unwrap();
+    let client =
+        OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
+    let mut agent = Agent::new(
+        config,
+        &paths,
+        state,
+        client,
+        ToolRegistry::new(),
+        AgentMode::Normal,
+    )
+    .unwrap();
+    assert!(!agent.current_model_supports_vision());
+    let mixed = vec![
+        Some(PastedImage::Path(video_path.clone())),
+        Some(PastedImage::Binary(ClipboardImage::new(
+            "image/png".to_string(),
+            vec![0x89, b'P', b'N', b'G'],
+        ))),
+    ];
+    let prepared = agent.prepare_user_input("一起看看", &mixed).await.unwrap();
+    assert_eq!(video_parts(&prepared), 1, "视频仍应内联");
+    let image_parts = match &prepared.message.content {
+        Some(crate::llm::ChatContent::Parts(parts)) => parts
+            .iter()
+            .filter(|part| matches!(part, crate::llm::ChatContentPart::ImageUrl { .. }))
+            .count(),
+        _ => 0,
+    };
+    assert_eq!(image_parts, 0, "不该收图的模型不能因为带了视频就收到图片块");
+
+    // 不吃视频:不内联,留给工具。
+    let config = build(vec!["text".into(), "image".into()]);
+    let state = StateStore::new(&paths).unwrap();
+    let client =
+        OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
+    let mut agent = Agent::new(
+        config,
+        &paths,
+        state,
+        client,
+        ToolRegistry::new(),
+        AgentMode::Normal,
+    )
+    .unwrap();
+    let images = vec![Some(PastedImage::Path(video_path))];
+    let prepared = agent.prepare_user_input("看看这段", &images).await.unwrap();
+    assert_eq!(video_parts(&prepared), 0, "不吃视频的模型不该收到视频块");
+}
+
+/// 已内联的图片不该再邀请模型去调视觉工具(08-27 用户点名"多模态模型总去调
+/// 视觉分析工具")。
+///
+/// 病灶不在工具、在提示:两处 hint 都不看图有没有已经内联,于是多模态模型明明
+/// 看得见图,同一轮还会收到一句"你可以用 vision_analyze 分析这些图片",它照做
+/// 就成了白烧一次旁路请求。拦工具是过滤症状,撤掉这句邀请才是根因。
+#[tokio::test]
+async fn inlined_images_do_not_invite_the_vision_tool() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let picture = temp.path().join("shot.png");
+    std::fs::write(&picture, b"\x89PNG\r\n\x1a\n").unwrap();
+    let picture_path = picture.to_string_lossy().to_string();
+
+    let build = |modalities: Vec<String>| {
+        let mut config = AppConfig::default();
+        let provider_id = config.provider(None).unwrap().id.clone();
+        let model = config.provider(None).unwrap().default_model.clone();
+        for provider in &mut config.providers {
+            if provider.id == provider_id {
+                provider
+                    .model_modalities
+                    .insert(model.clone(), modalities.clone());
+            }
+        }
+        config.active_provider_models = Some(vec![crate::config::ActiveProviderModelConfig {
+            provider_id,
+            model,
+        }]);
+        config
+    };
+    let prepare_binary = |config: AppConfig, images: Vec<Option<PastedImage>>| {
+        let paths = paths.clone();
+        async move {
+            let state = StateStore::new(&paths).unwrap();
+            let client =
+                OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths)
+                    .unwrap();
+            let mut agent = Agent::new(
+                config,
+                &paths,
+                state,
+                client,
+                crate::tools::build_tool_registry(
+                    &AppConfig::default(),
+                    &paths,
+                    AgentMode::Normal,
+                    false,
+                )
+                .unwrap(),
+                AgentMode::Normal,
+            )
+            .unwrap();
+            let prepared = agent.prepare_user_input("看图", &images).await.unwrap();
+            format!("{:?}", prepared.hints)
+        }
+    };
+    let prepare = |config: AppConfig, path: String| {
+        let paths = paths.clone();
+        async move {
+            let state = StateStore::new(&paths).unwrap();
+            let client =
+                OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths)
+                    .unwrap();
+            let mut agent = Agent::new(
+                config,
+                &paths,
+                state,
+                client,
+                crate::tools::build_tool_registry(
+                    &AppConfig::default(),
+                    &paths,
+                    AgentMode::Normal,
+                    false,
+                )
+                .unwrap(),
+                AgentMode::Normal,
+            )
+            .unwrap();
+            let images = vec![Some(PastedImage::Path(path))];
+            let prepared = agent.prepare_user_input("看图", &images).await.unwrap();
+            format!("{:?}", prepared.hints)
+        }
+    };
+
+    // 多模态:图已内联,不该出现工具邀请。
+    let hints = prepare(
+        build(vec!["text".into(), "image".into()]),
+        picture_path.clone(),
+    )
+    .await;
+    assert!(
+        !hints.contains("vision_analyze"),
+        "已内联的图不该再邀请调工具，实际提示：{hints}"
+    );
+
+    // 非多模态:图进不去,兜底提示必须还在。
+    let hints = prepare(build(vec!["text".into()]), picture_path).await;
+    assert!(
+        hints.contains("vision_analyze"),
+        "看不了图的模型必须保留工具兜底，实际提示：{hints}"
+    );
+
+    // 二进制(粘贴)图片走的是另一条提示分支,同样要钉住:临时文件路径保留
+    // (生图参考等工具要用),工具邀请撤掉。
+    let binary = || {
+        vec![Some(PastedImage::Binary(ClipboardImage::new(
+            "image/png".to_string(),
+            vec![0x89, b'P', b'N', b'G'],
+        )))]
+    };
+    let hints = prepare_binary(build(vec!["text".into(), "image".into()]), binary()).await;
+    assert!(
+        !hints.contains("vision_analyze"),
+        "已内联的粘贴图不该再邀请调工具，实际提示：{hints}"
+    );
+    assert!(
+        hints.contains("已保存到临时文件"),
+        "临时文件路径要留着给别的工具用，实际提示：{hints}"
+    );
+    let hints = prepare_binary(build(vec!["text".into()]), binary()).await;
+    assert!(
+        hints.contains("vision_analyze"),
+        "看不了图的模型必须保留工具兜底，实际提示：{hints}"
+    );
+}

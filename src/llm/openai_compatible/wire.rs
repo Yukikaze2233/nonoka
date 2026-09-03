@@ -138,7 +138,9 @@ pub(in crate::llm::openai_compatible) struct ResponsesReasoning {
     pub(in crate::llm::openai_compatible) summary: Option<String>,
 }
 
-pub(in crate::llm::openai_compatible) fn default_responses_reasoning(summary: &str) -> ResponsesReasoning {
+pub(in crate::llm::openai_compatible) fn default_responses_reasoning(
+    summary: &str,
+) -> ResponsesReasoning {
     ResponsesReasoning {
         effort: Some("medium".to_string()),
         summary: Some(summary.to_string()),
@@ -271,7 +273,9 @@ pub(in crate::llm::openai_compatible) struct ChatChoiceMessage {
     pub(in crate::llm::openai_compatible) tool_calls: Vec<ToolCallDelta>,
 }
 
-pub(in crate::llm::openai_compatible) fn null_as_default<'de, D, T>(deserializer: D) -> std::result::Result<T, D::Error>
+pub(in crate::llm::openai_compatible) fn null_as_default<'de, D, T>(
+    deserializer: D,
+) -> std::result::Result<T, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: Default + Deserialize<'de>,
@@ -364,7 +368,8 @@ pub(in crate::llm::openai_compatible) struct ResponsesUsage {
     #[serde(default)]
     pub(in crate::llm::openai_compatible) input_tokens_details: Option<ResponsesInputTokenDetails>,
     #[serde(default)]
-    pub(in crate::llm::openai_compatible) output_tokens_details: Option<ResponsesOutputTokenDetails>,
+    pub(in crate::llm::openai_compatible) output_tokens_details:
+        Option<ResponsesOutputTokenDetails>,
 }
 
 #[derive(Debug, Deserialize)]

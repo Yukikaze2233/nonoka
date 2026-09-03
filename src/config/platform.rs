@@ -94,6 +94,10 @@ pub struct PlatformsConfig {
     pub qq: OneBotConfig,
 }
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 pub(crate) fn default_platform_max_tool_rounds() -> usize {
     32
 }
@@ -305,8 +309,7 @@ impl PlatformsConfig {
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
             if let Some(models) = &mut settings.text_models {
-                models
-                    .retain(|entry| !(entry.provider_id == provider_id && entry.model == model));
+                models.retain(|entry| !(entry.provider_id == provider_id && entry.model == model));
             }
             normalize_route_pool(&mut settings.text_models);
         });
@@ -645,7 +648,11 @@ pub(crate) fn normalize_route_pool(pool: &mut Option<Vec<ActiveProviderModelConf
     }
 }
 
-pub(crate) fn rename_provider_in_pool(pool: &mut [ActiveProviderModelConfig], old_id: &str, new_id: &str) {
+pub(crate) fn rename_provider_in_pool(
+    pool: &mut [ActiveProviderModelConfig],
+    old_id: &str,
+    new_id: &str,
+) {
     for entry in pool {
         if entry.provider_id == old_id {
             entry.provider_id = new_id.to_string();
@@ -653,7 +660,10 @@ pub(crate) fn rename_provider_in_pool(pool: &mut [ActiveProviderModelConfig], ol
     }
 }
 
-pub(crate) fn retain_provider_pool(pool: &mut Option<Vec<ActiveProviderModelConfig>>, provider_id: &str) {
+pub(crate) fn retain_provider_pool(
+    pool: &mut Option<Vec<ActiveProviderModelConfig>>,
+    provider_id: &str,
+) {
     if let Some(entries) = pool {
         entries.retain(|entry| entry.provider_id != provider_id);
     }
@@ -696,6 +706,14 @@ pub struct OneBotConfig {
     pub memory: PlatformMemoryConfig,
     pub private_chats: QqPrivateChatsConfig,
     pub group_chats: QqGroupChatsConfig,
+    /// 会话内并行:同一个会话(群/私聊)允许几个回合同时跑。默认关闭=串行,
+    /// 一个会话同时只答一条(08-25 取证:并发回合各答各的,后到回合的历史
+    /// 里躺着"@我却无人应答"的消息,是跨线代答与重复答题的土壤)。串行时
+    /// 挡下的消息由「多少秒多少条」限流决定丢弃与否,超限即当没看到。
+    /// 每个平台各自设定;跨会话并发不受此开关影响。
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub session_parallel: bool,
+    /// 会话内并行数量与排队上限(按会话/按类型的覆盖优先)。
     #[serde(default, skip_serializing_if = "PlatformSessionLimits::is_default")]
     pub session_limits: PlatformSessionLimits,
     #[serde(
@@ -745,9 +763,11 @@ impl Default for QqPrivateChatsConfig {
             whitelist: Vec::new(),
             friend_requests_require_private_whitelist: true,
             allow_non_whitelist: true,
+            // 非白名单默认限流 300 秒 5 条(08-26 用户口径):原来的 600 秒 2 条
+            // 对正常提问都嫌紧,又挡不住刷屏——刷屏靠的是会话串行与队列上限。
             non_whitelist_rate_limit: PlatformRateLimit {
-                max_messages: 2,
-                window_seconds: 600,
+                max_messages: 5,
+                window_seconds: 300,
             },
             session_limits: None,
             legacy_non_whitelist_rate_per_minute: None,
@@ -783,7 +803,10 @@ impl Default for PlatformRateLimit {
     }
 }
 
-pub(crate) fn validate_platform_session_limits(field: &str, limits: PlatformSessionLimits) -> Result<()> {
+pub(crate) fn validate_platform_session_limits(
+    field: &str,
+    limits: PlatformSessionLimits,
+) -> Result<()> {
     if limits.running == 0 || limits.running > MAX_PLATFORM_SESSION_RUNNING {
         bail!("platforms.qq.{field}.running must be between 1 and {MAX_PLATFORM_SESSION_RUNNING}");
     }
@@ -823,9 +846,11 @@ impl Default for QqGroupChatsConfig {
                 window_seconds: 60,
             },
             allow_non_whitelist: true,
+            // 非白名单默认限流 300 秒 5 条(08-26 用户口径):原来的 600 秒 2 条
+            // 对正常提问都嫌紧,又挡不住刷屏——刷屏靠的是会话串行与队列上限。
             non_whitelist_rate_limit: PlatformRateLimit {
-                max_messages: 2,
-                window_seconds: 600,
+                max_messages: 5,
+                window_seconds: 300,
             },
             session_limits: None,
             legacy_whitelist_rate_per_minute: None,
@@ -866,6 +891,7 @@ impl Default for OneBotConfig {
             memory: PlatformMemoryConfig::default(),
             private_chats: QqPrivateChatsConfig::default(),
             group_chats: QqGroupChatsConfig::default(),
+            session_parallel: false,
             session_limits: PlatformSessionLimits::default(),
             group_context: PlatformGroupContextConfig::default(),
             text_models: None,
@@ -884,12 +910,15 @@ impl OneBotConfig {
         *self == Self::default()
     }
 
+    /// 一个会话的回合并发闸值。覆盖优先级:按会话 > 按会话类型 > QQ 默认;
+    /// **会话内并行关闭时并行数一律为 1**(串行),排队上限照旧生效。
     pub fn session_limits(
         &self,
         kind: PlatformConversationKind,
         conversation_id: &str,
     ) -> PlatformSessionLimits {
-        self.conversations
+        let mut limits = self
+            .conversations
             .iter()
             .find(|route| route.matches(kind, conversation_id))
             .and_then(|route| route.session_limits)
@@ -897,6 +926,10 @@ impl OneBotConfig {
                 PlatformConversationKind::Private => self.private_chats.session_limits,
                 PlatformConversationKind::Group => self.group_chats.session_limits,
             })
-            .unwrap_or(self.session_limits)
+            .unwrap_or(self.session_limits);
+        if !self.session_parallel {
+            limits.running = 1;
+        }
+        limits
     }
 }

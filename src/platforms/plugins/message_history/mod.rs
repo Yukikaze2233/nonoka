@@ -100,15 +100,51 @@ fn sqlite_file(path: &std::path::Path, suffix: &str) -> PathBuf {
     PathBuf::from(name)
 }
 
-pub(super) struct MessageHistoryPlugin {
-    delete_confirmations: tools::DeleteConfirmations,
+pub(super) struct MessageHistoryPlugin {}
+
+/// 把正文里的 `<qq-forward>…</qq-forward>` 整块换成一条有界摘要。
+///
+/// 返回 `None` = 没有转发块,正文原样入库。摘要形如
+/// `[forward x3] 阿: 外层一句 / 布布: [image] / 策: 里层一句`,截到
+/// `MAX_FORWARD_DIGEST_CHARS` 为止。当轮投喂给模型的仍是完整展开——这里只管
+/// 落库的那一份。
+fn forward_digest(text: &str) -> Option<String> {
+    const OPEN: &str = "\n<qq-forward>\n";
+    const CLOSE: &str = "</qq-forward>";
+    const MAX_FORWARD_DIGEST_CHARS: usize = 160;
+    let open = text.find(OPEN)?;
+    let close = text[open..].find(CLOSE)? + open;
+    let body = &text[open + OPEN.len()..close];
+    let lines = body
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && *line != "(forwarded content truncated)")
+        .collect::<Vec<_>>();
+    let summary = format!("[forward x{}] {}", lines.len(), lines.join(" / "));
+    let summary = if summary.chars().count() > MAX_FORWARD_DIGEST_CHARS {
+        format!(
+            "{}…",
+            summary
+                .chars()
+                .take(MAX_FORWARD_DIGEST_CHARS)
+                .collect::<String>()
+        )
+    } else {
+        summary
+    };
+    let mut digested = String::with_capacity(text.len());
+    digested.push_str(&text[..open]);
+    if !digested.is_empty() && !digested.ends_with(char::is_whitespace) {
+        digested.push(' ');
+    }
+    digested.push_str(&summary);
+    digested.push_str(&text[close + CLOSE.len()..]);
+    Some(digested)
 }
 
 impl MessageHistoryPlugin {
     pub(super) fn new() -> Self {
-        Self {
-            delete_confirmations: tools::DeleteConfirmations::default(),
-        }
+        Self {}
     }
 
     fn settings(context: &PlatformTurnContext) -> Result<Arc<QqMessageHistoryPluginSettings>> {
@@ -155,12 +191,16 @@ impl MessageHistoryPlugin {
                         }
                     })
                     .collect();
-                let mut content = SanitizedContent::new(event.text.clone(), media);
+                // 合并转发在当轮完整投喂给模型,历史库只留有界摘要:一条转发
+                // 动辄上千字,全量入库会把群历史撑大好几倍(08-26 用户要求)。
+                let digested = forward_digest(&event.text);
+                let stored_text = digested.clone().unwrap_or_else(|| event.text.clone());
+                let mut content = SanitizedContent::new(stored_text.clone(), media);
                 content.mentioned_user_ids = event.mentioned_user_ids.clone();
                 content.mentioned_users = event.mentioned_users.clone();
                 store
                     .record_message(NewHistoryMessage {
-                        group: key,
+                        group: key.clone(),
                         message_id: event_message_id(event),
                         sender_id: event.sender_id.clone(),
                         sender_name: event.sender_display_name.clone(),
@@ -171,6 +211,14 @@ impl MessageHistoryPlugin {
                         ingress_order: event.ingress_order,
                     })
                     .await?;
+                // 连接层的 observe_ingress 抢在展开之前就写过这条了(那时只有
+                // 一个 `[forward]` 记号),而写入是 INSERT OR IGNORE,上面这次
+                // 会被静默丢弃。摘要靠一次显式补写落库。
+                if digested.is_some() {
+                    store
+                        .update_message_text(key.clone(), event_message_id(event), stored_text)
+                        .await?;
+                }
             }
             PlatformInboundEventKind::MessageRecall => {
                 store
@@ -259,7 +307,6 @@ impl PlatformPlugin for MessageHistoryPlugin {
             context.clone(),
             store_for_paths(&context.paths),
             Self::settings(&context)?,
-            self.delete_confirmations.clone(),
         );
         Ok(())
     }
@@ -373,6 +420,12 @@ pub(super) fn register_group_member_tool(
     tools::register_avatar(registry, context);
 }
 
+/// 私聊等非群会话也要有 get_avatar(08-22 用户实测:私聊里模型答"没有这个
+/// 工具")。群成员搜索仍是群聊专属,头像不是。
+pub(super) fn register_avatar_tool(registry: &mut ToolRegistry, context: Arc<PlatformTurnContext>) {
+    tools::register_avatar(registry, context);
+}
+
 fn event_message_id(event: &PlatformInboundEvent) -> String {
     if !event.message_id.trim().is_empty() {
         return event.message_id.clone();
@@ -442,6 +495,40 @@ fn media_kind(kind: PlatformMediaKind) -> MediaKind {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    /// 转发块入库前收成有界摘要:模型当轮拿的是完整展开,历史库只留这一条。
+    #[test]
+    fn forward_blocks_shrink_to_a_bounded_digest() {
+        assert_eq!(forward_digest("普通消息"), None);
+
+        let expanded =
+            "看这个\n<qq-forward>\n阿: 外层一句\n布布: [image]\n  策: 里层一句\n</qq-forward>";
+        let digest = forward_digest(expanded).expect("有转发块");
+        assert_eq!(
+            digest,
+            "看这个 [forward x3] 阿: 外层一句 / 布布: [image] / 策: 里层一句"
+        );
+        // 原正文保留,展开块不再出现。
+        assert!(!digest.contains("<qq-forward>"));
+
+        // 超长转发被截断,且远小于当轮投喂的完整展开。
+        let long = format!(
+            "\n<qq-forward>\n{}</qq-forward>",
+            (0..80)
+                .map(|i| format!("发送者{i}: 这是一条相当长的转发内容用来撑爆预算\n"))
+                .collect::<String>()
+        );
+        let digest = forward_digest(&long).expect("有转发块");
+        assert!(digest.chars().count() <= 161, "{}", digest.chars().count());
+        assert!(digest.chars().count() * 8 < long.chars().count());
+        assert!(digest.ends_with('…'));
+
+        // 截断标记不占摘要条数。
+        let truncated = "\n<qq-forward>\n阿: 一\n(forwarded content truncated)\n</qq-forward>";
+        assert_eq!(forward_digest(truncated).unwrap(), "[forward x1] 阿: 一");
+    }
+
     use super::*;
     use crate::platforms::{
         PlatformConversation, PlatformInboundMedia, PlatformMediaKind, PlatformMessagePosition,

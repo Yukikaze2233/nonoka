@@ -632,7 +632,11 @@ impl<'a> ProviderBrowser<'a> {
                 } else {
                     // 目前只有内置 Claude Code 会处于未启用态,标出来免得
                     // 用户找不到"为什么模型列表里没有它"。
-                    format!("  {}{}", provider.display_name, t(" (disabled)", "(未启用)"))
+                    format!(
+                        "  {}{}",
+                        provider.display_name,
+                        t(" (disabled)", "(未启用)")
+                    )
                 }
             })
             .collect::<Vec<_>>();

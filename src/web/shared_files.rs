@@ -92,12 +92,9 @@ pub(in crate::web) async fn shared_file_download(
         return Err(ApiError::new(StatusCode::NOT_FOUND, "share not found"));
     };
     let path = std::path::PathBuf::from(&record.stored_path);
-    let metadata = tokio::fs::metadata(&path).await.map_err(|_| {
-        ApiError::new(
-            StatusCode::GONE,
-            "the shared file no longer exists on disk",
-        )
-    })?;
+    let metadata = tokio::fs::metadata(&path)
+        .await
+        .map_err(|_| ApiError::new(StatusCode::GONE, "the shared file no longer exists on disk"))?;
     if !metadata.is_file() {
         return Err(ApiError::new(
             StatusCode::GONE,

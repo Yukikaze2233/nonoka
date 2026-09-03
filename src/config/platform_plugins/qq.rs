@@ -234,7 +234,9 @@ pub(crate) fn validate_qq_group_management_plugin_config(
     Ok(())
 }
 
-pub(crate) fn validate_qq_message_recall_plugin_config(instance: &PlatformPluginInstanceConfig) -> Result<()> {
+pub(crate) fn validate_qq_message_recall_plugin_config(
+    instance: &PlatformPluginInstanceConfig,
+) -> Result<()> {
     let settings = QqMessageRecallPluginSettings::from_instance(instance)?;
     if settings.max_reason_length > 10_000
         || settings.max_messages_per_conversation == 0
@@ -247,7 +249,9 @@ pub(crate) fn validate_qq_message_recall_plugin_config(instance: &PlatformPlugin
     Ok(())
 }
 
-pub(crate) fn validate_qq_meme_collector_plugin_config(instance: &PlatformPluginInstanceConfig) -> Result<()> {
+pub(crate) fn validate_qq_meme_collector_plugin_config(
+    instance: &PlatformPluginInstanceConfig,
+) -> Result<()> {
     let settings = QqMemeCollectorPluginSettings::from_instance(instance)?;
     if !settings.collect_probability.is_finite()
         || !(0.0..=1.0).contains(&settings.collect_probability)

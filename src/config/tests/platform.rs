@@ -1,7 +1,7 @@
 //! 平台配置与模型路由。
 
-use crate::config::*;
 use super::shared::*;
+use crate::config::*;
 
 #[test]
 fn platforms_config_roundtrip_and_default_omission() {
@@ -260,10 +260,21 @@ fn qq_non_whitelist_model_pool_normalizes_for_dynamic_inheritance() {
 }
 
 #[test]
-fn qq_session_limits_resolve_from_conversation_then_kind_then_platform() {
+fn session_limits_resolve_from_conversation_then_kind_then_qq() {
     let mut qq = OneBotConfig::default();
     assert_eq!(qq.session_limits.running, 8);
     assert_eq!(qq.session_limits.queued, 16);
+    // 会话内并行默认关闭:无论配了几个并行位,解析出来都是串行。
+    assert!(!qq.session_parallel);
+    assert_eq!(
+        qq.session_limits(PlatformConversationKind::Group, "42"),
+        PlatformSessionLimits {
+            running: 1,
+            queued: 16
+        }
+    );
+
+    qq.session_parallel = true;
     qq.session_limits = PlatformSessionLimits {
         running: 2,
         queued: 3,
@@ -307,6 +318,15 @@ fn qq_session_limits_resolve_from_conversation_then_kind_then_platform() {
         PlatformSessionLimits {
             running: 2,
             queued: 3
+        }
+    );
+    // 串行模式压掉的只是并行数,覆盖项的队列深度照旧生效。
+    qq.session_parallel = false;
+    assert_eq!(
+        qq.session_limits(PlatformConversationKind::Group, "42"),
+        PlatformSessionLimits {
+            running: 1,
+            queued: 7
         }
     );
 }
@@ -763,18 +783,19 @@ fn qq_group_join_approval_normalizes_groups_and_merges_defaults() {
 fn qq_default_non_whitelist_rate_limits_match_the_deployed_contract() {
     let qq = OneBotConfig::default();
 
+    // 08-26 起默认 300 秒 5 条(私聊/群聊同口径)。
     assert_eq!(
         qq.private_chats.non_whitelist_rate_limit,
         PlatformRateLimit {
-            max_messages: 2,
-            window_seconds: 600,
+            max_messages: 5,
+            window_seconds: 300,
         }
     );
     assert_eq!(
         qq.group_chats.non_whitelist_rate_limit,
         PlatformRateLimit {
-            max_messages: 2,
-            window_seconds: 600,
+            max_messages: 5,
+            window_seconds: 300,
         }
     );
 

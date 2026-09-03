@@ -206,8 +206,6 @@ impl Agent {
         F: FnMut(AgentEvent) -> Result<()>,
     {
         on_event(AgentEvent::FlushJournal)?;
-        // 排队插话=人类语境变化,重复链重置。
-        self.repeat_chain.reset();
         // 排队消息=用户更新了请求,平台生图配额随之重置(非平台回合 no-op)。
         crate::tools::workspace::reset_image_gen_limit();
         let mut prepared = Vec::with_capacity(queued.len());

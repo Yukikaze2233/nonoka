@@ -14,18 +14,23 @@ pub(in crate::platforms::onebot) const PLATFORM_FILE_STORAGE_BYTES: u64 = 1024 *
 
 pub(in crate::platforms::onebot) const PLATFORM_FILE_STORAGE_ENTRIES: usize = 4096;
 
-pub(in crate::platforms::onebot) const PLATFORM_FILE_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+pub(in crate::platforms::onebot) const PLATFORM_FILE_TTL: Duration =
+    Duration::from_secs(7 * 24 * 60 * 60);
 
 /// QQ files are cached under `<cache>/platform_files/qq/`, never under the
 /// durable data tree. Downloads are lazy: only `read_platform_file` asks for
 /// them, so merely receiving a file costs no disk growth.
-pub(in crate::platforms::onebot) fn platform_file_storage_root(base_dir: &std::path::Path) -> PathBuf {
+pub(in crate::platforms::onebot) fn platform_file_storage_root(
+    base_dir: &std::path::Path,
+) -> PathBuf {
     base_dir.join("platform_files").join("qq")
 }
 
 /// One-time best-effort move of the old eager-download cache from
 /// `<data>/platform_files/` to `<cache>/platform_files/qq/`.
-pub(in crate::platforms::onebot) async fn migrate_legacy_platform_file_cache(paths: &crate::paths::NonokaPaths) {
+pub(in crate::platforms::onebot) async fn migrate_legacy_platform_file_cache(
+    paths: &crate::paths::NonokaPaths,
+) {
     let legacy = paths.data_dir.join("platform_files");
     if !legacy.exists() {
         return;

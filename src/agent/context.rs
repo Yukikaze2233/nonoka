@@ -325,7 +325,7 @@ pub(in crate::agent) fn turn_context_tokens(turn: &crate::state::Turn) -> usize 
     }
     // 与 push_history_turn 同步:工具轮以原生 tool_calls + tool 输出回放,
     // 漏计 tool_flow 会让 trim/压缩预算对工具密集回合失真数十倍。
-    for round in turn.tool_flow.iter().filter(|round| !round.remote) {
+    for round in replay_rounds(&turn.tool_flow) {
         push_assistant_message_with_reasoning(
             &mut messages,
             round.assistant_content.clone(),

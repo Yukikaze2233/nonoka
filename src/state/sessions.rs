@@ -201,8 +201,11 @@ impl StateStore {
     /// 分开写过一次，改一边漏一边，行为就分叉了。
     pub fn ensure_repl_session(&self, persona: &str) -> Result<String> {
         match self.repl_session(persona)? {
-            Some(session_id) => Ok(session_id),
-            None => self.new_repl_session(persona),
+            // 指针指向终端集成会话=视同缺失(08-25 用户裁定):normal 永远
+            // 不自动进终端车道——历史上的 /session 切换把指针钉过去、或
+            // 老回落语义留下的残值,都在这里自愈成一条新会话。
+            Some(session_id) if session_id != crate::state::DEFAULT_SESSION_ID => Ok(session_id),
+            _ => self.new_repl_session(persona),
         }
     }
 

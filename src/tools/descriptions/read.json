@@ -1,7 +1,7 @@
 {
-  "name": "read_file",
-  "display_name": "读取文件",
-  "description": "Read a UTF-8 text file with 1-based line pagination, or list a directory page by page.",
+  "name": "read",
+  "display_name": "读取",
+  "description": "Read a UTF-8 text file with 1-based line paging, or list a directory page. Prefix paths to select the store: artifact:<name> reads the WebUI Artifact workspace (artifact: alone lists it), kb:<path> reads the knowledge base.",
   "parameters": {
     "type": "object",
     "properties": {

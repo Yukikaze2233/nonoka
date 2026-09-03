@@ -38,9 +38,9 @@ mod meme_collector;
 mod message_history;
 mod message_recall;
 pub(crate) mod real_context;
-pub(crate) mod scheduled_messages;
 mod renderer;
 mod reply_processor;
+pub(crate) mod scheduled_messages;
 
 pub(crate) use real_context::active_judgement_skip::{
     active_judgement_skip_ids, apply_active_judgement_skip_editor_changes,

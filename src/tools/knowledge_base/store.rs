@@ -21,7 +21,7 @@ pub struct EditResult {
     pub(in crate::tools::knowledge_base) semantic_refreshed: bool,
 }
 
-pub(in crate::tools::knowledge_base) fn reject_non_kb_upload(
+pub(in crate::tools) fn reject_non_kb_upload(
     content: &str,
     title: &str,
     file_name: &str,

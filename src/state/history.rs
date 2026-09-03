@@ -20,10 +20,7 @@ impl StateStore {
             .background_report_replies_after(session_id, after_seq)
     }
 
-    pub fn oldest_visible_turn_timestamp(
-        &self,
-        excluding_turn_id: &str,
-    ) -> Result<Option<String>> {
+    pub fn oldest_visible_turn_timestamp(&self, excluding_turn_id: &str) -> Result<Option<String>> {
         self.conv_db
             .oldest_visible_turn_timestamp(&self.session(), excluding_turn_id)
     }

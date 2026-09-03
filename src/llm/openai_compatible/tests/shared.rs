@@ -87,8 +87,8 @@ pub(super) async fn write_http_sse_response(stream: &mut tokio::net::TcpStream, 
 /// The listener is bound before the task is spawned: `#[tokio::test]` runs
 /// a current-thread runtime, so handing the address back over a blocking
 /// channel would deadlock the only thread that could serve it.
-pub(super) async fn spawn_rate_limited_endpoint() -> (String, Arc<AtomicUsize>, tokio::task::JoinHandle<()>)
-{
+pub(super) async fn spawn_rate_limited_endpoint(
+) -> (String, Arc<AtomicUsize>, tokio::task::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}/v1", listener.local_addr().unwrap());
     let hits = Arc::new(AtomicUsize::new(0));

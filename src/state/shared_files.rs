@@ -236,7 +236,10 @@ mod tests {
         assert_eq!(record.size_bytes, 9);
         assert!(record.share_id.starts_with("share_"));
         // reference 模式零复制:stored_path 就是原文件。
-        assert_eq!(PathBuf::from(&record.stored_path), file.canonicalize().unwrap());
+        assert_eq!(
+            PathBuf::from(&record.stored_path),
+            file.canonicalize().unwrap()
+        );
 
         let listed = store.list_shared_files().unwrap();
         assert_eq!(listed.len(), 1);
@@ -247,7 +250,10 @@ mod tests {
 
         assert!(store.delete_shared_file(&record.share_id).unwrap());
         assert!(store.list_shared_files().unwrap().is_empty());
-        assert!(file.exists(), "deleting a reference share must not touch the original");
+        assert!(
+            file.exists(),
+            "deleting a reference share must not touch the original"
+        );
     }
 
     #[test]
@@ -268,7 +274,10 @@ mod tests {
         assert!(stored.exists());
 
         assert!(store.delete_shared_file(&record.share_id).unwrap());
-        assert!(!stored.exists(), "snapshot copy must be removed with the entry");
+        assert!(
+            !stored.exists(),
+            "snapshot copy must be removed with the entry"
+        );
     }
 
     #[test]

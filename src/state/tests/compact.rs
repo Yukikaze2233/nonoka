@@ -1,7 +1,7 @@
 //! 压缩、裁剪与可撤销性。
 
-use crate::state::*;
 use super::shared::*;
+use crate::state::*;
 
 /// Returns (non-summary fold ids, all visible ids) mirroring what the
 /// compactor passes for a full fold of the current history.
@@ -388,7 +388,10 @@ fn tail_retention_compact_folds_only_the_selected_turns() {
     assert_eq!(store.undo_last_turn().unwrap(), (1, None));
     let visible = store.load_visible_turns().unwrap();
     assert_eq!(
-        visible.iter().map(|t| t.turn_id.as_str()).collect::<Vec<_>>(),
+        visible
+            .iter()
+            .map(|t| t.turn_id.as_str())
+            .collect::<Vec<_>>(),
         vec!["t1", "t2", "t3", "t4"]
     );
 }

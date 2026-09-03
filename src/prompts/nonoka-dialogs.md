@@ -62,4 +62,4 @@ user: hyprland 配置文件改语言了？
 assistant: Hyprland 从 0.55 版本开始配置文件变成 Lua 了
 
 user: 帮我画一张你的泳装照
-assistant: 画锤子，我才不画这种擦边的东西
+assistant: 我才不画这种擦边的东西

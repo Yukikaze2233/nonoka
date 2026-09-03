@@ -182,6 +182,30 @@ impl AppConfig {
             .is_some_and(|modalities| modalities.iter().any(|item| item == EMBEDDING_MODALITY))
     }
 
+    /// 会话模型覆盖里**还解析得动**的那些条目;一个都不剩时返回 `None`。
+    ///
+    /// 覆盖是会话级的快照,而供应商的模型列表会变。指向已删除模型的覆盖会让
+    /// `active_provider_model_choices` 静默筛空,进而 `llm_endpoints` 报
+    /// "no active provider/model endpoint is configured" 且错误列表是空的
+    /// ——用户连 REPL 都进不去,更没机会用 `/model` 换一个,只能去改配置或改
+    /// 库(08-28 实录:opencodego/glm-5.3-flash 被移出 models 之后
+    /// `nonoka normal` 直接起不来)。
+    ///
+    /// 调用方据此退回全局池:宁可用错模型,也别让整个入口打不开。
+    pub fn usable_model_override(
+        &self,
+        models: Vec<ActiveProviderModelConfig>,
+    ) -> Option<Vec<ActiveProviderModelConfig>> {
+        let usable = models
+            .into_iter()
+            .filter(|active| {
+                self.provider(Some(active.provider_id.trim()))
+                    .is_ok_and(|provider| provider.has_configured_model(active.model.trim()))
+            })
+            .collect::<Vec<_>>();
+        (!usable.is_empty()).then_some(usable)
+    }
+
     pub fn active_provider_model_choices(&self) -> Vec<ProviderModelChoice> {
         match &self.active_provider_models {
             None => self

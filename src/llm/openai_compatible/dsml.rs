@@ -26,7 +26,8 @@ pub(in crate::llm::openai_compatible) const DSML_END: &str = "</｜｜DSML｜｜
 
 pub(in crate::llm::openai_compatible) const SYSTEM_REMINDER_PREFIX: &str = "<system-reminder";
 
-pub(in crate::llm::openai_compatible) const SYSTEM_REMINDER_UNDERSCORE_PREFIX: &str = "<system_reminder";
+pub(in crate::llm::openai_compatible) const SYSTEM_REMINDER_UNDERSCORE_PREFIX: &str =
+    "<system_reminder";
 
 /// Some gateways return the reasoning stream inline as `<thinking>...</thinking>`
 /// (or `<think>...</think>`) inside the plain `content` delta. The stream is
@@ -52,7 +53,10 @@ pub(in crate::llm::openai_compatible) fn hidden_start_after(
     starts.into_iter().flatten().map(|index| offset + index).min()
 }
 
-pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(value: &str, kind: ChatStreamKind) -> bool {
+pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(
+    value: &str,
+    kind: ChatStreamKind,
+) -> bool {
     let mut hidden = DSML_ANY_PREFIX.starts_with(value)
         || SYSTEM_REMINDER_PREFIX.starts_with(value)
         || SYSTEM_REMINDER_UNDERSCORE_PREFIX.starts_with(value)
@@ -67,7 +71,10 @@ pub(in crate::llm::openai_compatible) fn starts_hidden_prefix(value: &str, kind:
     hidden
 }
 
-pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(value: &str, kind: ChatStreamKind) -> usize {
+pub(in crate::llm::openai_compatible) fn partial_hidden_suffix_len(
+    value: &str,
+    kind: ChatStreamKind,
+) -> usize {
     let max_len = value.len().min(
         DSML_ANY_PREFIX
             .len()
@@ -126,7 +133,9 @@ pub(in crate::llm::openai_compatible) fn hidden_end_after(
     None
 }
 
-pub(in crate::llm::openai_compatible) fn extract_dsml_tool_calls(mut content: String) -> (String, Vec<ToolCall>) {
+pub(in crate::llm::openai_compatible) fn extract_dsml_tool_calls(
+    mut content: String,
+) -> (String, Vec<ToolCall>) {
     let mut calls = Vec::new();
     let mut index = 0usize;
     while let Some(start) = content.find(DSML_PREFIX) {
@@ -157,7 +166,10 @@ pub(in crate::llm::openai_compatible) fn strip_orphaned_dsml_tags(mut content: S
     content.trim().to_string()
 }
 
-pub(in crate::llm::openai_compatible) fn parse_dsml_block(block: &str, index: &mut usize) -> Vec<ToolCall> {
+pub(in crate::llm::openai_compatible) fn parse_dsml_block(
+    block: &str,
+    index: &mut usize,
+) -> Vec<ToolCall> {
     let mut calls = Vec::new();
     let mut rest = block;
     while let Some(start) = rest.find("<｜｜DSML｜｜invoke") {
@@ -243,7 +255,10 @@ pub(in crate::llm::openai_compatible) fn clean_plain_text(mut text: String) -> S
     text
 }
 
-pub(in crate::llm::openai_compatible) fn strip_tagged_sections(mut text: String, tag: &str) -> String {
+pub(in crate::llm::openai_compatible) fn strip_tagged_sections(
+    mut text: String,
+    tag: &str,
+) -> String {
     let close = format!("</{tag}>");
     let open_prefix = format!("<{tag}");
     loop {

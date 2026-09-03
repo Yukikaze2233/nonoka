@@ -104,7 +104,6 @@ impl Agent {
             context_images: Vec::new(),
             context_files: Vec::new(),
             persona_reminder: None,
-            repeat_chain: crate::tools::repeat_reminder::RepeatChain::default(),
             preset_dialogs,
             last_request_snapshot: None,
             pending_remote_tool_calls: std::sync::Mutex::new(Vec::new()),
@@ -190,6 +189,7 @@ impl Agent {
                             source: &usage_source,
                             provider: Some(client.provider_id()),
                             model: None,
+                            kind: None,
                         };
                         let _ = state.add_auxiliary_usage(&usage, meta);
                     }

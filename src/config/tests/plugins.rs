@@ -1,7 +1,7 @@
 //! 插件设置的默认值、校验与迁移。
 
-use crate::config::*;
 use super::shared::*;
+use crate::config::*;
 
 #[test]
 fn legacy_real_context_history_limits_move_to_message_history() {
@@ -199,8 +199,7 @@ fn real_context_legacy_settings_migrate_and_deprecated_keys_are_removed() {
 #[test]
 fn real_context_judge_persona_prompt_normalizes_validates_and_roundtrips() {
     let legacy =
-        RealContextPluginSettings::from_instance(&PlatformPluginInstanceConfig::default())
-            .unwrap();
+        RealContextPluginSettings::from_instance(&PlatformPluginInstanceConfig::default()).unwrap();
     assert!(legacy.judge_persona_prompt.is_empty());
 
     let mut settings = RealContextPluginSettings {

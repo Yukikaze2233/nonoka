@@ -1,8 +1,8 @@
 //! Anthropic 协议的流式、思考块与工具。
 
+use super::shared::*;
 use crate::llm::openai_compatible::*;
 use crate::llm::{ChatContent, ChatContentPart, ImageUrlContent};
-use super::shared::*;
 
 #[test]
 fn auto_protocol_uses_anthropic_for_official_provider() {
@@ -79,8 +79,7 @@ fn anthropic_stream_waits_for_message_stop() {
     assert!(!done);
 
     let done =
-        handle_anthropic_sse_data(r#"{"type":"message_stop"}"#, &mut state, &mut on_chunk)
-            .unwrap();
+        handle_anthropic_sse_data(r#"{"type":"message_stop"}"#, &mut state, &mut on_chunk).unwrap();
     assert!(done);
 }
 

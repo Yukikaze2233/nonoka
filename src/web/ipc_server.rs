@@ -194,9 +194,27 @@ pub(in crate::web) async fn handle_ipc_connection(
             let target = ipc::SessionRef::Id { id: session_id };
             let session_id = match resolve_available_local_session_ref(&state, &target) {
                 Ok(record) => record.session_id,
-                Err(_) => store
-                    .new_repl_session(&persona)
-                    .map_err(|error| anyhow::anyhow!(safe_error_message(&error)))?,
+                Err(reason) => {
+                    // 这条分支会把车道指针换成一条**新建的空会话**,于是重进
+                    // REPL 时没有历史可放、上键调不出输入记录(输入历史按会话
+                    // id 分文件)、`/undo` 也没得撤销——用户 08-26 报的 dev 三
+                    // 连全出自这里。原先丢掉了失败原因,只能靠翻库反推;把它
+                    // 打出来,一次就能定论。
+                    tracing::info!(
+                        target: "nonoka::qq",
+                        %persona,
+                        target = ?target,
+                        %reason,
+                        "{}",
+                        t(
+                            "REPL session pointer could not be resolved; starting a fresh session",
+                            "REPL 会话指针解析失败,改用新建会话"
+                        )
+                    );
+                    store
+                        .new_repl_session(&persona)
+                        .map_err(|error| anyhow::anyhow!(safe_error_message(&error)))?
+                }
             };
             let _ = store.set_repl_session(&persona, &session_id);
             ipc::send(

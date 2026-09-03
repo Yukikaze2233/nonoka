@@ -300,6 +300,33 @@ pub(in crate::web) fn resolve_local_session_ref_with_kinds(
     Ok(record)
 }
 
+/// 工具桥专用的会话寻址:在本地会话之外**额外**放行"正有回合在跑"的平台
+/// 会话。MCP 桥(claude-code 供应商唯一的工具通道)带的就是平台会话 id,被
+/// 本地解析一律挡掉时,群聊里整套平台工具都调不到(08-26 实测 `tool-call
+/// --list` 报"找不到该会话")。放行窗口卡在活回合上:回合结束登记即注销,
+/// 桥也随之失去这条会话的寻址能力。
+pub(in crate::web) fn resolve_tool_bridge_session_ref(
+    state: &DaemonState,
+    target: &ipc::SessionRef,
+) -> std::result::Result<crate::state::SessionRecord, String> {
+    match resolve_local_session_ref_with_kinds(state, target, TURN_TARGET_KINDS) {
+        Ok(record) => Ok(record),
+        Err(error) => {
+            let ipc::SessionRef::Id { id } = target else {
+                return Err(error);
+            };
+            if crate::platforms::live_turn_context(id).is_none() {
+                return Err(error);
+            }
+            state
+                .state_store
+                .session_record(id)
+                .map_err(|error| safe_error_message(&error))?
+                .ok_or(error)
+        }
+    }
+}
+
 pub(in crate::web) fn resolve_available_local_session_ref(
     state: &DaemonState,
     target: &ipc::SessionRef,
@@ -524,7 +551,7 @@ pub(in crate::web) fn spawn_session_title_refinement(
     tokio::task::spawn_local(async move {
         let session_id = store.session_id();
         let prompt = format!(
-            "为下面这条用户消息生成一个简洁的会话标题。要求：不超过 16 个字，             概括主题，只输出标题本身，不要引号、句号或任何解释。
+            "为下面这条用户消息生成一个简洁的会话标题：不超过 16 个字，概括主题，只输出标题本身，不要引号、句号或解释。
 
 用户消息：{seed}"
         );
@@ -560,6 +587,7 @@ pub(in crate::web) fn spawn_session_title_refinement(
                 source: "agent",
                 provider: result.provider_id.as_deref(),
                 model: result.model.as_deref(),
+                kind: None,
             };
             let _ = store.add_auxiliary_usage(usage, meta);
         }
@@ -684,8 +712,10 @@ pub(in crate::web) fn build_session_agent(
     crate::models_cache::ensure_active_metadata(paths, config);
     let client = OpenAiCompatibleClient::from_config(config, paths)?;
     let registry = build_tool_registry(config, paths, mode, true)?;
-    Ok(Agent::new(config.clone(), paths, state.clone(), client, registry, mode)?
-        .with_headless_pacing())
+    Ok(
+        Agent::new(config.clone(), paths, state.clone(), client, registry, mode)?
+            .with_headless_pacing(),
+    )
 }
 
 pub(in crate::web) fn session_state(

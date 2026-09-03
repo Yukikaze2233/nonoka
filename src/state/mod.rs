@@ -2,12 +2,12 @@ mod assets;
 mod history;
 mod shared_files;
 pub use conversation_db::SharedFile;
+mod conversation_db;
+mod migrations;
 mod queue;
 mod sessions;
 mod turns;
 mod usage_ops;
-mod conversation_db;
-mod migrations;
 pub use migrations::DEFAULT_SESSION_ID;
 pub(crate) mod usage;
 
@@ -32,18 +32,18 @@ use std::sync::{Arc, Mutex, OnceLock, RwLock, Weak};
 #[allow(unused_imports)]
 pub use conversation_db::{
     interrupted_text, pending_placeholder, ArtifactAsset, ArtifactAssetData, ConversationDb,
-    GoalDenied, GoalPhase, GoalRecord, DEFAULT_MAX_GOAL_ROUNDS,
-    ImageAsset, ImageAssetData, PlatformAccessActor, PlatformAccessGrant, PlatformAccessGrantKey,
-    PlatformMemeRefRecord, PlatformPluginScopeKey, PlatformSessionBinding,
-    PlatformSessionBindingKey, PruneStats, QueuedPrompt, QueuedPromptAttachment, RedoCandidate,
-    RedoInputKind, RedoStart, ReplayEntry, SessionOverview, SessionRecord, ToolFootprint, Turn,
-    TurnFollowup, TurnReplay,
-    TurnJournalEvent,
-    TurnRedoCheckpointPayload, TurnStatus, UserAttachment, UserAttachmentData,
-    GLOBAL_PLATFORM_ACCOUNT_SCOPE,
-    ToolFlowCall, ToolFlowRound,
+    GoalDenied, GoalPhase, GoalRecord, ImageAsset, ImageAssetData, PlatformAccessActor,
+    PlatformAccessGrant, PlatformAccessGrantKey, PlatformMemeRefRecord, PlatformPluginScopeKey,
+    PlatformSessionBinding, PlatformSessionBindingKey, PruneStats, QueuedPrompt,
+    QueuedPromptAttachment, RedoCandidate, RedoInputKind, RedoStart, ReplayEntry, SessionOverview,
+    SessionRecord, ToolFlowCall, ToolFlowRound, ToolFootprint, Turn, TurnFollowup,
+    TurnJournalEvent, TurnRedoCheckpointPayload, TurnReplay, TurnStatus, UserAttachment,
+    UserAttachmentData, DEFAULT_MAX_GOAL_ROUNDS, GLOBAL_PLATFORM_ACCOUNT_SCOPE,
 };
-pub use usage::{UsageMeta, UsageRange, UsageSnapshot, UsageStats};
+pub use usage::{
+    UsageMeta, UsageRange, UsageSnapshot, UsageStats, USAGE_KIND_AFFECTION, USAGE_KIND_GROUP_JOIN,
+    USAGE_KIND_JUDGE,
+};
 
 /// The only session kind users can list, name, switch to, or bind a platform
 /// to. Everything else is infrastructure and stays out of the session list.

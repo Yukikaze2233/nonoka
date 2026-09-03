@@ -104,7 +104,10 @@ pub(crate) fn migrate_resource_layout(layout: &Layout) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn try_migrate_resource_layout(layout: &Layout, current_process_is_daemon: bool) -> Result<bool> {
+pub(crate) fn try_migrate_resource_layout(
+    layout: &Layout,
+    current_process_is_daemon: bool,
+) -> Result<bool> {
     if resource_layout_marker_exists(layout)? {
         remove_resource_journal_if_present(layout)?;
         return Ok(true);
@@ -201,7 +204,10 @@ pub(crate) fn try_acquire_resource_daemon_guard(
     }))
 }
 
-pub(crate) fn preflight_resource_entries(layout: &Layout, entries: &[ResourceMigrationEntry]) -> Result<()> {
+pub(crate) fn preflight_resource_entries(
+    layout: &Layout,
+    entries: &[ResourceMigrationEntry],
+) -> Result<()> {
     let projections = entries
         .iter()
         .map(|entry| (entry.source.clone(), entry.destination.clone()))
@@ -335,7 +341,10 @@ pub(crate) fn atomic_resource_move(source: &Path, destination: &Path) -> Result<
     Ok(())
 }
 
-pub(crate) fn write_resource_journal(layout: &Layout, journal: &ResourceMigrationJournal) -> Result<()> {
+pub(crate) fn write_resource_journal(
+    layout: &Layout,
+    journal: &ResourceMigrationJournal,
+) -> Result<()> {
     let path = layout.resource_journal();
     let temporary = path.with_extension(format!(
         "tmp-{}-{}",

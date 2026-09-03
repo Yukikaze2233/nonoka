@@ -37,14 +37,15 @@ pub fn register(
     }
     registry.register(ToolSpec::new(
         "vision_analyze",
-        "Analyze an image using the current multimodal model or a configured vision provider. Supports local image paths and http(s) image URLs.",
+        "Analyze an image or a video using the current multimodal model or a configured vision provider. Supports local paths and http(s) URLs. Video formats: mp4, mkv, mov, webm, mpeg; a URL costs far less than a local file, which has to be inlined as base64.",
         json!({
             "type": "object",
             "properties": {
-                "image": { "type": "string", "description": "Local image path or http(s) image URL." },
+                "image": { "type": "string", "description": "Local path or http(s) URL of an image or a video." },
+                "images": { "type": "array", "items": { "type": "string" }, "description": "Several images to analyze in one call (paths or URLs). Overrides image. Videos are analyzed one at a time — pass a single video through `image`." },
                 "prompt": { "type": "string", "description": "Question or instruction for image analysis. Defaults to a concise description." }
             },
-            "required": ["image"],
+            "required": [],
             "additionalProperties": false
         }),
         move |args| {
@@ -151,9 +152,10 @@ fn register_scoped(
             "type": "object",
             "properties": {
                 "image": { "type": "string", "description": "A path listed in this turn's image prompt, or a historical image ID such as context_image_1." },
+                "images": { "type": "array", "items": { "type": "string" }, "description": "Several images to analyze in one call. Overrides image." },
                 "prompt": { "type": "string", "description": "Question or instruction for the image analysis. Defaults to a concise description." }
             },
-            "required": ["image"],
+            "required": [],
             "additionalProperties": false
         }),
         move |args| {
@@ -173,7 +175,136 @@ fn register_scoped(
     );
 }
 
+/// `images` 数组非空时返回目标列表;否则 None=单图路径。
+fn batch_targets(args: &Value) -> Option<Vec<String>> {
+    let list = args.get("images")?.as_array()?;
+    let targets: Vec<String> = list
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|item| item.trim().to_string())
+        .filter(|item| !item.is_empty())
+        .collect();
+    (!targets.is_empty()).then_some(targets)
+}
+
+/// 批内并发上限。视觉供应商单请求秒级,4 路已把 7 张图压进两个批次;
+/// 再高容易撞中转限流。
+const VISION_BATCH_CONCURRENCY: usize = 4;
+
+type VisionJob = std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send>>;
+
+/// 每个目标合成单图参数交给 `make_job`,保序有界并发,汇总为分节文本。
+/// 单张失败不掀整批,该节记 ERROR(纯文本输出=按成功处理,错误信息模型
+/// 自己看得懂)。
+async fn run_vision_batch(
+    targets: Vec<String>,
+    prompt: Option<Value>,
+    make_job: impl Fn(Value) -> VisionJob,
+) -> Result<String> {
+    use futures_util::StreamExt;
+    let jobs: Vec<VisionJob> = targets
+        .iter()
+        .map(|target| {
+            let mut sub = json!({ "image": target });
+            if let Some(prompt) = &prompt {
+                sub["prompt"] = prompt.clone();
+            }
+            make_job(sub)
+        })
+        .collect();
+    let results: Vec<Result<String>> = futures_util::stream::iter(jobs)
+        .buffered(VISION_BATCH_CONCURRENCY)
+        .collect()
+        .await;
+    let sections = targets
+        .iter()
+        .zip(results)
+        .enumerate()
+        .map(|(index, (target, result))| match result {
+            Ok(analysis) => format!(
+                "[Image {}] {}
+{}",
+                index + 1,
+                target,
+                analysis.trim()
+            ),
+            Err(error) => format!(
+                "[Image {}] {}
+ERROR: {:#}",
+                index + 1,
+                target,
+                error
+            ),
+        })
+        .collect::<Vec<_>>();
+    Ok(sections.join(
+        "
+
+",
+    ))
+}
+
+#[cfg(test)]
+mod batch_tests {
+    use super::*;
+
+    #[test]
+    fn batch_targets_requires_non_empty_array() {
+        assert!(batch_targets(&json!({"image": "a.png"})).is_none());
+        assert!(batch_targets(&json!({"images": []})).is_none());
+        assert!(batch_targets(&json!({"images": ["  "]})).is_none());
+        assert_eq!(
+            batch_targets(&json!({"images": ["a.png", " b.png "]})).unwrap(),
+            vec!["a.png".to_string(), "b.png".to_string()]
+        );
+    }
+
+    /// 批量输出保序分节;单张失败记 ERROR 不掀整批;prompt 透传给每张。
+    #[tokio::test]
+    async fn vision_batch_keeps_order_and_isolates_failures() {
+        let targets = vec![
+            "one.png".to_string(),
+            "two.png".to_string(),
+            "three.png".to_string(),
+        ];
+        let output = run_vision_batch(
+            targets,
+            Some(Value::String("what is it".to_string())),
+            |sub| {
+                Box::pin(async move {
+                    let image = sub["image"].as_str().unwrap().to_string();
+                    assert_eq!(sub["prompt"].as_str(), Some("what is it"));
+                    if image == "two.png" {
+                        bail!("boom")
+                    }
+                    Ok(format!("desc of {image}"))
+                })
+            },
+        )
+        .await
+        .unwrap();
+        let sections: Vec<&str> = output.split("\n\n").collect();
+        assert_eq!(sections.len(), 3);
+        assert!(sections[0].starts_with("[Image 1] one.png\ndesc of one.png"));
+        assert!(sections[1].starts_with("[Image 2] two.png\nERROR: boom"));
+        assert!(sections[2].starts_with("[Image 3] three.png\ndesc of three.png"));
+    }
+}
+
 async fn analyze_image(args: Value, config: AppConfig, paths: NonokaPaths) -> Result<String> {
+    if let Some(targets) = batch_targets(&args) {
+        let prompt = args.get("prompt").cloned();
+        return run_vision_batch(targets, prompt, |sub| {
+            let config = config.clone();
+            let paths = paths.clone();
+            Box::pin(async move { analyze_image_one(sub, config, paths).await })
+        })
+        .await;
+    }
+    analyze_image_one(args, config, paths).await
+}
+
+async fn analyze_image_one(args: Value, config: AppConfig, paths: NonokaPaths) -> Result<String> {
     let vision = &config.plugins.vision;
     if !vision.enabled {
         bail!("vision plugin is disabled")
@@ -184,7 +315,7 @@ async fn analyze_image(args: Value, config: AppConfig, paths: NonokaPaths) -> Re
         .unwrap_or_default()
         .trim();
     if image.is_empty() {
-        bail!("image is required")
+        bail!("image (or images) is required")
     }
     let prompt = args
         .get("prompt")
@@ -192,6 +323,16 @@ async fn analyze_image(args: Value, config: AppConfig, paths: NonokaPaths) -> Re
         .filter(|value| !value.trim().is_empty())
         .unwrap_or("Describe this image concisely and point out the important details.")
         .trim();
+    // 视频走独立路由(08-22):OpenRouter 系 video_url 内容块,仅视频能力
+    // 模型(如 ox-alpha)接受。
+    if let Some(mime) = video_mime(image) {
+        let video_url = if image.starts_with("http://") || image.starts_with("https://") {
+            image.to_string()
+        } else {
+            local_video_data_url(image, mime)?
+        };
+        return analyze_video_url_with_prompt(&config, &paths, &video_url, prompt).await;
+    }
     let image_url = if image.starts_with("http://") || image.starts_with("https://") {
         image.to_string()
     } else {
@@ -200,7 +341,148 @@ async fn analyze_image(args: Value, config: AppConfig, paths: NonokaPaths) -> Re
     analyze_image_url_with_prompt(&config, &paths, &image_url, prompt).await
 }
 
+/// 按扩展名识别视频并给出 mime;None=按图片处理。
+pub(crate) fn video_mime(value: &str) -> Option<&'static str> {
+    let lower = value
+        .split('?')
+        .next()
+        .unwrap_or(value)
+        .to_ascii_lowercase();
+    let ext = lower.rsplit('.').next()?;
+    Some(match ext {
+        "mp4" | "m4v" => "video/mp4",
+        "mkv" => "video/x-matroska",
+        // GLM 官方列的三种格式是 mp4 / mkv / mov;mkv 原先不在表里,会被当图片
+        // 走(08-27)。mpeg / webm 保留:别的中转吃这些,GLM 自己会退回明确错误。
+        "mpeg" | "mpg" => "video/mpeg",
+        "mov" => "video/mov",
+        "webm" => "video/webm",
+        _ => return None,
+    })
+}
+
+/// 视频体积上限,对齐 GLM 官方规格(08-27:GLM-5V-Turbo / 4.6V / 4.5V 及其他
+/// 多模态模型 200MB;GLM-4V-Plus 另有 20MB 且 ≤30 秒的更紧限制,由服务端自己
+/// 回错)。原先卡在 24MB,是按"base64 过中转"定的保守线,把 GLM 能吃的量挡在
+/// 门外。
+///
+/// 本地文件要 base64,体积会 +33% 再叠请求 JSON 外壳;超大文件走 URL 更划算
+/// ——官方文档也推荐 URL。超限时指引裁剪而不是静默截断。
+const MAX_VIDEO_BYTES: u64 = 200 * 1024 * 1024;
+
+pub(crate) fn local_video_data_url(value: &str, mime: &str) -> Result<String> {
+    let path = expand_path(value);
+    let metadata = std::fs::metadata(&path)
+        .with_context(|| format!("failed to stat video {}", path.display()))?;
+    if !metadata.is_file() {
+        bail!("video path is not a file: {}", path.display())
+    }
+    if metadata.len() > MAX_VIDEO_BYTES {
+        bail!(
+            "video is {:.1} MB; the limit is {} MB — trim or compress it first (e.g. ffmpeg -ss/-t or lower the resolution)",
+            metadata.len() as f64 / 1024.0 / 1024.0,
+            MAX_VIDEO_BYTES / 1024 / 1024
+        )
+    }
+    let bytes = std::fs::read(&path)?;
+    Ok(format!(
+        "data:{mime};base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(bytes)
+    ))
+}
+
+pub async fn analyze_video_url_with_prompt(
+    config: &AppConfig,
+    paths: &NonokaPaths,
+    video_url: &str,
+    prompt: &str,
+) -> Result<String> {
+    let vision = &config.plugins.vision;
+    if !vision.enabled {
+        bail!("vision plugin is disabled")
+    }
+    let client = video_client(config, paths)?.with_request_timeouts(
+        Duration::from_secs(vision.response_header_timeout_seconds.max(1)),
+        Duration::from_secs(vision.stream_idle_timeout_seconds.max(1)),
+    );
+    let endpoint_count = client.endpoint_count();
+    let request = client.chat_stream(
+        vec![
+            ChatMessage::system(
+                "Answer based on the video content; do not make up details you cannot see.",
+            ),
+            ChatMessage::user_with_video(prompt, video_url.to_string()),
+        ],
+        Vec::new(),
+        |_| Ok(()),
+    );
+    let result = with_image_timeout(vision_pool_timeout(vision, endpoint_count), request).await?;
+    if result.content.trim().is_empty() {
+        bail!("video model returned empty response")
+    }
+    Ok(result.content)
+}
+
+/// 视频模型路由:显式 video_provider_id/video_model 优先;否则在启用的多模态
+/// 模型里挑 models.dev 标了 video 输入能力的;都没有给出可操作的报错。
+fn video_client(config: &AppConfig, paths: &NonokaPaths) -> Result<OpenAiCompatibleClient> {
+    let vision = &config.plugins.vision;
+    let provider_id = vision.video_provider_id.trim();
+    let model = vision.video_model.trim();
+    if !provider_id.is_empty() || !model.is_empty() {
+        if provider_id.is_empty() || model.is_empty() {
+            bail!("plugins.vision.video_provider_id 与 video_model 需同时配置");
+        }
+        let mut provider = config.provider(Some(provider_id))?.clone();
+        provider.default_model = model.to_string();
+        if !provider
+            .models
+            .iter()
+            .any(|item| item == &provider.default_model)
+        {
+            provider.models.push(provider.default_model.clone());
+        }
+        return OpenAiCompatibleClient::new(&provider, config, paths);
+    }
+    let choices = config
+        .active_multimodal_provider_model_choices()
+        .into_iter()
+        .filter(|choice| {
+            config.model_supports_any_input(&choice.provider_id, &choice.model, &["video"])
+        })
+        .collect::<Vec<_>>();
+    if !choices.is_empty() {
+        return OpenAiCompatibleClient::from_choices(config, paths, &choices)
+            .map(|client| client.with_request_scope("vision"));
+    }
+    // 两条路都要写出来。原先只指了 video_provider_id 那条,而更自然的做法是把
+    // 支持视频的模型选进多模态池——用户按提示去翻 vision 配置,查了一圈才发现
+    // 池子根本是空的(08-27)。
+    bail!(
+        "no video-capable model available: either add a model whose input modalities include \"video\" to the active multimodal model pool (nonoka config → 配置多模态模型), or set plugins.vision.video_provider_id/video_model to one (e.g. glm-5.3-flash, or ox-alpha-free on an OpenRouter-compatible relay)"
+    )
+}
+
 async fn analyze_scoped_image(
+    args: Value,
+    config: AppConfig,
+    paths: NonokaPaths,
+    state: Arc<ScopedVisionState>,
+) -> Result<String> {
+    if let Some(targets) = batch_targets(&args) {
+        let prompt = args.get("prompt").cloned();
+        return run_vision_batch(targets, prompt, |sub| {
+            let config = config.clone();
+            let paths = paths.clone();
+            let state = state.clone();
+            Box::pin(async move { analyze_scoped_image_one(sub, config, paths, state).await })
+        })
+        .await;
+    }
+    analyze_scoped_image_one(args, config, paths, state).await
+}
+
+async fn analyze_scoped_image_one(
     args: Value,
     config: AppConfig,
     paths: NonokaPaths,
@@ -212,7 +494,7 @@ async fn analyze_scoped_image(
         .unwrap_or_default()
         .trim();
     if image.is_empty() {
-        bail!("image is required")
+        bail!("image (or images) is required")
     }
     if state.calls.fetch_add(1, Ordering::AcqRel) >= MAX_SCOPED_VISION_CALLS {
         bail!("vision_analyze call limit reached for the current platform turn")
@@ -239,14 +521,14 @@ async fn analyze_scoped_image(
         return Ok(result);
     }
     if state.allow_general_access {
-        return analyze_image(args, config, paths).await;
+        return analyze_image_one(args, config, paths).await;
     }
     if image.starts_with("http://") || image.starts_with("https://") {
         // QQ avatar URLs are built by our own tools from numeric IDs
         // (fixed host, digits-only parameters), so admitting them opens
         // no injection or exfiltration surface.
         if crate::platform_types::is_trusted_avatar_url(image) {
-            return analyze_image(args, config, paths).await;
+            return analyze_image_one(args, config, paths).await;
         }
         bail!("only images attached to the current platform turn are allowed")
     }
@@ -286,7 +568,9 @@ pub async fn analyze_image_url_with_prompt(
     let endpoint_count = client.endpoint_count();
     let request = client.chat_stream(
         vec![
-            ChatMessage::system("Answer based on the image content; do not make up details you cannot see."),
+            ChatMessage::system(
+                "Answer based on the image content; do not make up details you cannot see.",
+            ),
             ChatMessage::user_with_image(prompt, image_url.to_string()),
         ],
         Vec::new(),
@@ -391,7 +675,7 @@ fn vision_client(config: &AppConfig, paths: &NonokaPaths) -> Result<OpenAiCompat
     OpenAiCompatibleClient::new(&provider, config, paths)
 }
 
-fn local_image_data_url(value: &str) -> Result<String> {
+pub(crate) fn local_image_data_url(value: &str) -> Result<String> {
     let path = expand_path(value);
     let metadata = std::fs::metadata(&path)
         .with_context(|| format!("failed to stat image {}", path.display()))?;
@@ -438,6 +722,51 @@ fn mime_from_path(path: &Path) -> Result<&'static str> {
         value => {
             bail!("unsupported image extension: {value}; supported: jpg, jpeg, png, webp, gif")
         }
+    }
+}
+
+#[cfg(test)]
+mod video_route_tests {
+    use super::*;
+
+    /// 扩展名分流是视频路由的唯一开关:带查询串的 URL、大小写、图片后缀
+    /// 都不能误判。
+    #[test]
+    fn video_mime_detection_covers_url_and_case() {
+        assert_eq!(video_mime("/tmp/a.mp4"), Some("video/mp4"));
+        assert_eq!(video_mime("/tmp/A.MOV"), Some("video/mov"));
+        assert_eq!(
+            video_mime("https://x.com/v.webm?sig=abc"),
+            Some("video/webm")
+        );
+        assert_eq!(video_mime("/tmp/a.png"), None);
+        assert_eq!(video_mime("https://x.com/v"), None);
+        // GLM 官方列的三种格式必须全认(08-27:mkv 原先漏了,会被当图片走)。
+        for (path, mime) in [
+            ("/tmp/a.mp4", "video/mp4"),
+            ("/tmp/a.mkv", "video/x-matroska"),
+            ("/tmp/a.mov", "video/mov"),
+        ] {
+            assert_eq!(video_mime(path), Some(mime), "GLM 支持的格式: {path}");
+        }
+    }
+
+    /// 体积上限对齐 GLM 官方规格(200MB);卡在旧的 24MB 会把 GLM 能吃的量挡住。
+    #[test]
+    fn video_size_cap_matches_the_glm_limit() {
+        assert_eq!(MAX_VIDEO_BYTES, 200 * 1024 * 1024);
+    }
+
+    /// wire 形态锁定:GLM 官方文档与 OpenRouter/Qwen 系一致,都是
+    /// {"type":"video_url","video_url":{"url":…}}(08-27 对过官方 API 文档)。
+    #[test]
+    fn video_part_serializes_to_openrouter_shape() {
+        let message =
+            crate::llm::ChatMessage::user_with_video("看看这段", "data:video/mp4;base64,AAAA");
+        let json = serde_json::to_value(&message).unwrap();
+        let parts = json["content"].as_array().unwrap();
+        assert_eq!(parts[1]["type"], "video_url");
+        assert_eq!(parts[1]["video_url"]["url"], "data:video/mp4;base64,AAAA");
     }
 }
 
@@ -533,10 +862,10 @@ mod tests {
     fn vision_uses_the_active_text_pool_when_it_can_see() {
         let mut config = AppConfig::default();
         let provider = config
-        .providers
-        .iter_mut()
-        .find(|provider| !provider.is_claude_code())
-        .unwrap();
+            .providers
+            .iter_mut()
+            .find(|provider| !provider.is_claude_code())
+            .unwrap();
         let provider_id = provider.id.clone();
         provider.model_modalities.insert(
             provider.default_model.clone(),

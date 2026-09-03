@@ -514,6 +514,164 @@ async fn a_turn_that_dies_mid_loop_keeps_the_tools_it_already_ran() {
     server.await.unwrap();
 }
 
+/// 同参复读闸(08-23 取证,08-24 二版:全程无提示文本):第 3 个相同轮起
+/// 不再真执行、回灌上一轮真实结果字节;第 6 个相同轮烧保险丝——此后请
+/// 求不再带工具;模型(桩)仍坚持发调用时静默收束,任何受众正文都不掺
+/// 机器文本。退回闸前这个用例会陪桩服务器转满 100 轮后在断言处报红。
+#[tokio::test]
+async fn identical_tool_call_loop_is_skipped_then_fused() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
+    let mut config = queue_test_config(base_url);
+    config.tools.enabled = true;
+
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let executions = Arc::new(AtomicUsize::new(0));
+    let executions_probe = executions.clone();
+    let mut tools = ToolRegistry::new();
+    tools.register(ToolSpec::new(
+        "web_search",
+        "searches",
+        empty_parameters(),
+        move |_| {
+            let executions = executions.clone();
+            async move {
+                executions.fetch_add(1, Ordering::SeqCst);
+                Ok("{\"ok\": true, \"results\": \"same results\"}".to_string())
+            }
+        },
+    ));
+    let control = AgentTurnControl::new(AgentMode::Normal, tools.clone(), tools.clone());
+
+    let server = tokio::spawn(async move {
+        // 桩模型:每次请求都发一模一样的 web_search 调用,最多陪 100 轮。
+        // 保险丝在第 6 个相同轮收束,轮数远到不了 100——到了就是闸没工作。
+        for _ in 0..100 {
+            let Ok((mut round, _)) = listener.accept().await else {
+                return;
+            };
+            let _ = read_test_http_request(&mut round).await;
+            write_test_sse(
+                &mut round,
+                concat!(
+                    "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"web_search\",\"arguments\":\"{\\\"query\\\":\\\"same\\\"}\"}}]}}]}\n\n",
+                    "data: {\"choices\":[{\"finish_reason\":\"tool_calls\",\"delta\":{}}]}\n\n",
+                    "data: [DONE]\n\n"
+                ),
+            )
+            .await;
+        }
+    });
+
+    let state = StateStore::new(&paths).unwrap();
+    state.init_files().unwrap();
+    let provider = config.provider(None).unwrap().clone();
+    let client = OpenAiCompatibleClient::new(&provider, &config, &paths).unwrap();
+    let mut agent = Agent::new(
+        config,
+        &paths,
+        state.clone(),
+        client,
+        tools,
+        AgentMode::Normal,
+    )
+    .unwrap();
+
+    let reply = agent
+        .chat_stream_with_control("搜一下", &[], &control, |_| Ok(()))
+        .await
+        .unwrap();
+    // 真执行只有前两轮(首轮+第 2 个相同轮),后面全被闸掉。
+    assert_eq!(executions_probe.load(Ordering::SeqCst), 2);
+    // 二版:收束不产任何机器文本。
+    assert!(
+        !reply.content.contains("Tool loop stopped") && !reply.content.contains("repeated"),
+        "收束警告不该进正文: {}",
+        reply.content
+    );
+    let turn = state.load_turns().unwrap().pop().expect("回合应当已落库");
+    // 跳过轮回灌的是上一轮真实结果字节,不是错误提示。
+    let replayed = turn
+        .tool_flow
+        .iter()
+        .flat_map(|round| round.calls.iter())
+        .filter(|call| call.output.contains("same results"))
+        .count();
+    assert!(replayed >= 3, "缓存结果应回灌到跳过轮, got {replayed}");
+    // 轮数被钉在保险丝阈值附近(首轮+5 个相同轮+1 个无工具收束轮),
+    // 不是桩服务器的 100。
+    assert!(
+        turn.tool_flow.len() <= 7,
+        "tool_flow 有 {} 轮,复读闸没拦住",
+        turn.tool_flow.len()
+    );
+    server.abort();
+}
+
+/// 平台受众(External)下保险丝/上限的机器面警告只进日志,绝不拼进正文
+/// ——正文=群消息,拼进去就是把系统文本发到 QQ(08-24 线上翻车实录)。
+#[tokio::test]
+async fn repeat_fuse_warning_stays_out_of_external_reply_content() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
+    let mut config = queue_test_config(base_url);
+    config.tools.enabled = true;
+
+    let mut tools = ToolRegistry::new();
+    tools.register(ToolSpec::new(
+        "web_search",
+        "searches",
+        empty_parameters(),
+        |_| async { Ok("{\"ok\": true}".to_string()) },
+    ));
+    let control = AgentTurnControl::new(AgentMode::Normal, tools.clone(), tools.clone());
+
+    let server = tokio::spawn(async move {
+        for _ in 0..100 {
+            let Ok((mut round, _)) = listener.accept().await else {
+                return;
+            };
+            let _ = read_test_http_request(&mut round).await;
+            write_test_sse(
+                &mut round,
+                concat!(
+                    "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"web_search\",\"arguments\":\"{\\\"query\\\":\\\"same\\\"}\"}}]}}]}\n\n",
+                    "data: {\"choices\":[{\"finish_reason\":\"tool_calls\",\"delta\":{}}]}\n\n",
+                    "data: [DONE]\n\n"
+                ),
+            )
+            .await;
+        }
+    });
+
+    let state = StateStore::new(&paths).unwrap();
+    state.init_files().unwrap();
+    let provider = config.provider(None).unwrap().clone();
+    let client = OpenAiCompatibleClient::new(&provider, &config, &paths).unwrap();
+    let mut agent = Agent::new(config, &paths, state, client, tools, AgentMode::Normal).unwrap();
+    agent.prompt_audience = crate::config::PromptAudience::External;
+
+    let reply = agent
+        .chat_stream_with_control("搜一下", &[], &control, |_| Ok(()))
+        .await
+        .unwrap();
+    assert!(
+        !reply.content.contains("Tool loop stopped"),
+        "机器面警告漏进了平台正文: {}",
+        reply.content
+    );
+    assert!(
+        !reply.content.contains("reached the limit"),
+        "上限警告漏进了平台正文: {}",
+        reply.content
+    );
+    server.abort();
+}
+
 /// 回合内每次模型请求结束都发射 RoundUsage(provider 未报 usage 时走
 /// 估算路径),这是 footer/WebUI 逐请求刷新计量的事件源。
 #[tokio::test]
@@ -557,6 +715,7 @@ async fn round_usage_event_fires_per_model_request() {
                 round,
                 turn,
                 estimated,
+                ..
             } = &event
             {
                 rounds

@@ -13,6 +13,18 @@ impl Agent {
         &self,
     ) -> Result<Vec<crate::state::StoredConversationEntry>> {
         let Some(context_window) = self.context_window() else {
+            // 窗口解析失败(池里有 config 查不到的 provider,Err 被 .ok() 吞掉)
+            // 会静默关闭裁剪——68 万 token 膨胀事故的候选路径之一。日志打在
+            // nonoka::qq 这条 target 上:默认日志级别只有它是 INFO,打在别处等于
+            // 没打(08-26 实证:昨天布的观测一行都没写出来)。
+            tracing::warn!(
+                target: "nonoka::qq",
+                "{}",
+                crate::i18n::text(
+                    "context trim disabled: no context window could be resolved",
+                    "上下文裁剪已停用:解析不出上下文窗口"
+                )
+            );
             return Ok(Vec::new());
         };
         let track_loaded_tool_sources = self.tools_enabled
@@ -81,6 +93,29 @@ impl Agent {
             count += 1;
         }
         let turns = self.state.oldest_evictable_visible_turns(count)?;
+        // 观测(08-25 膨胀取证:群会话 68 万 token 未被裁剪,归档 07:42 后
+        // 静默停摆):水位越线的每次裁剪把门内数字全部留痕,零归档时告警。
+        tracing::info!(
+            target: "nonoka::qq",
+            total,
+            trigger,
+            evict_to = target,
+            planned = count,
+            evictable = turns.len(),
+            "{}",
+            crate::i18n::text("context trim engaged", "上下文裁剪已触发")
+        );
+        if count > 0 && turns.is_empty() {
+            tracing::warn!(
+                target: "nonoka::qq",
+                planned = count,
+                "{}",
+                crate::i18n::text(
+                    "context trim planned evictions but found no evictable turns",
+                    "上下文裁剪算出要逐出的回合,却一个可逐出的都没有"
+                )
+            );
+        }
         archive_and_delete_visible_turns_checked(
             &self.state,
             &self.memory,
@@ -166,7 +201,9 @@ impl Agent {
         }
         // 防失忆提醒(08-16 起):不再浮动,每隔 interval 轮以化石身份进
         // 历史——纯追加,不掰前缀。计数以历史里最近一份提醒化石所在的
-        // 轮为锚。
+        // 轮为锚。(08-23 试过"上一轮工具轮次多则提前补一针"的工具后
+        // 重锚,A/B 实测 8/12→4/12 负增量,已回滚——探针轮贴着当前消息
+        // 再注提醒反而伤风格,别再试。)
         if let Some(reminder) = self.persona_reminder.as_deref() {
             let interval = self.config.prompt.persona_reminder_interval.max(1) as usize;
             if turns_since_reminder_fossil(&self.state, current_turn_id)?
@@ -230,7 +267,7 @@ impl Agent {
             // dsh 形态回放:每轮 assistant 带原生 tool_calls(参数原样字节),
             // 随后各 call 的 role:"tool" 输出;最终回复照旧收尾。老回合
             // (无结构化流)退回 private_tool_memory 压扁兜底。
-            for round in turn.tool_flow.iter().filter(|round| !round.remote) {
+            for round in replay_rounds(&turn.tool_flow) {
                 push_assistant_message_with_reasoning(
                     messages,
                     round.assistant_content.clone(),

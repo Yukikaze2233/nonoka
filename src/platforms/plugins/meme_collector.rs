@@ -148,7 +148,7 @@ impl PlatformPlugin for MemeCollectorPlugin {
             registry.register(
                 ToolSpec::new(
                     "save_current_message_meme",
-                    "把当前 QQ 消息或其直接引用消息中的一张图片保存为表情包。不能指定任意消息，并且必须通过严格表情判定。",
+                    "Save an image from the current QQ message or its directly quoted message as a meme. Arbitrary messages cannot be targeted, and the strict meme check must pass.",
                     json!({
                         "type": "object",
                         "properties": {
@@ -173,7 +173,7 @@ impl PlatformPlugin for MemeCollectorPlugin {
             registry.register(
                 ToolSpec::new(
                     "delete_referenced_meme",
-                    "删除当前 QQ 消息所引用的表情包。只能删除引用消息精确对应的表情，不接受任意 ID。",
+                    "Delete the meme referenced by the current QQ message. Only the exact meme of the quoted message can be deleted; arbitrary ids are rejected.",
                     json!({
                         "type": "object",
                         "properties": {},
@@ -339,7 +339,9 @@ async fn save_current_message_meme(
                 .map(|m| m.sender_display_name.clone())
                 .unwrap_or_default(),
             message_id: message_id.clone(),
-            sent_at: replied.map(|m| platform_sent_at(m.timestamp)).unwrap_or_default(),
+            sent_at: replied
+                .map(|m| platform_sent_at(m.timestamp))
+                .unwrap_or_default(),
             collected_at: String::new(),
         }
     };
