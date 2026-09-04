@@ -427,7 +427,10 @@ pub(crate) async fn dashboard_reset_context(
 }
 
 /// 情绪"冷清感"用:该账号最近一条人类消息的时间;库不存在或没有则 None。
-pub(crate) fn latest_human_message_at(paths: &NonokaPaths, account_id: &str) -> Result<Option<i64>> {
+pub(crate) fn latest_human_message_at(
+    paths: &NonokaPaths,
+    account_id: &str,
+) -> Result<Option<i64>> {
     let Some(conn) = open_readonly(paths)? else {
         return Ok(None);
     };

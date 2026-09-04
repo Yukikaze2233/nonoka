@@ -17,7 +17,11 @@ use tokio::process::Command;
 const SCRIPT_TIMEOUT_SECS: u64 = 120;
 const MAX_SCRIPT_OUTPUT_CHARS: usize = 20_000;
 
-pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, paths: &NonokaPaths) {
+pub fn register(
+    registry: &mut ToolRegistry,
+    config: &crate::config::AppConfig,
+    paths: &NonokaPaths,
+) {
     // 内置脚本装在 <system>/personas/default/ 下,自定义人格天然扫不到——
     // 别人换上自定义人格拿到纯净状态(09-01)。覆盖链与四层细节见
     // script_scan_roots。

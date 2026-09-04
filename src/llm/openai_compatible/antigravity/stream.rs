@@ -437,7 +437,8 @@ mod tests {
 
     #[test]
     fn bridge_tools_are_unwrapped_in_both_shapes() {
-        let (name, input) = translate_tool("mcp_nonoka_use_meme", Some(json!({ "action": "show" })));
+        let (name, input) =
+            translate_tool("mcp_nonoka_use_meme", Some(json!({ "action": "show" })));
         assert_eq!(name, "use_meme");
         assert_eq!(input["action"], "show");
         let (name, input) = translate_tool(

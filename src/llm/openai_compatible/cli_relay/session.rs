@@ -158,7 +158,9 @@ pub(in crate::llm::openai_compatible) fn record_session(
 
 /// 清空 Nonoka 会话时联动:丢弃它名下的全部映射,返回对应的 claude 会话 id
 /// (调用方拿去做 claude 侧转录的尽力删除)。
-pub(in crate::llm::openai_compatible) fn forget_nonoka_session(nonoka_session: &str) -> Vec<String> {
+pub(in crate::llm::openai_compatible) fn forget_nonoka_session(
+    nonoka_session: &str,
+) -> Vec<String> {
     let Ok(mut sessions) = SESSIONS.lock() else {
         return Vec::new();
     };
@@ -242,7 +244,10 @@ mod tests {
         );
 
         // 清空 Nonoka 会话 ⇒ 名下映射整体丢弃,并交回 claude 会话 id。
-        assert_eq!(forget_nonoka_session("nonoka-a"), vec!["sess-1".to_string()]);
+        assert_eq!(
+            forget_nonoka_session("nonoka-a"),
+            vec!["sess-1".to_string()]
+        );
         let chain = prefix_chain("p", "m", "sys", &extended);
         assert_eq!(
             find_resumable("p", "m", Some("nonoka-a"), true, &chain, extended.len()),

@@ -10,7 +10,9 @@
 use crate::cli::*;
 
 pub(in crate::cli) async fn run_mcp_serve(paths: &NonokaPaths) -> Result<()> {
-    let session = std::env::var("NONOKA_SESSION").ok().filter(|s| !s.is_empty());
+    let session = std::env::var("NONOKA_SESSION")
+        .ok()
+        .filter(|s| !s.is_empty());
     // antigravity 线的全局 MCP 注册对用户自己交互式开的 agy 同样生效——那时
     // 没有会话身份;守卫在场就只应答空工具表,不降级成无作用域直连。
     let require_session = std::env::var("NONOKA_MCP_REQUIRE_SESSION")

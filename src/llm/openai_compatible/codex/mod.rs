@@ -348,7 +348,10 @@ fn bridge_overrides(exclude_duplicates: bool, nonoka_session: Option<&str>) -> O
         ("NONOKA_TURN_ORIGIN".into(), origin),
     ];
     if exclude_duplicates {
-        env.push(("NONOKA_MCP_EXCLUDE".into(), BRIDGE_DUPLICATE_TOOLS.join(",")));
+        env.push((
+            "NONOKA_MCP_EXCLUDE".into(),
+            BRIDGE_DUPLICATE_TOOLS.join(","),
+        ));
     }
     env.extend(cli_relay::bridge_env_passthrough());
     let env_table = env

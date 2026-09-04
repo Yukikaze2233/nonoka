@@ -164,7 +164,10 @@ pub(in crate::cli) fn detect_origin_tty() -> Option<crate::ipc::OriginTty> {
     })
 }
 
-pub(in crate::cli) async fn send_ipc_command(paths: &NonokaPaths, command: IpcCommand) -> Result<()> {
+pub(in crate::cli) async fn send_ipc_command(
+    paths: &NonokaPaths,
+    command: IpcCommand,
+) -> Result<()> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
     ipc::send(&mut stream, &IpcRequest::new(command)).await?;
     validate_ipc_command_response(ipc::receive::<IpcFrame>(&mut stream).await?)
