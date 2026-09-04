@@ -63,7 +63,7 @@ impl Default for ReplyProcessorConfig {
     fn default() -> Self {
         Self {
             default_enabled: true,
-            threshold: 300,
+            threshold: 100,
             mode: ReplyMode::Image,
             followup_mention: true,
             strip_period: true,
