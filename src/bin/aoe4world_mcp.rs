@@ -6,9 +6,6 @@
 //! 知识库:分析结果缓存在 `AOE4WORLD_KB_DIR`(默认 ~/.aoe4world-mcp)。
 
 use anyhow::{bail, Context, Result};
-use cosmic_text::{
-    Attrs, Buffer as TextBuffer, Color as TextColor, FontSystem, Metrics, Shaping, SwashCache,
-};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -127,7 +124,7 @@ fn write_cache(path: &str, body: &Value) {
     let _ = std::fs::write(file, serde_json::to_string(&record).unwrap_or_default());
 }
 
-fn http_get_uncached(url: &str, cache_key_path: &str) -> Result<Value> {
+fn http_get_uncached(url: &str, _cache_key_path: &str) -> Result<Value> {
     let client = http_client();
     let mut attempt = 0u32;
     loop {
@@ -320,7 +317,7 @@ fn tools_list() -> Value {
         },
         {
             "name": "screenshot_stats",
-            "description": "截取 aoe4world 统计页面的官方原图并以图片形式发到对话。用户要\"胜率表截图/对阵网格图/热力图/发张图看看\"等任何要图的场景,必须调用本工具,不要用文字表格替代。path 支持 stats/rm_solo/matchups、stats/rm_solo/civilizations 等(stats/{board}/matchups|civilizations|maps);board 可换模式;支持查询参数如 rank_level=conqueror。热力网格在页面下方,height 建议 4000+。",
+            "description": "截取 aoe4world 统计页面的官方原图并以图片形式发到对话。用户要\"胜率表截图/对阵网格图/热力图/发张图看看\"等任何要图的场景,必须调用本工具。path 支持 stats/rm_solo/matchups、stats/rm_solo/civilizations 等(stats/{board}/matchups|civilizations|maps);board 可换模式;支持查询参数如 rank_level=conqueror。热力网格在页面下方,height 建议 4000+。若截图失败报错,降级调用 civ_stats 以文字+表格给出胜率数据,并向用户说明截图暂时不可用。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -966,13 +963,6 @@ fn civ_stats(board: &str, rank_level: Option<&str>, patch: Option<&str>) -> Resu
     Ok(text)
 }
 
-fn t2s(t: &str) -> u64 {
-    let mut it = t.split(':');
-    let m: u64 = it.next().and_then(|x| x.parse().ok()).unwrap_or(0);
-    let s: u64 = it.next().and_then(|x| x.parse().ok()).unwrap_or(0);
-    m * 60 + s
-}
-
 fn fmt_secs(s: u64) -> String {
     format!("{}:{:02}", s / 60, s % 60)
 }
@@ -1230,408 +1220,6 @@ fn update_knowledge() -> Result<String> {
     Ok(out)
 }
 
-/// 文明对阵矩阵:两字中文缩写 + 胜率百分数,markdown 表格(长文转图自动出图)。
-fn matchup_grid(board: &str, rank_level: Option<&str>) -> Result<String> {
-    let mut path = format!("/stats/{board}/matchups?");
-    if let Some(rl) = rank_level {
-        path.push_str(&format!("rank_level={rl}&"));
-    }
-    let body: Value = http_get(&path)?;
-    let rows = body
-        .get("data")
-        .and_then(Value::as_array)
-        .context("matchups 无数据")?;
-    let civs = kb()
-        .get("civs")
-        .and_then(Value::as_object)
-        .context("KB civs")?;
-    let abbr = |id: &str| -> String {
-        let cn = civs
-            .get(id)
-            .and_then(|v| v.get("cn"))
-            .and_then(Value::as_str)
-            .unwrap_or(id);
-        cn.chars().take(2).collect()
-    };
-    // 行序按总体胜率降序,列序与行序一致
-    let mut order: Vec<String> = Vec::new();
-    let mut overall: HashMap<String, (usize, usize)> = HashMap::new();
-    let mut cell: HashMap<(String, String), (i64, i64)> = HashMap::new();
-    for r in rows {
-        let a = r
-            .get("civilization")
-            .and_then(Value::as_str)
-            .unwrap_or("?")
-            .to_string();
-        let b = r
-            .get("other_civilization")
-            .and_then(Value::as_str)
-            .unwrap_or("?")
-            .to_string();
-        let g = r.get("games_count").and_then(Value::as_i64).unwrap_or(0);
-        let w = r.get("win_count").and_then(Value::as_i64).unwrap_or(0);
-        if a == b {
-            continue;
-        }
-        let oe = overall.entry(a.clone()).or_default();
-        oe.0 += g as usize;
-        oe.1 += w as usize;
-        cell.insert((a.clone(), b.clone()), (w, g));
-        if !order.contains(&a) {
-            order.push(a.clone());
-        }
-        if !order.contains(&b) {
-            order.push(b.clone());
-        }
-    }
-    let mut sorted: Vec<(String, usize)> = overall
-        .iter()
-        .map(|(k, (g, w))| (k.clone(), if *g > 0 { w * 10000 / g } else { 0 }))
-        .collect();
-    sorted.sort_by(|a, b| b.1.cmp(&a.1));
-    let order: Vec<String> = sorted.iter().map(|(k, _)| k.clone()).collect();
-    let mut out = format!(
-        "文明对阵矩阵 {board}{}(行=该文明视角胜率%,胜率降序;>52 优势 <48 劣势)\n\n",
-        rank_level.map(|r| format!(" [{r}]")).unwrap_or_default(),
-    );
-    out.push('|');
-    for c in &order {
-        out.push_str(&abbr(c));
-        out.push('|');
-    }
-    out.push('\n');
-    out.push_str(&format!("|---{}|\n", "---|".repeat(order.len())));
-    for row_civ in &order {
-        out.push('|');
-        out.push_str(&abbr(row_civ));
-        for col_civ in &order {
-            if row_civ == col_civ {
-                out.push_str("| -- ");
-            } else if let Some((w, g)) = cell.get(&(row_civ.clone(), col_civ.clone())) {
-                let wr = if *g > 0 { w * 100 / g } else { 0 };
-                out.push_str(&format!("|{wr}"));
-            } else {
-                out.push_str("| .. ");
-            }
-        }
-        out.push_str("|\n");
-    }
-    out.push_str(&format!(
-        "(共 {} 文明;patch 见 update_knowledge;两字缩写对照: ",
-        order.len()
-    ));
-    for c in &order {
-        out.push_str(&format!("{}={} ", abbr(c), c));
-    }
-    out.push(')');
-    Ok(out)
-}
-
-// ---- 热力图渲染:cosmic-text 光栅化中文,image 画布,零外部进程 ----
-
-fn find_cjk_font() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("AOE4_FONT") {
-        let p = PathBuf::from(p);
-        if p.is_file() {
-            return Some(p);
-        }
-    }
-    [
-        "/usr/share/nonoka/fonts/NotoSansCJK-Regular.ttc",
-        "/opt/nonoka/assets/fonts/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
-    ]
-    .iter()
-    .map(PathBuf::from)
-    .find(|p| p.is_file())
-}
-
-/// 简单文本画布:一次 Buffer 一次 blit,白字或指定色。
-struct TextPainter {
-    fs: Option<FontSystem>,
-    cache: Option<SwashCache>,
-}
-
-impl TextPainter {
-    fn new() -> Self {
-        let Some(font) = find_cjk_font() else {
-            return Self {
-                fs: None,
-                cache: None,
-            };
-        };
-        let mut fs = FontSystem::new();
-        if fs.db_mut().load_font_file(&font).is_err() {
-            return Self {
-                fs: None,
-                cache: None,
-            };
-        }
-        let cache = SwashCache::new();
-        Self {
-            fs: Some(fs),
-            cache: Some(cache),
-        }
-    }
-
-    /// 在 (x,y)(基线左上角) 绘制 size px 文本,返回实际绘制宽度;无字体时跳过。
-    fn draw(
-        &mut self,
-        canvas: &mut image::RgbaImage,
-        x: i32,
-        y: i32,
-        text: &str,
-        size: f32,
-        rgb: (u8, u8, u8),
-    ) -> i32 {
-        let Some(fs) = self.fs.as_mut() else { return 0 };
-        let Some(cache) = self.cache.as_mut() else {
-            return 0;
-        };
-        let metrics = Metrics::new(size, size * 1.25);
-        let mut buf = TextBuffer::new(fs, metrics);
-        let attrs = Attrs::new().color(TextColor::rgb(rgb.0, rgb.1, rgb.2));
-        buf.set_text(text, &attrs, Shaping::Advanced, None);
-        buf.set_size(Some(2400.0), Some(size * 2.0));
-        buf.shape_until_scroll(fs, false);
-        let (cw, ch) = (canvas.width() as i32, canvas.height() as i32);
-        let mut max_x = 0i32;
-        for run in buf.layout_runs() {
-            for glyph in run.glyphs.iter() {
-                let phys = glyph.physical((0.0, 0.0), 1.0);
-                let Some(sw) = cache.get_image_uncached(fs, phys.cache_key) else {
-                    continue;
-                };
-                let pl = sw.placement;
-                let gx = x + (glyph.x + phys.x as f32) as i32;
-                let gy = y + (run.line_y + glyph.y + phys.y as f32) as i32;
-                if sw.content == cosmic_text::SwashContent::Mask {
-                    for dy in 0..pl.height as i32 {
-                        for dx in 0..pl.width as i32 {
-                            let a = sw.data[dy as usize * pl.width as usize + dx as usize] as u32;
-                            if a == 0 {
-                                continue;
-                            }
-                            let px = gx + pl.left + dx;
-                            let py = gy + pl.top + dy;
-                            if px < 0 || py < 0 || px >= cw || py >= ch {
-                                continue;
-                            }
-                            max_x = max_x.max(px + 1);
-                            let p = canvas.get_pixel_mut(px as u32, py as u32);
-                            p.0[0] = ((rgb.0 as u32 * a + p.0[0] as u32 * (255 - a)) / 255) as u8;
-                            p.0[1] = ((rgb.1 as u32 * a + p.0[1] as u32 * (255 - a)) / 255) as u8;
-                            p.0[2] = ((rgb.2 as u32 * a + p.0[2] as u32 * (255 - a)) / 255) as u8;
-                            if p.0[3] as u32 + a > 255 {
-                                p.0[3] = 255;
-                            } else {
-                                p.0[3] += a as u8;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        max_x.saturating_sub(x)
-    }
-}
-
-/// 胜率(0-100)到绿-中性-红背景色,亮度自适应文字色。
-fn heat_color(win_rate: f64) -> ([u8; 4], (u8, u8, u8)) {
-    let t = ((win_rate - 50.0) / 12.0).clamp(-1.0, 1.0) as f32;
-    let (r, g, b) = if t >= 0.0 {
-        let k = t;
-        let base = 42.0 + (1.0 - k) * 28.0;
-        (base, base + k * 130.0, base + k * 40.0)
-    } else {
-        let k = -t;
-        let base = 42.0 + (1.0 - k) * 28.0;
-        (base + k * 140.0, base + k * 10.0, base + k * 10.0)
-    };
-    let bg = [r as u8, g as u8, b as u8, 255];
-    let text = if g > 120.0 && r < 150.0 {
-        (12, 30, 14)
-    } else {
-        (238, 240, 244)
-    };
-    (bg, text)
-}
-
-/// 画对阵热力网格 PNG;数据来自 matchups(已缓存)。
-fn render_matchup_png(
-    order: &[String],
-    cell: &HashMap<(String, String), (i64, i64)>,
-    abbrs: &HashMap<String, String>,
-    title: &str,
-) -> Result<Vec<u8>> {
-    use image::{Rgba, RgbaImage};
-    let n = order.len();
-    let label_w = 64i32;
-    let cell_s = 56i32;
-    let head_h = 72i32;
-    let title_h = 56i32;
-    let w = (label_w + n as i32 * cell_s + 16) as u32;
-    let h = (title_h + head_h + n as i32 * cell_s + 40) as u32;
-    let mut canvas = RgbaImage::from_pixel(w, h, Rgba([17, 19, 24, 255]));
-    let mut painter = TextPainter::new();
-    // 标题
-    painter.draw(&mut canvas, 16, 10, title, 26.0, (232, 234, 240));
-    painter.draw(
-        &mut canvas,
-        16,
-        title_h - 18,
-        "行=该文明视角胜率% 绿=优势 红=劣势 对角=镜像",
-        15.0,
-        (148, 152, 162),
-    );
-    // 列头
-    for (i, civ) in order.iter().enumerate() {
-        let ab = abbrs
-            .get(civ)
-            .cloned()
-            .unwrap_or_else(|| civ.chars().take(2).collect());
-        let x = label_w + i as i32 * cell_s + 6;
-        painter.draw(&mut canvas, x, title_h + 8, &ab, 18.0, (168, 172, 182));
-    }
-    // 行
-    for (ri, row_civ) in order.iter().enumerate() {
-        let y0 = title_h + head_h + ri as i32 * cell_s;
-        let ab = abbrs
-            .get(row_civ)
-            .cloned()
-            .unwrap_or_else(|| row_civ.chars().take(2).collect());
-        painter.draw(&mut canvas, 8, y0 + 18, &ab, 18.0, (200, 204, 214));
-        for ci in 0..n {
-            let x0 = label_w + ci as i32 * cell_s;
-            let col_civ = &order[ci];
-            let rect = image::imageops::crop(
-                &mut canvas,
-                x0 as u32 + 1,
-                (y0 + 1) as u32,
-                (cell_s - 2) as u32,
-                (cell_s - 2) as u32,
-            );
-            let _ = rect;
-            if ri == ci {
-                for dy in 2..cell_s - 2 {
-                    for dx in 2..cell_s - 2 {
-                        canvas.put_pixel(
-                            (x0 + dx) as u32,
-                            (y0 + dy) as u32,
-                            Rgba([40, 43, 51, 255]),
-                        );
-                    }
-                }
-                painter.draw(&mut canvas, x0 + 20, y0 + 18, "--", 18.0, (94, 98, 108));
-                continue;
-            }
-            let (wr, txt) = match cell.get(&(row_civ.clone(), col_civ.clone())) {
-                Some((w_, g)) if *g > 0 => (
-                    (*w_ as f64) * 100.0 / (*g as f64),
-                    format!("{}", ((*w_ * 100 / *g).min(99))),
-                ),
-                _ => continue,
-            };
-            let (bg, tcol) = heat_color(wr);
-            for dy in 2..cell_s - 2 {
-                for dx in 2..cell_s - 2 {
-                    canvas.put_pixel((x0 + dx) as u32, (y0 + dy) as u32, Rgba(bg));
-                }
-            }
-            // 两位数字宽约 24px,一位约 12px,按长度近似居中
-            let cx = x0 + 14 + (2 - txt.chars().count() as i32) * 6;
-            painter.draw(&mut canvas, cx, y0 + 16, &txt, 20.0, tcol);
-        }
-    }
-    let mut png = Vec::new();
-    use image::ImageEncoder;
-    image::codecs::png::PngEncoder::new(std::io::Cursor::new(&mut png))
-        .write_image(canvas.as_raw(), w, h, image::ExtendedColorType::Rgba8)
-        .context("encode png")?;
-    Ok(png)
-}
-
-/// matchup_grid 工具主逻辑:拉数据→排序→画图→(text+image) 内容块。
-fn matchup_grid_image(board: &str, rank_level: Option<&str>) -> Result<Vec<Value>> {
-    let mut path = format!("/stats/{board}/matchups?");
-    if let Some(rl) = rank_level {
-        path.push_str(&format!("rank_level={rl}&"));
-    }
-    let body: Value = http_get(&path)?;
-    let rows = body
-        .get("data")
-        .and_then(Value::as_array)
-        .context("matchups 无数据")?;
-    let civs_kb = kb()
-        .get("civs")
-        .and_then(Value::as_object)
-        .context("KB civs")?;
-    let mut abbrs = HashMap::new();
-    for (id, v) in civs_kb {
-        let cn = v.get("cn").and_then(Value::as_str).unwrap_or(id);
-        abbrs.insert(id.clone(), cn.chars().take(2).collect::<String>());
-    }
-    let mut overall: HashMap<String, (usize, usize)> = HashMap::new();
-    let mut cell: HashMap<(String, String), (i64, i64)> = HashMap::new();
-    for r in rows {
-        let a = r
-            .get("civilization")
-            .and_then(Value::as_str)
-            .unwrap_or("?")
-            .to_string();
-        let b = r
-            .get("other_civilization")
-            .and_then(Value::as_str)
-            .unwrap_or("?")
-            .to_string();
-        if a == b {
-            continue;
-        }
-        let g = r.get("games_count").and_then(Value::as_i64).unwrap_or(0);
-        let w_ = r.get("win_count").and_then(Value::as_i64).unwrap_or(0);
-        let oe = overall.entry(a.clone()).or_default();
-        oe.0 += g as usize;
-        oe.1 += w_ as usize;
-        cell.insert((a, b), (w_, g));
-    }
-    let mut order: Vec<String> = overall.keys().cloned().collect();
-    order.sort_by_key(|k| {
-        let (g, w_) = overall[k];
-        if g > 0 {
-            std::cmp::Reverse(w_ * 10000 / g)
-        } else {
-            std::cmp::Reverse(0)
-        }
-    });
-    let title = format!(
-        "AOE4 文明对阵矩阵 {board}{}(patch {})",
-        rank_level.map(|r| format!(" [{r}]")).unwrap_or_default(),
-        body.get("patch").and_then(Value::as_str).unwrap_or("-")
-    );
-    let png = render_matchup_png(&order, &cell, &abbrs, &title)?;
-    use base64::Engine;
-    let b64 = base64::engine::general_purpose::STANDARD.encode(&png);
-    let cn_list = order
-        .iter()
-        .map(|c| {
-            format!(
-                "{}={}",
-                abbrs.get(c).cloned().unwrap_or_default(),
-                civs_kb
-                    .get(c)
-                    .and_then(|v| v.get("cn"))
-                    .and_then(Value::as_str)
-                    .unwrap_or(c)
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(" ");
-    Ok(vec![
-        json!({"type": "text", "text": format!("文明对阵热力图已生成({} 文明,胜率降序)。缩写对照:{cn_list}。请直接把图发给用户,并点评最值得注意的克制关系(>57% 或 <43%)。", order.len())}),
-        json!({"type": "image", "data": b64, "mimeType": "image/png"}),
-    ])
-}
-
 /// 截图机连接串(AOE4_SHOT_HOST,如 alliance@192.168.64.216);未配置时
 /// 用本机 docker。NAS 的 docker 有 PVE 嵌套 sysctl 限制起不了新容器,
 /// 部署上必须把截图机指到 minipc。
@@ -1710,7 +1298,7 @@ fn screenshot_stats(path: &str, height: u32) -> Result<Vec<Value>> {
     }
     if size < 100_000 {
         bail!(
-            "截图疑似空白({size} bytes,站点挑战或渲染未完成)。改用 matchup_grid 工具出热力图 PNG,或稍后再试"
+            "截图疑似空白({size} bytes,站点挑战或渲染未完成)。降级方案:改用 civ_stats 工具输出文字版胜率数据"
         );
     }
     let png = if is_remote {
@@ -2186,14 +1774,6 @@ fn call_tool(name: &str, args: &Value) -> Result<String> {
             civ_stats(board, rl, patch)
         }
         "kb_lookup" => kb_lookup(args.get("query").and_then(Value::as_str).unwrap_or("")),
-        "matchup_grid" => {
-            let board = args
-                .get("board")
-                .and_then(Value::as_str)
-                .unwrap_or("rm_solo");
-            let rl = args.get("rank_level").and_then(Value::as_str);
-            matchup_grid(board, rl)
-        }
         "analyze_game_full" => analyze_game_full(
             args.get("share_url").and_then(Value::as_str),
             args.get("profile_id").and_then(Value::as_i64),
@@ -2239,13 +1819,6 @@ fn main() {
                 let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
                 // 图片型工具返回 text+image 多内容块;其余工具单文本。
                 let image_tool = match name {
-                    "matchup_grid" => Some(matchup_grid_image(
-                        arguments
-                            .get("board")
-                            .and_then(Value::as_str)
-                            .unwrap_or("rm_solo"),
-                        arguments.get("rank_level").and_then(Value::as_str),
-                    )),
                     "screenshot_stats" => Some(screenshot_stats(
                         arguments.get("path").and_then(Value::as_str).unwrap_or(""),
                         arguments
