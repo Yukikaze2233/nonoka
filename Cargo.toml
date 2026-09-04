@@ -16,6 +16,10 @@ path = "src/lib.rs"
 name = "nonoka"
 path = "src/main.rs"
 
+[[bin]]
+name = "aoe4world-mcp"
+path = "src/bin/aoe4world_mcp.rs"
+
 [dependencies]
 anyhow = "1.0"
 axum = { version = "0.8", features = ["ws"] }
