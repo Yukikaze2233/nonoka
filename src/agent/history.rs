@@ -291,7 +291,7 @@ impl Agent {
             round
                 .calls
                 .iter()
-                .any(|call| INLINE_MEDIA_TOOLS.contains(&call.name.as_str()))
+                .any(|call| is_inline_media_tool(&call.name))
         });
         if !relevant {
             return grouped;

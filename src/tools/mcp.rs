@@ -322,7 +322,59 @@ fn call_mcp_tool_inner(
             "arguments": args,
         }),
     )?;
+    // 图片内容块走 vision inline 寄存(与 vision_analyze 同一出口):媒体进
+    // turn_inline_media 并落库,模型收到 inline JSON + 文本部分作为说明。
+    // 文本部分并成 kind=text 的首项,inline_media_message 会把它拼进追加消息。
+    if let Some(mut media) = extract_image_media(&result, &binding.server.id) {
+        let note = format_mcp_result(&result);
+        media.insert(
+            0,
+            crate::state::TurnInlineMedia {
+                call_id: String::new(),
+                seq: 0,
+                kind: crate::state::INLINE_MEDIA_KIND_TEXT.to_string(),
+                mime: "text/plain".into(),
+                source: format!("mcp:{}", binding.server.id),
+                data: Some(note.into_bytes()),
+            },
+        );
+        return Ok(crate::tools::vision::inline::deposit(media));
+    }
     Ok(format_mcp_result(&result))
+}
+
+/// 抽出工具结果 content 里的图片块(base64)。无图片块时返回 None,
+/// 原有纯文本路径不受影响。
+fn extract_image_media(
+    result: &Value,
+    server_id: &str,
+) -> Option<Vec<crate::state::TurnInlineMedia>> {
+    use base64::Engine;
+    let content = result.get("content").and_then(Value::as_array)?;
+    let mut media = Vec::new();
+    for part in content {
+        if part.get("type").and_then(Value::as_str) != Some("image") {
+            continue;
+        }
+        let data = part.get("data").and_then(Value::as_str)?;
+        let mime = part
+            .get("mimeType")
+            .and_then(Value::as_str)
+            .unwrap_or("image/png")
+            .to_string();
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(data)
+            .ok()?;
+        media.push(crate::state::TurnInlineMedia {
+            call_id: String::new(),
+            seq: 0,
+            kind: crate::state::INLINE_MEDIA_KIND_IMAGE.to_string(),
+            mime,
+            source: format!("mcp:{server_id}"),
+            data: Some(bytes),
+        });
+    }
+    (!media.is_empty()).then_some(media)
 }
 
 /// 同步 MCP 会话移出 async 线程(spawn_blocking):在 actor 的单线程

@@ -62,7 +62,13 @@ pub(in crate::agent) fn clipboard_binary_image_from_tool_result(
 
 /// 会在工具结果之后追加媒体块的工具。历史重放只对这些回合查一次
 /// `turn_inline_media`,别的回合不多付一次查询。
+/// MCP 工具(mcp_<server>_<tool>)的结果可能带 inline 图片块(09-05),
+/// 前缀匹配放行;多查一次空表的成本可忽略。
 pub(in crate::agent) const INLINE_MEDIA_TOOLS: &[&str] = &["vision_analyze", "read_clipboard"];
+
+pub(in crate::agent) fn is_inline_media_tool(name: &str) -> bool {
+    INLINE_MEDIA_TOOLS.contains(&name) || name.starts_with("mcp_")
+}
 
 /// 某次工具调用之后要追加给模型的媒体:剪贴板图片(旧路)与
 /// `vision_analyze` 的 inline 寄存(09-03)走同一条出口。
