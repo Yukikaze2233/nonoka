@@ -199,7 +199,7 @@ fn tools_list() -> Value {
     json!({"tools": [
         {
             "name": "search_players",
-            "description": "在 AOE4World 按昵称搜索玩家，返回 profile_id、天梯分、最近比赛时间等。",
+            "description": "在 AOE4World 按昵称搜索玩家，返回 profile_id、天梯分、最近比赛时间等。拿到 profile_id 后按用户诉求继续后续调用(主页截图用 screenshot_stats、历史分析用 analyze_player),全部在同一轮回复内完成,不要中途反问。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -317,7 +317,7 @@ fn tools_list() -> Value {
         },
         {
             "name": "screenshot_stats",
-            "description": "截取 aoe4world 统计页面的官方原图并以图片形式发到对话。用户要\"胜率表截图/对阵网格图/热力图/发张图看看\"等任何要图的场景,必须调用本工具。path 支持 stats/rm_solo/matchups、stats/rm_solo/civilizations 等(stats/{board}/matchups|civilizations|maps);board 可换模式;支持查询参数如 rank_level=conqueror。热力网格在页面下方,height 建议 4000+。若截图失败报错,降级调用 civ_stats 以文字+表格给出胜率数据,并向用户说明截图暂时不可用。",
+            "description": "截取 aoe4world 页面官方原图并以图片形式发到对话,一次调用直接完成,禁止反问用户或要求补充信息。两种场景:(1)统计图:用户要\"胜率表/对阵网格/热力图/文明强度截图\"→ path 用 stats/rm_solo/civilizations、stats/rm_solo/matchups 等,热力网格在页面下方 height 建议 4000+;(2)玩家主页:用户要\"玩家主页截图/发XX的数据图/查XX战绩截图\"→ path 用 players/<profile_id>-(如 players/15324458-),可带查询参数 rank_level。支持 rank_level=conqueror 等段位参数。若截图失败报错,降级调用 civ_stats/get_player 以文字+表格给出数据,并向用户说明截图暂时不可用。群聊场景同样一次调用直接出图。",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -1242,17 +1242,18 @@ fn shot_host() -> Vec<String> {
 
 /// 截图管线:headless chromium 截官网页面,PNG 回传。默认本机 docker,
 /// 配置 AOE4_SHOT_HOST 后经 SSH 在远端截图机执行。
+/// 允许 stats/ 统计页与 players/ 玩家主页;slug 可含 unicode 字母。
 fn screenshot_stats(path: &str, height: u32) -> Result<Vec<Value>> {
     let safe_path = path.trim().trim_start_matches('/');
     if safe_path.is_empty()
         || !safe_path
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() || "=&?/_-.".contains(c))
+            .all(|c| c.is_alphanumeric() || "=&?/_-.%".contains(c))
     {
-        bail!("path 只允许站点相对路径(字母数字与 =&?/_-.),拒绝: {path}");
+        bail!("path 只允许站点相对路径(字母数字与 =&?/_-.%),拒绝: {path}");
     }
-    if !safe_path.starts_with("stats/") {
-        bail!("只允许截 stats/ 下的统计页,拒绝: {path}");
+    if !safe_path.starts_with("stats/") && !safe_path.starts_with("players/") {
+        bail!("只允许截 stats/ 统计页与 players/ 玩家主页,拒绝: {path}");
     }
     let height = height.clamp(800, 6000);
     let url = format!("https://aoe4world.com/{safe_path}");
