@@ -206,6 +206,31 @@ impl AppConfig {
         (!usable.is_empty()).then_some(usable)
     }
 
+    /// 活跃池里每个供应商的工具结果都能直接带媒体时才用"图进工具结果"
+    /// 形态;否则整池退回"工具结果之后补一条带图的用户消息"。池是负载均衡
+    /// 的,一半供应商会 400 就不能用。空池按能带处理(无处可发,形态无关)。
+    pub fn active_pool_tool_result_media(&self) -> bool {
+        self.active_provider_model_choices().iter().all(|choice| {
+            self.provider(Some(&choice.provider_id))
+                .map(|provider| provider.tool_result_carries_media())
+                .unwrap_or(false)
+        })
+    }
+
+    /// 活跃文本池整池靠原生 `view_file` 看媒体,且该工具在本模式放行。
+    /// 满足时用户媒体只留本地路径提示、邀请模型自己打开,不做视觉旁路
+    /// 转述,也不往消息里内联。池是负载均衡的,有一个端点不是这条线就不算。
+    pub fn active_pool_views_media_with_native_file_tool(&self, dev_mode: bool) -> bool {
+        let pool = self.active_provider_model_choices();
+        !pool.is_empty()
+            && pool.iter().all(|choice| {
+                self.provider(Some(&choice.provider_id))
+                    .ok()
+                    .is_some_and(|provider| provider.views_media_with_native_file_tool())
+            })
+            && relay_scope_allows(&self.plugins.antigravity.native_tools, dev_mode)
+    }
+
     pub fn active_provider_model_choices(&self) -> Vec<ProviderModelChoice> {
         match &self.active_provider_models {
             None => self
@@ -700,11 +725,24 @@ impl AppConfig {
 }
 
 impl AppConfig {
-    /// 内置 Claude Code 特殊供应商是否启用。这是订阅接入的**总开关**:
-    /// 同时决定中转供应商可选与 `claude_code` 委托工具注册。
+    /// 内置 Claude Code 特殊供应商是否启用(订阅中转的总开关)。
     pub fn claude_code_enabled(&self) -> bool {
         self.providers
             .iter()
             .any(|provider| provider.is_claude_code() && provider.enabled)
+    }
+
+    /// 内置 Codex 特殊供应商是否启用(codex CLI 中转的总开关)。
+    pub fn codex_enabled(&self) -> bool {
+        self.providers
+            .iter()
+            .any(|provider| provider.is_codex() && provider.enabled)
+    }
+
+    /// 内置 Antigravity 特殊供应商是否启用(agy CLI 中转的总开关)。
+    pub fn antigravity_enabled(&self) -> bool {
+        self.providers
+            .iter()
+            .any(|provider| provider.is_antigravity() && provider.enabled)
     }
 }

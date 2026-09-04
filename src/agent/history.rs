@@ -27,18 +27,6 @@ impl Agent {
             );
             return Ok(Vec::new());
         };
-        let track_loaded_tool_sources = self.tools_enabled
-            && self.config.tools.persist_loaded_tools
-            && tools::is_hybrid_loading_mode(&self.config.tools.loading_mode);
-        if track_loaded_tool_sources {
-            self.effective_context_tokens()?;
-        }
-        let mut loaded_tool_sources = if track_loaded_tool_sources {
-            Some(self.state.load_session_loaded_tools_with_sources()?)
-        } else {
-            None
-        };
-        let expected_loaded_tools = loaded_tool_sources.clone();
         let mut total = usize::try_from(self.effective_context_tokens()?).unwrap_or(usize::MAX);
         let trigger = (context_window as f32 * self.trim_at_ratio).max(1.0) as usize;
         if total < trigger {
@@ -47,17 +35,6 @@ impl Agent {
 
         let target = (context_window as f32 * (1.0 - self.trim_batch_ratio)).max(1.0) as usize;
         let turns = self.state.load_visible_turns()?;
-        let mut loaded_tool_tokens = loaded_tool_sources
-            .as_ref()
-            .map(|items| {
-                self.tool_definition_tokens(
-                    &items
-                        .iter()
-                        .map(|(name, _)| name.clone())
-                        .collect::<BTreeSet<_>>(),
-                )
-            })
-            .unwrap_or(0);
         let mut count = 0usize;
         for turn in turns
             .iter()
@@ -76,20 +53,6 @@ impl Agent {
                 turn_context_tokens(turn)
             };
             total = total.saturating_sub(turn_tokens);
-            if let Some(items) = loaded_tool_sources.as_mut() {
-                items.retain(|(_, source)| source.as_deref() != Some(turn.turn_id.as_str()));
-                let remaining = items
-                    .iter()
-                    .map(|(name, _)| name.clone())
-                    .collect::<BTreeSet<_>>();
-                let remaining_tokens = self.tool_definition_tokens(&remaining);
-                if remaining_tokens <= loaded_tool_tokens {
-                    total = total.saturating_sub(loaded_tool_tokens - remaining_tokens);
-                } else {
-                    total = total.saturating_add(remaining_tokens - loaded_tool_tokens);
-                }
-                loaded_tool_tokens = remaining_tokens;
-            }
             count += 1;
         }
         let turns = self.state.oldest_evictable_visible_turns(count)?;
@@ -116,12 +79,7 @@ impl Agent {
                 )
             );
         }
-        archive_and_delete_visible_turns_checked(
-            &self.state,
-            &self.memory,
-            &turns,
-            expected_loaded_tools.as_deref(),
-        )
+        archive_and_delete_visible_turns_checked(&self.state, &self.memory, &turns, None)
     }
 
     pub(in crate::agent) fn initial_loaded_tools(
@@ -263,10 +221,15 @@ impl Agent {
                     false,
                 );
                 messages.push(self.followup_user_message(followup));
+                // followup 随发的瞬态尾巴(runtime/图片路径/context-images)同样
+                // 化石回放,否则化石在这里比活体短一截,前缀与续传链都掰断。
+                messages.extend(followup.context_messages().iter().map(replay_fossil));
             }
             // dsh 形态回放:每轮 assistant 带原生 tool_calls(参数原样字节),
             // 随后各 call 的 role:"tool" 输出;最终回复照旧收尾。老回合
             // (无结构化流)退回 private_tool_memory 压扁兜底。
+            let inline_media = self.turn_inline_media_by_call(turn);
+            let tool_form = self.config.active_pool_tool_result_media();
             for round in replay_rounds(&turn.tool_flow) {
                 push_assistant_message_with_reasoning(
                     messages,
@@ -290,7 +253,17 @@ impl Agent {
                     false,
                 );
                 for call in &round.calls {
-                    messages.push(ChatMessage::tool(call.id.clone(), call.output.clone()));
+                    // 工具的媒体块(vision_analyze inline / 剪贴板图片 / 旁路
+                    // 描述)与活体同形态同位置回放。
+                    push_tool_result_with_media(
+                        messages,
+                        ChatMessage::tool(call.id.clone(), call.output.clone()),
+                        inline_media
+                            .get(call.id.as_str())
+                            .map(Vec::as_slice)
+                            .unwrap_or(&[]),
+                        tool_form,
+                    );
                 }
             }
             push_assistant_context_messages(
@@ -305,6 +278,38 @@ impl Agent {
                 )));
             }
         }
+    }
+
+    /// 本回合各次工具调用之后追加的媒体块,按 call_id 归组。只有流里出现
+    /// 过会追加媒体的工具才查库,其余回合零开销。
+    fn turn_inline_media_by_call(
+        &self,
+        turn: &crate::state::Turn,
+    ) -> std::collections::HashMap<String, Vec<crate::state::TurnInlineMedia>> {
+        let mut grouped = std::collections::HashMap::new();
+        let relevant = turn.tool_flow.iter().any(|round| {
+            round
+                .calls
+                .iter()
+                .any(|call| INLINE_MEDIA_TOOLS.contains(&call.name.as_str()))
+        });
+        if !relevant {
+            return grouped;
+        }
+        match self.state.load_turn_inline_media(&turn.turn_id) {
+            Ok(items) => {
+                for item in items {
+                    grouped
+                        .entry(item.call_id.clone())
+                        .or_insert_with(Vec::new)
+                        .push(item);
+                }
+            }
+            Err(error) => {
+                tracing::warn!(turn_id = %turn.turn_id, %error, "failed to load inline media for replay");
+            }
+        }
+        grouped
     }
 
     /// Byte-identical prefix of the live conversation covering exactly the
@@ -342,13 +347,10 @@ impl Agent {
         if !self.tools_enabled {
             return Ok(Vec::new());
         }
-        let loaded = self.initial_loaded_tools(&[])?;
         let tools = self.tools.lock().unwrap();
         Ok(
-            if tools::is_stub_loading_mode(&self.config.tools.loading_mode) {
+            if tools::is_stub_loading_mode(&tools::effective_tools_loading_mode(&self.config)) {
                 tools.stub_definitions()
-            } else if tools::is_hybrid_loading_mode(&self.config.tools.loading_mode) {
-                tools.lazy_definitions(&loaded)
             } else {
                 tools.definitions()
             },

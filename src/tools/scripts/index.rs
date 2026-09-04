@@ -66,11 +66,33 @@ pub(crate) struct ScriptDisplayNames {
     pub(crate) en: Option<String>,
 }
 
-pub fn rescan_scripts(registry: &mut ToolRegistry, paths: &NonokaPaths) {
-    let dirs = [
-        paths.system_scripts_dir.as_path(),
-        paths.scripts_dir.as_path(),
-    ];
+/// 扫描根,覆盖链低→高。每个物理层(内置 system、全局 data)都是
+/// 「顶层(平台共享) + personas/<当前人格>(人格专属)」两级,四个根按此顺序扫,
+/// scan_scripts 后者同名覆盖前者。
+///
+/// 内置脚本装在 `<system>/personas/default/` 下:自定义人格扫
+/// `<system>/personas/<那个人格>`——目录不存在,天然拿不到内置。人格门因此是
+/// **隐式**的,不再需要 is_default_persona 特判,四层一套逻辑贯穿,与 data 层的
+/// personas/ 约定对齐(09-01)。顶层留给将来的平台级内置脚本(当前为空)。
+pub(crate) fn script_scan_roots(
+    config: &crate::config::AppConfig,
+    paths: &NonokaPaths,
+) -> Vec<PathBuf> {
+    vec![
+        paths.system_scripts_dir.clone(),
+        config.active_persona_system_scripts_dir(paths),
+        paths.scripts_dir.clone(),
+        config.active_persona_scripts_dir(paths),
+    ]
+}
+
+pub fn rescan_scripts(
+    registry: &mut ToolRegistry,
+    config: &crate::config::AppConfig,
+    paths: &NonokaPaths,
+) {
+    let roots = script_scan_roots(config, paths);
+    let dirs: Vec<&Path> = roots.iter().map(PathBuf::as_path).collect();
     let scan = match scan_scripts(&dirs) {
         Ok(scan) => scan,
         Err(error) => {

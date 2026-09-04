@@ -22,6 +22,10 @@ pub(in crate::llm::openai_compatible) enum ProviderProtocol {
     /// 本机 Claude Code CLI 中转:传输层是子进程 stream-json,不是 HTTP。
     /// 只能显式配置,`auto` 永远不会猜到这条线。
     ClaudeCode,
+    /// 本机 Antigravity CLI(`agy`)中转:同样是子进程 stream-json。
+    Antigravity,
+    /// 本机 OpenAI Codex CLI 中转:`codex exec --json` 的 JSONL。
+    Codex,
 }
 
 impl ProviderProtocol {
@@ -36,6 +40,8 @@ impl ProviderProtocol {
                 Ok(Self::Anthropic)
             }
             "claude-code" | "claude-code-cli" => Ok(Self::ClaudeCode),
+            "antigravity" | "antigravity-cli" | "agy" => Ok(Self::Antigravity),
+            "codex" | "codex-cli" => Ok(Self::Codex),
             protocol => bail!("unsupported provider protocol: {protocol}"),
         }
     }
@@ -50,6 +56,63 @@ pub(in crate::llm::openai_compatible) fn provider_uses_claude_code(
         ProviderProtocol::from_provider(provider),
         Ok(ProviderProtocol::ClaudeCode)
     )
+}
+
+/// 该 provider 是否走 Antigravity CLI 中转。
+pub(in crate::llm::openai_compatible) fn provider_uses_antigravity(
+    provider: &ProviderConfig,
+) -> bool {
+    matches!(
+        ProviderProtocol::from_provider(provider),
+        Ok(ProviderProtocol::Antigravity)
+    )
+}
+
+/// 该 provider 是否走 Codex CLI 中转。
+pub(in crate::llm::openai_compatible) fn provider_uses_codex(provider: &ProviderConfig) -> bool {
+    matches!(
+        ProviderProtocol::from_provider(provider),
+        Ok(ProviderProtocol::Codex)
+    )
+}
+
+/// 三条本机 CLI 中转线的合称:端点装配(无 API key)、keepalive 分流按它豁免。
+pub(in crate::llm::openai_compatible) fn provider_uses_cli_relay(
+    provider: &ProviderConfig,
+) -> bool {
+    provider_uses_claude_code(provider)
+        || provider_uses_antigravity(provider)
+        || provider_uses_codex(provider)
+}
+
+/// Codex 的思考档:config 的 `model_reasoning_effort` 五档,所有模型通用。
+pub(in crate::llm::openai_compatible) fn codex_reasoning_variants(
+    _model: &str,
+) -> Vec<ReasoningVariant> {
+    ["minimal", "low", "medium", "high", "xhigh"]
+        .into_iter()
+        .map(|effort| ReasoningVariant {
+            id: effort.to_string(),
+            setting: ReasoningSetting::Effort(effort.to_string()),
+        })
+        .collect()
+}
+
+/// Antigravity 的思考档:CLI 的 `--effort` 三档。gemini/gpt-oss 模型名自带
+/// 档位后缀(-high/-low),只给 claude-* 模型暴露 effort。
+pub(in crate::llm::openai_compatible) fn antigravity_reasoning_variants(
+    model: &str,
+) -> Vec<ReasoningVariant> {
+    if !model.starts_with("claude-") {
+        return Vec::new();
+    }
+    ["low", "medium", "high"]
+        .into_iter()
+        .map(|effort| ReasoningVariant {
+            id: effort.to_string(),
+            setting: ReasoningSetting::Effort(effort.to_string()),
+        })
+        .collect()
 }
 
 pub(in crate::llm::openai_compatible) fn effective_protocol(
@@ -128,6 +191,12 @@ pub(in crate::llm::openai_compatible) fn supported_reasoning_variants(
     if provider_uses_claude_code(provider) {
         return claude_code_reasoning_variants(model);
     }
+    if provider_uses_antigravity(provider) {
+        return antigravity_reasoning_variants(model);
+    }
+    if provider_uses_codex(provider) {
+        return codex_reasoning_variants(model);
+    }
     let Some(info) = models_cache::reasoning_info(&provider.id, model) else {
         return Vec::new();
     };
@@ -158,7 +227,9 @@ pub(in crate::llm::openai_compatible) fn reasoning_variant_supported_for_protoco
 ) -> bool {
     match protocol {
         // Claude Code 只认 `--effort` 的档位语义。
-        ProviderProtocol::ClaudeCode => matches!(variant.setting, ReasoningSetting::Effort(_)),
+        ProviderProtocol::ClaudeCode | ProviderProtocol::Antigravity | ProviderProtocol::Codex => {
+            matches!(variant.setting, ReasoningSetting::Effort(_))
+        }
         ProviderProtocol::OpenAiResponses => matches!(
             variant.setting,
             ReasoningSetting::Effort(_) | ReasoningSetting::Toggle(_) | ReasoningSetting::Disabled

@@ -34,10 +34,10 @@ import urllib.parse
 # 窗口尺寸。不设 viewport, 让 outerWidth/innerHeight 保持真实浏览器该有的边框差
 # ——两者完全相等在真实浏览器里不可能出现, 是一眼可辨的自动化特征。
 WINDOW_SIZE = (1440, 900)
-# 缓存根目录。`MIYU_SCRIPT_CACHE_DIR` 让 Miyu（或运维）把所有脚本的中间
+# 缓存根目录。`NONOKA_SCRIPT_CACHE_DIR` 让 Nonoka（或运维）把所有脚本的中间
 # 产物集中到一处；不设时退回 XDG 默认，脚本单独拿去用也不会往奇怪的地方写。
 DATA_DIR = os.path.join(
-    os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+    os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
     or os.environ.get("XDG_CACHE_HOME")
     or os.path.join(os.path.expanduser("~"), ".cache"),
     "xhs-search")
@@ -736,14 +736,14 @@ LOGIN_STATUS_PATH = os.path.join(DATA_DIR, "login-status.json")
 def login_command_hint(tool):
     """给出**能真正生效**的登录命令。
 
-    Miyu 调脚本时会设 MIYU_SCRIPT_CACHE_DIR(指向 ~/.miyu/cache),登录态落在
+    Nonoka 调脚本时会设 NONOKA_SCRIPT_CACHE_DIR(指向 ~/.nonoka/cache),登录态落在
     那儿。用户照着裸命令在终端跑,会登到 ~/.cache/<tool> 去——登了等于没登。
     变量在场时把它带进命令里。
     """
-    root = os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+    root = os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
     if not root:
         return f"{tool} login"
-    return f"MIYU_SCRIPT_CACHE_DIR={root} {tool} login"
+    return f"NONOKA_SCRIPT_CACHE_DIR={root} {tool} login"
 
 
 
@@ -773,7 +773,7 @@ def read_login_status():
 def start_login(timeout_s=600, qr_wait=25):
     """拉起后台登录、等二维码出来就返回，不等人扫。
 
-    原来是单次阻塞调用等满 600 秒——Miyu 脚本工具的超时上限是 300 秒
+    原来是单次阻塞调用等满 600 秒——Nonoka 脚本工具的超时上限是 300 秒
     (index.rs 的 .min(300))，必被砍断，而且整轮对话卡住。现在第一步只负责
     把二维码交出来，调用方(AI)把图发给用户，再轮询 `login --check`。
     """
@@ -1060,10 +1060,10 @@ def doctor_text():
         return {"ok": False, "problems": [str(e)]}
 
 
-# ---------------------------------------------------------------- Miyu stdin-JSON 模式
+# ---------------------------------------------------------------- Nonoka stdin-JSON 模式
 
 def stdin_json_mode(raw):
-    """Miyu script 工具入口: 无命令行参数且 stdin 不是终端时启用。
+    """Nonoka script 工具入口: 无命令行参数且 stdin 不是终端时启用。
     输入: {"action":"search|note|status", "query":"...", "limit":N, ...}
     输出: 纯 JSON(stdout), 进度静默。"""
     global QUIET
@@ -1199,7 +1199,7 @@ def main():
     global QUIET
     install_signal_handlers()
     if len(sys.argv) == 1:
-        # Miyu script 工具模式: stdin 上真有数据才按 JSON 处理。只判断 isatty 不够 ——
+        # Nonoka script 工具模式: stdin 上真有数据才按 JSON 处理。只判断 isatty 不够 ——
         # 被脚本调用时 stdin 常是个一直开着却没数据的管道, 那样会永远阻塞在 read 上。
         raw = ""
         if not sys.stdin.isatty() and select.select([sys.stdin], [], [], 2.0)[0]:

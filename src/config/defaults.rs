@@ -23,16 +23,18 @@ pub(crate) fn default_timeout() -> u64 {
     60
 }
 
+// 三个视觉超时统一放到一小时(09-03 用户裁定):它们只剩"防僵尸"一个用途,
+// 大图慢模型下 15s/20s 会先把正常请求掐死;真要等太久用户自己会停。
 pub(crate) fn default_vision_response_header_timeout() -> u64 {
-    15
+    3600
 }
 
 pub(crate) fn default_vision_stream_idle_timeout() -> u64 {
-    20
+    3600
 }
 
 pub(crate) fn default_vision_image_timeout() -> u64 {
-    60
+    3600
 }
 
 pub(crate) fn default_mcp_timeout() -> u64 {
@@ -88,9 +90,16 @@ pub(crate) fn default_true() -> bool {
 }
 
 pub(crate) fn default_tools_loading_mode() -> String {
-    // v7 §八点七 stub mode: byte-constant tools array + on-demand contracts.
-    // "hybrid" (grow the tools array on load) and "full" remain available.
-    "stub".to_string()
+    // 默认 full(09-01 定稿):对 Nonoka 这个 ~60 工具量级的目录,stub 的省 token
+    // 优势本就薄(两模式缓存命中率一样,stub 只是常驻块更小,而这优势随 load
+    // 的工具增多被尾部契约吃掉),且约束解码型模型(glm-5.3-flash)吃不下空壳。
+    // full 更可靠(免 load 舞蹈/免"先调用后报错")、选工具准确度实测持平。想省
+    // 的模型仍可按模型级 provider.model_tools_loading_mode 单独降回 stub。
+    //
+    // stub(v7 §八点七):byte-constant 工具数组 + 按需取契约。claude-code 桥、
+    // tool-call 桥、mcp_serve 桥都直接读 registry 真 spec,不受本模式影响。
+    // 旧 "hybrid" 档 09-01 删除,历史值回退 stub。
+    "full".to_string()
 }
 
 pub(crate) fn default_subagent_concurrency() -> usize {
@@ -441,15 +450,39 @@ pub(crate) fn default_claude_code_nonoka_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_claude_code_timeout_seconds() -> u64 {
-    600
-}
-
-pub(crate) fn default_claude_code_max_output_bytes() -> u64 {
-    512 * 1024
-}
-
 pub(crate) fn default_claude_code_idle_timeout_seconds() -> u64 {
+    300
+}
+
+pub(crate) fn default_antigravity_native_tools() -> String {
+    "all".to_string()
+}
+
+pub(crate) fn default_antigravity_nonoka_tools() -> String {
+    "all".to_string()
+}
+
+pub(crate) fn default_antigravity_idle_timeout_seconds() -> u64 {
+    300
+}
+
+pub(crate) fn default_antigravity_print_timeout_seconds() -> u64 {
+    24 * 60 * 60
+}
+
+pub(crate) fn default_codex_native_tools() -> String {
+    "all".to_string()
+}
+
+pub(crate) fn default_codex_nonoka_tools() -> String {
+    "all".to_string()
+}
+
+pub(crate) fn default_codex_sandbox_mode() -> String {
+    "danger-full-access".to_string()
+}
+
+pub(crate) fn default_codex_idle_timeout_seconds() -> u64 {
     300
 }
 

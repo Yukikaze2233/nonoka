@@ -199,7 +199,7 @@ pub fn preparing_phase(name: &str) -> Option<&'static str> {
         "trash_path" => t("Preparing delete", "准备删除"),
         // A subagent brief is long, and its own timed block only appears once
         // the arguments have all arrived.
-        "task" | "deep_research" | "claude_code" => t("Preparing task", "准备任务"),
+        "task" | "deep_research" => t("Preparing task", "准备任务"),
         "ask_question" => t("Preparing question", "准备问题"),
         // 整张清单都在参数里,条目一多就是几百字节,和批量删是同一个窗口。
         "todowrite" => t("Preparing list", "准备清单"),
@@ -228,7 +228,6 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "present_artifact" => t("Preview file", "预览文件"),
         "ask_question" => t("Ask user", "询问用户"),
         "task" => t("Subagent", "子代理"),
-        "claude_code" => t("Claude Code", "Claude Code"),
         "read" | "read_file" => t("Read file", "读取文件"),
         "write_file" => t("Write file", "写入文件"),
         "edit_file" => t("Edit file", "编辑文件"),
@@ -463,13 +462,14 @@ pub fn builtin_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry
     // claude_code 委托工具已移除(08-21 用户裁定);中转供应商那条线不受影响。
     let task_tools = registry.clone();
     task::register(&mut registry, config.clone(), paths.clone(), task_tools);
-    scripts::register(&mut registry, paths);
+    scripts::register(&mut registry, config, paths);
     if config.mcp.enabled {
         mcp::register(&mut registry, config.clone());
     }
-    if uses_load_tools(&config.tools.loading_mode) {
-        load_tools::register(&mut registry);
-    }
+    // load_tools 常驻注册(09-01):full 模式下调用它无害(返回契约文本),
+    // 而会话中途从需加载模型切到完整模型时,历史里的 load_tools 调用记录
+    // 必须仍然可执行,否则模型模仿历史会撞未知工具。
+    load_tools::register(&mut registry);
     registry
 }
 
@@ -534,22 +534,59 @@ pub(crate) fn rescope_platform_memory_tools(
     }
 }
 
-pub fn is_hybrid_loading_mode(mode: &str) -> bool {
-    matches!(mode.trim(), "hybrid" | "lazy")
-}
-
 /// Stub loading mode (v7 §八点七): every lazy tool stays registered as a
 /// permanently visible stub (real name + one-line summary + permissive
 /// parameter shell), so the provider-visible tools array is byte-constant for
 /// the whole session; full contracts are fetched on demand through
 /// `load_tools` as a tool result that rides the conversation tail.
+///
+/// "hybrid"/"lazy"(按已加载集合增长声明数组的旧档)09-01 删除,历史配置值
+/// 按「需加载」处理——它们同属懒加载家族,悄悄升成 full 会让旧配置的工具面
+/// 字节数翻好几倍。
 pub fn is_stub_loading_mode(mode: &str) -> bool {
-    mode.trim() == "stub"
+    matches!(mode.trim(), "stub" | "hybrid" | "lazy")
 }
 
-/// Modes that need the `load_tools` catalog tool registered.
-pub fn uses_load_tools(mode: &str) -> bool {
-    is_hybrid_loading_mode(mode) || is_stub_loading_mode(mode)
+/// 本次请求的有效工具加载模式,按候选模型池解析。
+///
+/// 单成员规则:模型级覆盖(`provider.model_tools_loading_mode`)优先,缺项回退
+/// 全局 `tools.loading_mode`。池级规则:任一成员要求 full 则整池 full——
+/// 一次请求只有一张工具面,而命中主回合池里哪个模型(以及故障转移换给谁)是
+/// 发送时才决定的,这张脸必须让池里任何成员都能用;full 全兼容,stub 只是省
+/// token 的优化,「就高不就低」恒安全。
+///
+/// 只看**主回合池** `active_provider_models`——工具面是给主回合用的。多模态池
+/// (`active_multimodal_provider_models`)只喂看图子分析(describe.rs),从不处理
+/// 带工具的主回合;09-01 起初误把它并进候选,导致文本池是 opus(stub)、多模态池
+/// 里配了 full 的 glm 时,每个 opus 回合都被拖成 full(用户实测暴露)。
+///
+/// 背景(09-01):约束解码型供应商(实测 bigmodel glm-5.3-flash)把工具参数
+/// 生成硬限制在声明 schema 内,空壳 stub 让它永远只能发 `{}`,契约文本在
+/// 对话里也救不回(裸 API 8/8 复现)。给这类模型配模型级 full,其余照旧 stub。
+pub fn effective_tools_loading_mode(config: &AppConfig) -> String {
+    let canonical = |mode: &str| {
+        if mode.trim() == "full" {
+            "full"
+        } else {
+            "stub"
+        }
+    };
+    let global = canonical(&config.tools.loading_mode);
+    let mut any = false;
+    for entry in config.active_provider_models.iter().flatten() {
+        any = true;
+        let mode = config
+            .providers
+            .iter()
+            .find(|provider| provider.id == entry.provider_id)
+            .and_then(|provider| provider.model_tools_loading_mode.get(&entry.model))
+            .map(|mode| canonical(mode))
+            .unwrap_or(global);
+        if mode == "full" {
+            return "full".to_string();
+        }
+    }
+    if any { "stub" } else { global }.to_string()
 }
 
 /// Build/Dev 模式工具目录:极简开发形态,"模型可见表面积最小化"。
@@ -592,9 +629,10 @@ pub fn dev_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry {
     if config.mcp.enabled {
         mcp::register(&mut registry, config.clone());
     }
-    if uses_load_tools(&config.tools.loading_mode) {
-        load_tools::register(&mut registry);
-    }
+    // load_tools 常驻注册(09-01):full 模式下调用它无害(返回契约文本),
+    // 而会话中途从需加载模型切到完整模型时,历史里的 load_tools 调用记录
+    // 必须仍然可执行,否则模型模仿历史会撞未知工具。
+    load_tools::register(&mut registry);
     registry
 }
 
@@ -638,9 +676,10 @@ pub fn restricted_platform_registry(config: &AppConfig, paths: &NonokaPaths) -> 
             tracing::warn!(error = %error, "failed to register skills for restricted platform registry");
         }
     }
-    if uses_load_tools(&config.tools.loading_mode) {
-        load_tools::register(&mut registry);
-    }
+    // load_tools 常驻注册(09-01):full 模式下调用它无害(返回契约文本),
+    // 而会话中途从需加载模型切到完整模型时,历史里的 load_tools 调用记录
+    // 必须仍然可执行,否则模型模仿历史会撞未知工具。
+    load_tools::register(&mut registry);
     registry
 }
 
@@ -692,6 +731,46 @@ pub(crate) fn build_tool_registry(
 mod tests {
     use super::*;
 
+    /// 内置工具 schema 的 token 预算:每件工具的 description + parameters 折成的
+    /// token 数封顶。这份东西每轮都进上下文(full 模式)或按需拉入(stub),膨胀
+    /// 是慢性的、靠肉眼发现不了。超线的名字连同前十名一起打出来,好知道该修谁。
+    /// 内置脚本不在此列:脚本按「一个脚本包办所有事」设计,参数面大是本分
+    /// (用户 09-03 裁定),不拿这条预算约束它们。
+    #[test]
+    fn tool_schemas_stay_within_the_token_budget() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = test_paths(temp.path());
+        let mut config = crate::config::AppConfig::default();
+        config.plugins.web.enabled = true;
+        config.skills.allow_command_execution = true;
+        let registry = builtin_registry(&config, &paths);
+        let cost = |description: &str, parameters: &serde_json::Value| {
+            crate::token_estimate::estimate_tokens(description)
+                + crate::token_estimate::estimate_tokens(&parameters.to_string())
+        };
+        let mut rows: Vec<(String, usize)> = registry
+            .tool_names()
+            .iter()
+            .filter_map(|name| registry.get(name))
+            .map(|spec| (spec.name.clone(), cost(&spec.description, &spec.parameters)))
+            .collect();
+        rows.sort_by(|a, b| b.1.cmp(&a.1));
+        let top: Vec<String> = rows
+            .iter()
+            .take(10)
+            .map(|(n, t)| format!("{n}={t}"))
+            .collect();
+        println!("schema token top10: {}", top.join(" "));
+        // 600 = 现状最重的 task(332)留将近一倍头:新工具照这个体量写,别更肥。
+        const BUDGET: usize = 600;
+        let over: Vec<&(String, usize)> =
+            rows.iter().filter(|(_, tokens)| *tokens > BUDGET).collect();
+        assert!(
+            over.is_empty(),
+            "这些工具的 schema 超过 {BUDGET} token 预算:{over:?};当前前十:{top:?}"
+        );
+    }
+
     /// 数组参数要容忍模型真会传的形状。线上实测:mimo-v2.5 把
     /// `reference_images` 传成了 `"[\"/path.png\"]"`——一个被 JSON 编码成
     /// 字符串的数组。只认真数组会让 job_ids / user_ids / tags / groups 这类
@@ -716,6 +795,68 @@ mod tests {
             string_list(Some(&json!("[not json"))),
             vec!["[not json".to_string()]
         );
+    }
+
+    /// 有效加载模式按候选池取最保守:任一成员要 full 则整池 full——一次请求
+    /// 只有一张工具面,命中与故障转移都在发送时才定,这张脸必须全员可用。
+    /// 约束解码型模型(实测 bigmodel glm-5.3-flash)吃不下空壳 stub,是模型级
+    /// full 覆盖存在的理由(09-01)。
+    #[test]
+    fn effective_loading_mode_takes_the_most_conservative_pool_member() {
+        use crate::config::ActiveProviderModelConfig;
+        let mut config = AppConfig::default();
+        config.tools.loading_mode = "stub".to_string();
+        let provider_id = config.providers[0].id.clone();
+        let pick = |model: &str| ActiveProviderModelConfig {
+            provider_id: provider_id.clone(),
+            model: model.to_string(),
+        };
+
+        // 空池回退全局。
+        config.active_provider_models = None;
+        assert_eq!(effective_tools_loading_mode(&config), "stub");
+
+        // 全员跟随全局(需加载)。
+        config.active_provider_models = Some(vec![pick("lenient-a"), pick("lenient-b")]);
+        assert_eq!(effective_tools_loading_mode(&config), "stub");
+
+        // 混进一个模型级 full,整池升 full。
+        config.providers[0]
+            .model_tools_loading_mode
+            .insert("locked".to_string(), "full".to_string());
+        config
+            .active_provider_models
+            .as_mut()
+            .unwrap()
+            .push(pick("locked"));
+        assert_eq!(effective_tools_loading_mode(&config), "full");
+
+        // 回归(09-01 用户暴露):多模态池【不】参与——它只喂看图子分析,不处理
+        // 带工具的主回合。文本池全需加载、多模态池里配了 full 的模型时,主回合
+        // 仍是需加载,不被拖成 full。
+        config.active_provider_models = Some(vec![pick("lenient-a")]);
+        config.active_multimodal_provider_models = Some(vec![pick("locked")]);
+        assert_eq!(
+            effective_tools_loading_mode(&config),
+            "stub",
+            "多模态池不该把文本主回合拖成 full"
+        );
+        config.active_multimodal_provider_models = None;
+
+        // 模型级覆盖压过全局:全局 full,钉死的单模型显式需加载 → stub。
+        config.tools.loading_mode = "full".to_string();
+        config.providers[0]
+            .model_tools_loading_mode
+            .insert("thrifty".to_string(), "stub".to_string());
+        config.active_provider_models = Some(vec![pick("thrifty")]);
+        assert_eq!(effective_tools_loading_mode(&config), "stub");
+
+        // 已删档的 hybrid/lazy 旧值按需加载处理,不悄悄升 full。
+        config.tools.loading_mode = "hybrid".to_string();
+        config.active_provider_models = Some(vec![pick("lenient-a")]);
+        assert_eq!(effective_tools_loading_mode(&config), "stub");
+        assert!(is_stub_loading_mode("hybrid"));
+        assert!(is_stub_loading_mode("lazy"));
     }
 
     /// 回归:dev 模式要有看图(vision_analyze),且随 vision 插件开关走。

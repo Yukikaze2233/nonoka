@@ -83,6 +83,51 @@ pub struct ActiveProviderModelConfig {
 
 /// Claude Code 特殊供应商的内部协议标识(不暴露成用户概念)。
 pub const CLAUDE_CODE_PROTOCOL: &str = "claude-code";
+/// Antigravity(agy CLI)特殊供应商的内部协议标识(不暴露成用户概念)。
+pub const ANTIGRAVITY_PROTOCOL: &str = "antigravity";
+/// Codex(OpenAI codex CLI)特殊供应商的内部协议标识。
+pub const CODEX_PROTOCOL: &str = "codex";
+
+/// CLI 中转线的工具作用域(off/dev/normal/all)在本模式下是否放行。
+/// 中转层与 agent 侧共用这一份判定,免得两边各写一套 match。
+pub fn relay_scope_allows(scope: &str, dev_mode: bool) -> bool {
+    match scope.trim().to_ascii_lowercase().as_str() {
+        "all" => true,
+        "dev" => dev_mode,
+        "normal" => !dev_mode,
+        _ => false,
+    }
+}
+/// Claude Code 预置模型:CLI 认的别名。
+pub const CLAUDE_CODE_PRESET_MODELS: &[&str] = &["fable", "opus", "sonnet", "haiku"];
+/// Codex 预置模型:`codex debug models` 的目录(09-03,codex 0.147)。
+pub const CODEX_PRESET_MODELS: &[&str] = &[
+    "gpt-5.6-terra",
+    "gpt-5.6-sol",
+    "gpt-5.6-luna",
+    "gpt-5.5",
+    "gpt-5.4",
+    "gpt-5.4-mini",
+    "gpt-5.2",
+];
+/// Antigravity 预置模型:`agy models` 的输出(09-03);本机 CLI 没有 /models
+/// 端点,列表就是这份别名。gemini 的思考档位编码在模型名后缀里。
+pub const ANTIGRAVITY_PRESET_MODELS: &[&str] = &[
+    "gemini-3.8-flash-high",
+    "gemini-3.8-flash-medium",
+    "gemini-3.8-flash-low",
+    "gemini-3.7-flash-high",
+    "gemini-3.7-flash-medium",
+    "gemini-3.7-flash-low",
+    "gemini-3.6-flash-high",
+    "gemini-3.6-flash-medium",
+    "gemini-3.6-flash-low",
+    "gemini-3.1-pro-high",
+    "gemini-3.1-pro-low",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6-thinking",
+    "gpt-oss-120b-medium",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderConfig {
@@ -108,8 +153,20 @@ pub struct ProviderConfig {
     /// 菜单里的温度曾误写供应商全局,牵连所有模型。
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub model_temperature: HashMap<String, f32>,
+    /// 按模型工具加载模式覆盖("full"/"stub");缺项回退全局
+    /// `tools.loading_mode`。约束解码型模型(如 bigmodel glm-5.3-flash)把
+    /// 参数生成硬限制在声明 schema 内,吃不下空壳 stub,给它们单独配 full。
+    /// 池级解析取最保守,见 `tools::effective_tools_loading_mode`(09-01)。
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub model_tools_loading_mode: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub model_modalities: HashMap<String, Vec<String>>,
+    /// 工具结果(role=tool)能否直接带图片/视频块。留空按协议推断:
+    /// openai-chat 端点默认能(智谱 09-03 实测),OpenAI 官方端点与本机 CLI
+    /// 中转不能(前者 400,后者只传文本),anthropic 协议的下沉层暂未接图。
+    /// 不能的走"工具结果之后再补一条带图的用户消息"。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_result_media: Option<bool>,
     /// 手动模型价格,键为模型名;设了就覆盖 models.dev 目录价。
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub model_costs: HashMap<String, ModelCostConfig>,
@@ -276,7 +333,9 @@ impl ProviderConfig {
             models: vec![OPENCODE_DEFAULT_CHAT_MODEL.to_string()],
             model_context_window: HashMap::new(),
             model_temperature: HashMap::new(),
+            model_tools_loading_mode: HashMap::new(),
             model_modalities: HashMap::new(),
+            tool_result_media: None,
             model_costs: HashMap::new(),
             default_model: OPENCODE_DEFAULT_CHAT_MODEL.to_string(),
             timeout_seconds: default_timeout(),
@@ -297,7 +356,9 @@ impl ProviderConfig {
             models: Vec::new(),
             model_context_window: HashMap::new(),
             model_temperature: HashMap::new(),
+            model_tools_loading_mode: HashMap::new(),
             model_modalities: HashMap::new(),
+            tool_result_media: None,
             model_costs: HashMap::new(),
             default_model: String::new(),
             timeout_seconds: default_timeout(),
@@ -314,9 +375,9 @@ impl ProviderConfig {
         Self {
             enabled: false,
             protocol: CLAUDE_CODE_PROTOCOL.to_string(),
-            models: ["fable", "opus", "sonnet", "haiku"]
-                .into_iter()
-                .map(str::to_string)
+            models: CLAUDE_CODE_PRESET_MODELS
+                .iter()
+                .map(|name| name.to_string())
                 .collect(),
             default_model: "sonnet".to_string(),
             ..Self::template("claude-code", "Claude Code", "")
@@ -329,6 +390,90 @@ impl ProviderConfig {
         let protocol = self.protocol.trim();
         protocol.eq_ignore_ascii_case(CLAUDE_CODE_PROTOCOL)
             || protocol.eq_ignore_ascii_case("claude-code-cli")
+    }
+
+    /// 内置的 Antigravity 特殊供应商:本机 `agy` CLI 的 Google 登录态中转。
+    /// 形态与 Claude Code 完全同构(恒存在、默认禁用、无 HTTP 字段)。
+    pub fn antigravity_template() -> Self {
+        Self {
+            enabled: false,
+            protocol: ANTIGRAVITY_PROTOCOL.to_string(),
+            models: ANTIGRAVITY_PRESET_MODELS
+                .iter()
+                .map(|model| model.to_string())
+                .collect(),
+            default_model: "gemini-3.8-flash-high".to_string(),
+            ..Self::template("antigravity", "Antigravity", "")
+        }
+    }
+
+    /// 内置的 Codex 特殊供应商:本机 `codex` CLI 的 ChatGPT 登录态中转。
+    pub fn codex_template() -> Self {
+        Self {
+            enabled: false,
+            protocol: CODEX_PROTOCOL.to_string(),
+            models: CODEX_PRESET_MODELS
+                .iter()
+                .map(|model| model.to_string())
+                .collect(),
+            default_model: "gpt-5.6-terra".to_string(),
+            ..Self::template("codex", "Codex", "")
+        }
+    }
+
+    /// 该条目是否 Codex 特殊供应商(按协议判定)。
+    pub fn is_codex(&self) -> bool {
+        let protocol = self.protocol.trim();
+        protocol.eq_ignore_ascii_case(CODEX_PROTOCOL) || protocol.eq_ignore_ascii_case("codex-cli")
+    }
+
+    /// 该条目是否 Antigravity 特殊供应商(按协议判定)。
+    pub fn is_antigravity(&self) -> bool {
+        let protocol = self.protocol.trim();
+        protocol.eq_ignore_ascii_case(ANTIGRAVITY_PROTOCOL)
+            || protocol.eq_ignore_ascii_case("antigravity-cli")
+            || protocol.eq_ignore_ascii_case("agy")
+    }
+
+    /// 内置的本机 CLI 中转供应商(Claude Code / Antigravity):没有 URL、
+    /// API key 概念,列表里恒存在且不可删除。
+    pub fn is_builtin_cli_provider(&self) -> bool {
+        self.is_claude_code() || self.is_antigravity() || self.is_codex()
+    }
+
+    /// 见 `tool_result_media` 字段。
+    pub fn tool_result_carries_media(&self) -> bool {
+        if let Some(explicit) = self.tool_result_media {
+            return explicit;
+        }
+        if self.is_builtin_cli_provider() || self.protocol.trim() == "anthropic" {
+            return false;
+        }
+        let host = self
+            .base_url
+            .trim()
+            .trim_start_matches("https://")
+            .trim_start_matches("http://")
+            .split('/')
+            .next()
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        host != "api.openai.com"
+    }
+
+    /// 内置 CLI 供应商的模型目录(没有 /models 端点,目录就是预置别名表)。
+    /// 配置里的 `models` 是"已激活"集合,不是目录——两者混为一谈时,用户
+    /// 只激活了一个模型,TUI 就只剩这一个可选(09-03 报"没有模型了")。
+    pub fn preset_model_catalog(&self) -> &'static [&'static str] {
+        if self.is_claude_code() {
+            CLAUDE_CODE_PRESET_MODELS
+        } else if self.is_antigravity() {
+            ANTIGRAVITY_PRESET_MODELS
+        } else if self.is_codex() {
+            CODEX_PRESET_MODELS
+        } else {
+            &[]
+        }
     }
 
     pub fn default_templates() -> Vec<Self> {
@@ -353,8 +498,10 @@ impl ProviderConfig {
             Self::template("ollama", "Ollama", "http://localhost:11434/v1"),
             Self::template("lmstudio", "LMStudio", "http://localhost:1234/v1"),
         ]);
-        // Claude Code 置顶:用户拍板的列表次序。
+        // Claude Code 置顶:用户拍板的列表次序;Antigravity 紧随其后。
         providers.insert(0, Self::claude_code_template());
+        providers.insert(1, Self::antigravity_template());
+        providers.insert(2, Self::codex_template());
         providers
     }
 
@@ -369,7 +516,9 @@ impl ProviderConfig {
             models: Vec::new(),
             model_context_window: HashMap::new(),
             model_temperature: HashMap::new(),
+            model_tools_loading_mode: HashMap::new(),
             model_modalities: HashMap::new(),
+            tool_result_media: None,
             model_costs: HashMap::new(),
             default_model: String::new(),
             timeout_seconds: default_timeout(),
@@ -390,7 +539,9 @@ impl ProviderConfig {
             models: Vec::new(),
             model_context_window: HashMap::new(),
             model_temperature: HashMap::new(),
+            model_tools_loading_mode: HashMap::new(),
             model_modalities: HashMap::new(),
+            tool_result_media: None,
             model_costs: HashMap::new(),
             default_model: String::new(),
             timeout_seconds: default_timeout(),
@@ -405,11 +556,27 @@ impl ProviderConfig {
             .map(|modalities| modalities.iter().any(|m| m == "image"))
     }
 
+    /// 模型能直接吃进**消息**里的输入种类。
+    ///
+    /// agy 中转线恒为纯文本:它的 stream-json 只收 text 块(09-04 实测,image/
+    /// media 块一律 `not supported (only "text")`),模型看媒体只能自己调原生
+    /// `view_file`。目录里 Gemini 标着 image 输入,照抄就会让 Nonoka 把图内联进
+    /// 消息——中转层再降级成占位文本,图没到模型,活体消息与化石还因此字节
+    /// 不同,续传链逢图必断(09-04 群 130515298 实证)。
     pub fn input_modalities(&self, model: &str) -> Option<Vec<String>> {
+        if self.is_antigravity() {
+            return Some(vec!["text".to_string()]);
+        }
         if let Some(modalities) = self.model_modalities.get(model) {
             return Some(modalities.clone());
         }
         crate::models_cache::input_modalities(&self.id, model)
+    }
+
+    /// 本线上模型看媒体靠自己调原生文件工具(`view_file` 对图片/视频/音频/PDF
+    /// 都返回媒体本体,09-04 实测),而不是消息内联或视觉旁路。
+    pub fn views_media_with_native_file_tool(&self) -> bool {
+        self.is_antigravity()
     }
 
     pub fn resolved_api_keys(&self, _paths: &NonokaPaths) -> Result<Vec<ResolvedProviderKey>> {

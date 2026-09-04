@@ -99,6 +99,11 @@ pub fn bundled_available() -> bool {
     default_kb_source_dir().is_dir()
 }
 
+/// dashboard 用:完整状态(远端提交 / 是否有更新 / 上次导入时间)。
+pub fn state(paths: &NonokaPaths) -> Result<DefaultKbState> {
+    load_state(paths)
+}
+
 pub fn status(paths: &NonokaPaths) -> Result<DefaultKbStatus> {
     let state = load_state(paths)?;
     Ok(DefaultKbStatus {

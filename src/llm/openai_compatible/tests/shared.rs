@@ -144,6 +144,8 @@ pub(super) fn client_over(endpoints: Vec<LlmEndpoint>) -> OpenAiCompatibleClient
         max_tokens_override: None,
         request_scope: "chat",
         claude_code: None,
+        antigravity: None,
+        codex: None,
         claude_code_dev_mode: false,
         continuation_health: ResponsesContinuationHealth::detached(),
     }
@@ -170,6 +172,8 @@ pub(super) fn test_client(provider: ProviderConfig) -> OpenAiCompatibleClient {
         max_tokens_override: None,
         request_scope: "chat",
         claude_code: None,
+        antigravity: None,
+        codex: None,
         claude_code_dev_mode: false,
         continuation_health: ResponsesContinuationHealth::detached(),
     }
@@ -204,7 +208,9 @@ pub(super) fn test_provider(id: &str, base_url: &str) -> ProviderConfig {
         models: Vec::new(),
         model_context_window: std::collections::HashMap::new(),
         model_temperature: std::collections::HashMap::new(),
+        model_tools_loading_mode: std::collections::HashMap::new(),
         model_modalities: std::collections::HashMap::new(),
+        tool_result_media: None,
         model_costs: std::collections::HashMap::new(),
         default_model: String::new(),
         timeout_seconds: 60,

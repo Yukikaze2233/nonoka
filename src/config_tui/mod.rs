@@ -1,16 +1,23 @@
+mod antigravity_form;
 mod claude_code_form;
+mod cli_catalog;
+mod codex_form;
 mod personas;
 mod platforms;
 mod plugin_settings;
 mod plugins;
 mod providers;
 mod quota;
+pub(crate) use cli_catalog::builtin_cli_binary;
+pub(crate) use providers::fetch_models;
 mod real_context;
 mod scheduled_messages;
 mod settings;
 mod undo;
 mod widgets;
+use antigravity_form::*;
 use claude_code_form::*;
+use codex_form::*;
 use personas::*;
 use platforms::*;
 use plugin_settings::*;
@@ -366,12 +373,14 @@ impl<'a> ProviderBrowser<'a> {
         self.fetch_seq += 1;
         if let Some(provider) = self.config.providers.get(self.provider_idx).cloned() {
             let seq = self.fetch_seq;
+            let cli_binary = cli_catalog::builtin_cli_binary(&self.config, &provider);
             let (tx, rx) = mpsc::channel();
             self.fetch_rx = Some(rx);
             self.loading = true;
             self.status = t("Fetching model list...", "正在获取模型列表...").to_string();
             std::thread::spawn(move || {
-                let result = fetch_models(&provider).map_err(|err| err.to_string());
+                let result =
+                    fetch_models(&provider, cli_binary.as_deref()).map_err(|err| err.to_string());
                 let _ = tx.send((seq, result));
             });
         } else {
@@ -475,13 +484,13 @@ impl<'a> ProviderBrowser<'a> {
             .config
             .providers
             .get(self.provider_idx)
-            .is_some_and(ProviderConfig::is_claude_code)
+            .is_some_and(ProviderConfig::is_builtin_cli_provider)
         {
             // 内置供应商删了下次加载也会被重新注入,徒增困惑;要停用走编辑
             // 表单里的启用开关。
             self.status = t(
-                "Claude Code is built in and cannot be deleted; disable it in its edit form instead.",
-                "Claude Code 是内置供应商,不可删除;要停用请在编辑表单里关掉启用开关。",
+                "This built-in CLI provider cannot be deleted; disable it in its edit form instead.",
+                "内置 CLI 供应商不可删除;要停用请在编辑表单里关掉启用开关。",
             )
             .to_string();
             return;
@@ -518,6 +527,14 @@ impl<'a> ProviderBrowser<'a> {
                             provider,
                             &mut self.config.plugins.claude_code,
                         )?
+                    } else if provider.is_antigravity() {
+                        edit_antigravity_provider_form(
+                            stdout,
+                            provider,
+                            &mut self.config.plugins.antigravity,
+                        )?
+                    } else if provider.is_codex() {
+                        edit_codex_provider_form(stdout, provider, &mut self.config.plugins.codex)?
                     } else {
                         edit_provider_form(stdout, provider)?
                     };
@@ -544,7 +561,13 @@ impl<'a> ProviderBrowser<'a> {
                         auto_configure_model_tags(self.paths, provider, &model.full);
                     }
                     if let Some(provider) = self.config.providers.get_mut(self.provider_idx) {
-                        if edit_model_form(stdout, provider, &model.full, self.thinking_variants)? {
+                        if edit_model_form(
+                            stdout,
+                            self.paths,
+                            provider,
+                            &model.full,
+                            self.thinking_variants,
+                        )? {
                             self.config.active_provider = provider.id.clone();
                             model_updated = true;
                             self.status = if is_zh() {

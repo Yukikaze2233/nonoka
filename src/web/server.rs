@@ -37,7 +37,10 @@ pub async fn run(paths: NonokaPaths, args: WebArgs) -> Result<()> {
             }
         });
     }
-    let context = cold_context(&config, &paths, &state_store)?;
+    // 09-04 issue #36:上下文现算含 MCP tools/list,一个不可达的 MCP server
+    // 曾让这一行卡到 CLI 的 8 秒就绪窗口耗尽、整个 daemon 被杀。限时等待,
+    // 超时先用占位快照放行,真数算好后在下面回填。
+    let (context, pending_context) = startup_context(&config, &paths, &state_store)?;
 
     // Default binds all interfaces so the WebUI is reachable from the LAN;
     // `--bind 127.0.0.1` restricts it to this machine. Access URLs matching
@@ -81,6 +84,29 @@ pub async fn run(paths: NonokaPaths, args: WebArgs) -> Result<()> {
         )]),
         runs_changed: Arc::new(tokio::sync::Notify::new()),
     }));
+    if let Some(pending_context) = pending_context {
+        let manager = manager.clone();
+        let state_store = state_store.clone();
+        let session_at_start = state_store.session_id();
+        tokio::task::spawn_blocking(move || {
+            let Ok(Ok(context)) = pending_context.recv() else {
+                return;
+            };
+            let mut manager = manager.lock().unwrap();
+            // 只在没人动过快照时回填:期间跑完的回合或切走的会话已经写入了
+            // 各自的真数,拿启动会话的旧数盖上去反而错。
+            let untouched = manager.context.tokens == 0
+                && manager.active_runs.is_empty()
+                && state_store.session_id() == session_at_start;
+            if untouched {
+                manager.context = context;
+                tracing::info!(
+                    tokens = context.tokens,
+                    "startup context backfilled after slow calculation"
+                );
+            }
+        });
+    }
     let turn_engine = TurnEngineState::default();
     let memory_organizer = MemoryOrganizer::spawn()?;
     let memory_organizer_handle = memory_organizer.handle();
@@ -284,6 +310,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
             post(upload_persona_asset).layer(DefaultBodyLimit::max(PERSONA_ASSET_LIMIT)),
         )
         .route("/api/config", get(get_config).put(update_config))
+        .route("/api/providers/models", post(provider_models))
         .route(
             "/api/qq-group-management/history",
             get(qq_group_history_http),
@@ -299,15 +326,112 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route("/api/events", get(events))
         .route("/api/assets/{asset_id}", get(image_asset))
         .route("/api/artifacts/{asset_id}", get(artifact_asset))
-        .route("/api/shared", get(shared_files_list))
+        .route(
+            "/api/shared",
+            get(shared_files_list)
+                .post(shared_file_upload)
+                .layer(DefaultBodyLimit::disable()),
+        )
         .route(
             "/api/shared/{share_id}",
             get(shared_file_download).delete(shared_file_delete),
         )
         .route("/shared.js", get(shared_js_asset))
+        .route("/dash/{script}", get(dash_script_asset))
+        .route("/api/dash/memory/personas", get(dash_memory_personas))
+        .route("/api/dash/memory/stats", get(dash_memory_stats))
+        .route("/api/dash/memory/items", get(dash_memory_items))
+        .route(
+            "/api/dash/memory/items/{table}/{id}",
+            get(dash_memory_item)
+                .patch(dash_memory_patch)
+                .delete(dash_memory_delete),
+        )
+        .route("/api/dash/memory/facts", post(dash_memory_add_fact))
+        .route("/api/dash/memory/evicted", get(dash_memory_evicted))
+        .route(
+            "/api/dash/memory/evicted/clear",
+            post(dash_memory_evicted_clear),
+        )
+        .route(
+            "/api/dash/memory/evicted/{id}",
+            get(dash_memory_evicted_item).delete(dash_memory_evicted_delete),
+        )
+        .route(
+            "/api/dash/memory/pending/clear",
+            post(dash_memory_pending_clear),
+        )
+        .route("/api/dash/memory/reset", post(dash_memory_reset))
+        .route("/api/dash/kb/overview", get(dash_kb_overview))
+        .route("/api/dash/kb/file", get(dash_kb_file))
+        .route("/api/dash/kb/search", get(dash_kb_search))
+        .route(
+            "/api/dash/kb/files",
+            post(dash_kb_upload)
+                .layer(DefaultBodyLimit::max(KB_UPLOAD_LIMIT))
+                .delete(dash_kb_delete),
+        )
+        .route(
+            "/api/dash/kb/reindex",
+            get(dash_kb_reindex_status).post(dash_kb_reindex_start),
+        )
+        .route(
+            "/api/dash/kb/reindex/lock",
+            axum::routing::delete(dash_kb_reindex_unlock),
+        )
+        .route("/api/dash/kb/default", get(dash_kb_default))
+        .route("/api/dash/kb/default/update", post(dash_kb_default_update))
+        .route("/api/dash/memes/libraries", get(dash_memes_libraries))
+        .route(
+            "/api/dash/memes/items",
+            get(dash_memes_items)
+                .post(dash_memes_upload)
+                .layer(DefaultBodyLimit::max(MEME_UPLOAD_LIMIT)),
+        )
+        .route(
+            "/api/dash/memes/items/{id}",
+            axum::routing::patch(dash_memes_patch).delete(dash_memes_delete),
+        )
+        .route(
+            "/api/dash/memes/items/{id}/classify",
+            post(dash_memes_classify),
+        )
+        .route("/api/dash/memes/image", get(dash_memes_image))
+        .route("/api/dash/qq/accounts", get(dash_qq_accounts))
+        .route("/api/dash/qq/conversations", get(dash_qq_conversations))
+        .route("/api/dash/qq/messages", get(dash_qq_messages))
+        .route("/api/dash/qq/messages/delete", post(dash_qq_delete))
+        .route("/api/dash/qq/stats", get(dash_qq_stats))
+        .route("/api/dash/qq/recalls", get(dash_qq_recalls))
+        .route(
+            "/api/dash/qq/boundary",
+            get(dash_qq_boundary).post(dash_qq_reset_context),
+        )
+        .route("/api/dash/qq/groups", get(dash_qq_groups))
+        .route("/api/dash/qq/management", get(dash_qq_management))
+        .route(
+            "/api/dash/qq/management/events/clear",
+            post(dash_qq_management_clear_events),
+        )
+        .route("/api/dash/affection/scopes", get(dash_affection_scopes))
+        .route("/api/dash/affection/items", get(dash_affection_items))
+        .route(
+            "/api/dash/affection/items/{user}",
+            get(dash_affection_item)
+                .patch(dash_affection_patch)
+                .delete(dash_affection_delete),
+        )
+        .route(
+            "/api/dash/affection/emotion",
+            get(dash_emotion_state).put(dash_emotion_set),
+        )
+        .route(
+            "/api/dash/affection/emotion/reset",
+            post(dash_emotion_reset),
+        )
         .route(
             "/api/attachments",
-            post(upload_user_attachment).layer(DefaultBodyLimit::max(ATTACHMENT_BODY_LIMIT)),
+            post(upload_user_attachment).layer(DefaultBodyLimit::disable()),
         )
         .route(
             "/api/attachments/{attachment_id}",

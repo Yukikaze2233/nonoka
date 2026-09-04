@@ -44,13 +44,13 @@ from difflib import SequenceMatcher
 
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
-# 缓存根目录。`MIYU_SCRIPT_CACHE_DIR` 让 Miyu(或运维)把所有脚本的产物集中到
+# 缓存根目录。`NONOKA_SCRIPT_CACHE_DIR` 让 Nonoka(或运维)把所有脚本的产物集中到
 # 一处;不设时退回 XDG 默认,脚本单独拿去用也不会往奇怪的地方写。
 #
 # 历史底价库严格说是数据不是中间产物,但一个目录管完比分两处清楚(08-31 用户
 # 定的)。代价是清缓存会连价格历史一起带走。
 DATA_DIR = os.path.join(
-    os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+    os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
     or os.environ.get("XDG_CACHE_HOME")
     or os.path.join(os.path.expanduser("~"), ".cache"),
     "hotel-deals")
@@ -64,7 +64,7 @@ def migrate_legacy_data():
     """把旧的 ~/.local/share/hotel-deals 搬过来。只在用默认路径、且新位置还
     不存在时做一次——价格历史丢了 trend 就废一半。"""
     import shutil
-    if os.environ.get("MIYU_SCRIPT_CACHE_DIR") or os.environ.get("XDG_CACHE_HOME"):
+    if os.environ.get("NONOKA_SCRIPT_CACHE_DIR") or os.environ.get("XDG_CACHE_HOME"):
         return
     if os.path.isdir(DATA_DIR) or not os.path.isdir(LEGACY_DATA_DIR):
         return
@@ -1152,7 +1152,7 @@ def json_keys(ap):
 def argv_from_json(payload, ap):
     """把 {"location": "东京", "sources": ["google"]} 摊成一行 argv。
 
-    工具层（Miyu 之类）调脚本时是把参数打成 JSON 从 stdin 喂进来的，argv 是空的。
+    工具层（Nonoka 之类）调脚本时是把参数打成 JSON 从 stdin 喂进来的，argv 是空的。
     没有这个入口，脚本会当成「没给动作」直接打印帮助然后退出 —— 更糟的是退出码 0，
     调用方拿到一坨帮助文本还以为查询成功了。
     """

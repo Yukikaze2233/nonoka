@@ -54,10 +54,17 @@ impl ModelEntry {
     }
 }
 
-pub(in crate::config_tui) fn fetch_models(provider: &ProviderConfig) -> Result<Vec<String>> {
-    if provider.is_claude_code() {
-        // 本机 CLI 后端没有 /models HTTP 端点;模型列表就是预置的 CLI 别名。
-        return Ok(provider.models.clone());
+/// `cli_binary`:内置 CLI 供应商列模型要跑的二进制(见 `cli_catalog`);
+/// HTTP 供应商忽略。
+pub(crate) fn fetch_models(
+    provider: &ProviderConfig,
+    cli_binary: Option<&str>,
+) -> Result<Vec<String>> {
+    if provider.is_builtin_cli_provider() {
+        // 本机 CLI 后端没有 /models HTTP 端点:目录问 CLI 要(失败就报错),
+        // 再并上配置里手工加的名字。只返回 `provider.models` 的话,用户一旦
+        // 只激活一个模型,下次进来就只剩那一个可选(09-03)。
+        return crate::config_tui::cli_catalog::builtin_cli_catalog(provider, cli_binary);
     }
     let api_key = provider.api_key.as_deref().unwrap_or_default();
     let mut api_key = if let Some(env_name) = api_key.strip_prefix("$env:") {
@@ -93,21 +100,50 @@ pub(in crate::config_tui) fn fetch_models(provider: &ProviderConfig) -> Result<V
         .collect())
 }
 
+/// 该模型在 models.dev 目录里的条目(读磁盘全量目录,没有就联网取一次)。
+pub(in crate::config_tui) fn catalog_entry(
+    paths: &NonokaPaths,
+    provider: &ProviderConfig,
+    model: &str,
+) -> Option<crate::models_cache::ModelCatalogEntry> {
+    crate::models_cache::describe_models(
+        paths,
+        &provider.id,
+        &provider.base_url,
+        &[model.to_string()],
+    )
+    .pop()
+}
+
+/// 从目录自动同步模型元数据:输入模态、上下文窗口,只补空缺不覆盖手填
+/// (09-04,与 WebUI 「从目录补全」同一语义)。价格不落盘——运行时本来就按
+/// 目录价估算,编辑表单里只把目录价显示出来。
 pub(in crate::config_tui) fn auto_configure_model_tags(
     paths: &NonokaPaths,
     provider: &mut ProviderConfig,
     model: &str,
 ) {
-    if provider.model_modalities.contains_key(model) {
+    let needs_modalities = !provider.model_modalities.contains_key(model);
+    let needs_window = !provider.model_context_window.contains_key(model);
+    if !needs_modalities && !needs_window {
         return;
     }
-    if let Some(modalities) =
-        crate::models_cache::input_modalities_blocking(paths, &provider.id, model)
-            .filter(|modalities| !modalities.is_empty())
-    {
-        provider
-            .model_modalities
-            .insert(model.to_string(), modalities);
+    let Some(entry) = catalog_entry(paths, provider, model) else {
+        return;
+    };
+    if needs_modalities {
+        if let Some(modalities) = entry.modalities.filter(|modalities| !modalities.is_empty()) {
+            provider
+                .model_modalities
+                .insert(model.to_string(), modalities);
+        }
+    }
+    if needs_window {
+        if let Some(window) = entry.context_window.filter(|window| *window > 0) {
+            provider
+                .model_context_window
+                .insert(model.to_string(), window as usize);
+        }
     }
 }
 
@@ -655,7 +691,9 @@ pub(in crate::config_tui) fn edit_provider_form(
             models: provider.models.clone(),
             model_context_window: provider.model_context_window.clone(),
             model_temperature: provider.model_temperature.clone(),
+            model_tools_loading_mode: provider.model_tools_loading_mode.clone(),
             model_modalities: provider.model_modalities.clone(),
+            tool_result_media: provider.tool_result_media,
             model_costs: provider.model_costs.clone(),
             default_model: provider.default_model.clone(),
             timeout_seconds: timeout,
@@ -690,15 +728,37 @@ pub(in crate::config_tui) fn parse_extra_body(
 
 pub(in crate::config_tui) fn edit_model_form(
     stdout: &mut io::Stdout,
+    paths: &NonokaPaths,
     provider: &mut ProviderConfig,
     model: &str,
     thinking_variants: &mut ThinkingVariantPreferences,
 ) -> Result<bool> {
+    // 目录信息只用来预填与提示;真正落盘的仍是表单里保存的值。
+    let catalog = catalog_entry(paths, provider, model);
     let context_window = provider
         .model_context_window
         .get(model)
         .copied()
+        .or_else(|| {
+            catalog
+                .as_ref()
+                .and_then(|entry| entry.context_window)
+                .map(|window| window as usize)
+        })
         .unwrap_or_default();
+    let catalog_price_label: &'static str =
+        match catalog.as_ref().and_then(|entry| entry.cost.as_ref()) {
+            Some(cost) => Box::leak(
+                format!(
+                    "{} ${}/{}",
+                    t("catalogue", "目录价"),
+                    trim_price(cost.input),
+                    trim_price(cost.output)
+                )
+                .into_boxed_str(),
+            ),
+            None => t("catalogue", "目录价"),
+        };
     let stored_variant = thinking_variants
         .selected(&provider.id, model)
         .filter(|selected| !selected.trim().is_empty())
@@ -751,7 +811,7 @@ pub(in crate::config_tui) fn edit_model_form(
             currency_value,
         )
         .choices(&["", "USD", "CNY"])
-        .empty_choice_label(t("catalogue", "目录价")),
+        .empty_choice_label(catalog_price_label),
         Field::new(
             t("Input price / 1M tokens", "输入价 / 1M tokens"),
             price_text(cost.map(|c| c.input)),
@@ -767,6 +827,19 @@ pub(in crate::config_tui) fn edit_model_form(
             ),
             price_text(cost.and_then(|c| c.cache_read)),
         ),
+        // 按模型工具加载模式覆盖:约束解码型模型(实测 bigmodel glm-5.3-flash)
+        // 把参数生成硬限制在声明 schema 内,吃不下空壳 stub,要单独配完整。
+        // 池级解析取最保守(tools::effective_tools_loading_mode)。
+        Field::new(
+            t("Tool loading mode", "工具加载模式"),
+            provider
+                .model_tools_loading_mode
+                .get(model)
+                .map(|mode| crate::config_tui::settings::normalize_tools_loading_mode(mode))
+                .unwrap_or_default(),
+        )
+        .choices(&["", "full", "stub"])
+        .empty_choice_label(t("inherit global", "跟随全局")),
     ];
     loop {
         if !run_form(stdout, t(" EDIT MODEL ", " 编辑模型 "), &mut fields)? {
@@ -859,8 +932,24 @@ pub(in crate::config_tui) fn edit_model_form(
                 provider.model_temperature.remove(model);
             }
         }
+        match fields[9].value.trim() {
+            "" => {
+                provider.model_tools_loading_mode.remove(model);
+            }
+            mode => {
+                provider.model_tools_loading_mode.insert(
+                    model.to_string(),
+                    crate::config_tui::settings::normalize_tools_loading_mode(mode),
+                );
+            }
+        }
         return Ok(true);
     }
+}
+
+fn trim_price(value: f64) -> String {
+    let text = format!("{value:.4}");
+    text.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
 pub(in crate::config_tui) fn thinking_variant_field(

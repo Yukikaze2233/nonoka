@@ -44,6 +44,8 @@ impl Agent {
         // opencode / Claude Code all converge on exactly one attempt).
         let mut overflow_recovery_attempted = false;
         let mut loaded_tools = self.initial_loaded_tools(messages)?;
+        // 已经给过契约提示的桩工具:同一工具反复失败不必每次都重发一遍 schema。
+        let mut contract_hinted = std::collections::BTreeSet::<String>::new();
         self.pending_remote_tool_calls.lock().unwrap().clear();
         let mut usage_accumulator = UsageAccumulator::default();
         // v7 cache write-grace: provider prefix-cache writes are async, so a
@@ -74,7 +76,7 @@ impl Agent {
             if self.config.skills.enabled {
                 if self.mode == AgentMode::Normal {
                     let mut registry = self.tools.lock().unwrap();
-                    tools::rescan_scripts(&mut registry, &self.paths);
+                    tools::rescan_scripts(&mut registry, &self.config, &self.paths);
                     tools::register_script_display_names(&registry);
                 }
                 let current_fingerprint = {
@@ -109,10 +111,10 @@ impl Agent {
 
             let definitions = if self.tools_enabled && !tool_limit_reached {
                 let tools = self.tools.lock().unwrap();
-                if tools::is_stub_loading_mode(&self.config.tools.loading_mode) {
+                // 有效模式按候选模型池解析(模型级覆盖,任一成员要 full 则整池
+                // full)——约束解码型模型吃不下空壳 stub(09-01)。
+                if tools::is_stub_loading_mode(&tools::effective_tools_loading_mode(&self.config)) {
                     tools.stub_definitions()
-                } else if tools::is_hybrid_loading_mode(&self.config.tools.loading_mode) {
-                    tools.lazy_definitions(&loaded_tools)
                 } else {
                     tools.definitions()
                 }
@@ -618,7 +620,7 @@ impl Agent {
             let mut parallel_task_outputs = if defer_sibling_tools || repeat_skip {
                 std::collections::HashMap::new()
             } else {
-                self.execute_parallel_task_calls(&result.tool_calls, &loaded_tools, on_event)
+                self.execute_parallel_task_calls(&result.tool_calls, on_event)
                     .await?
             };
             for (call_index, call) in result.tool_calls.into_iter().enumerate() {
@@ -750,37 +752,6 @@ impl Agent {
                 // 模式级 ReadOnly 权限门随闲聊模式一并删除:拒绝层现在是
                 // registry 的单调 guard(软失败),不可用工具靠 registry 组合
                 // 不注册(平台 restricted 同理),未知工具在分发处软失败。
-                {
-                    let tools = self.tools.lock().unwrap();
-                    if tools::is_hybrid_loading_mode(&self.config.tools.loading_mode)
-                        && call.function.name != "load_tools"
-                        && tools.requires_lazy_load(&call.function.name, &loaded_tools)
-                    {
-                        if tools.can_auto_load_direct_call(&call.function.name) {
-                            loaded_tools.insert(call.function.name.clone());
-                            if self.config.tools.persist_loaded_tools {
-                                self.state.add_session_loaded_tools(
-                                    &[call.function.name.clone()],
-                                    Some(current_turn_id),
-                                )?;
-                            }
-                        } else {
-                            let output = format!(
-                                "tool error: tool `{}` is not loaded yet. Call load_tools first with {{\"names\":[\"{}\"]}}.",
-                                call.function.name,
-                                call.function.name,
-                            );
-                            on_event(AgentEvent::ToolResult {
-                                call_id: call_id.clone(),
-                                name: event_name.clone(),
-                                ok: false,
-                                output: output.clone(),
-                            })?;
-                            messages.push(ChatMessage::tool(call.id, output));
-                            continue;
-                        }
-                    }
-                }
                 let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
                 let tool_future = {
                     let tools = self.tools.lock().unwrap();
@@ -794,10 +765,29 @@ impl Agent {
                         },
                     )
                 };
+                // 桩工具失败时把真契约补进返回体(每个工具每回合只补一次)。
+                let mut attach_contract = |message: String| -> String {
+                    if !tools::is_stub_loading_mode(&self.config.tools.loading_mode) {
+                        return message;
+                    }
+                    if !contract_hinted.insert(call.function.name.clone()) {
+                        return message;
+                    }
+                    let tools = self.tools.lock().unwrap();
+                    if !tools.is_stub_presented(&call.function.name) {
+                        return message;
+                    }
+                    match tools.contract_text(&call.function.name) {
+                        Some(contract) => format!(
+                            "{message}\n\nThis tool was declared with an empty parameter shell, so its real schema follows. Call it again with these arguments at the top level.{contract}"
+                        ),
+                        None => message,
+                    }
+                };
                 let tool_future = match tool_future {
                     Ok(f) => f,
                     Err(err) => {
-                        let output = format!("tool error: {err}");
+                        let output = attach_contract(format!("tool error: {err}"));
                         on_event(AgentEvent::ToolResult {
                             call_id: call_id.clone(),
                             name: event_name.clone(),
@@ -826,13 +816,14 @@ impl Agent {
                                     while let Ok(progress) = progress_rx.try_recv() {
                                         emit_tool_progress(on_event, &call_id, &event_name, progress)?;
                                     }
+                                    let output = attach_contract(format!("tool error: {err}"));
                                     on_event(AgentEvent::ToolResult {
                                         call_id: call_id.clone(),
                                         name: event_name.clone(),
                                         ok: false,
-                                        output: format!("tool error: {err}"),
+                                        output: output.clone(),
                                     })?;
-                                    (format!("tool error: {err}"), false)
+                                    (output, false)
                                 }
                             };
                         }
@@ -844,10 +835,10 @@ impl Agent {
                         }
                     }
                 };
-                let clipboard_image = if tool_succeeded {
-                    clipboard_binary_image_from_tool_result(&call.function.name, &output)
+                let inline_media = if tool_succeeded {
+                    inline_media_from_tool_result(&call.function.name, &output)
                 } else {
-                    None
+                    Vec::new()
                 };
                 let model_output = self
                     .spill_tool_output(current_turn_id, &call.id, &call.function.name, &output)
@@ -861,7 +852,9 @@ impl Agent {
                     &call.function.arguments,
                     &model_output,
                 );
-                messages.push(ChatMessage::tool(call.id.clone(), model_output));
+                // tool 消息要等媒体块定下来再推:图直接进它的内容 parts(供应商
+                // 不认时才退回"之后补一条用户消息")。
+                let tool_message = ChatMessage::tool(call.id.clone(), model_output);
                 if tool_succeeded && call.function.name == "load_tools" {
                     let loaded = loaded_items_from_output(&output);
                     for name in &loaded.tools {
@@ -874,11 +867,14 @@ impl Agent {
                             .add_session_loaded_targets(&loaded.targets, Some(current_turn_id))?;
                     }
                 }
-                if let Some(img) = clipboard_image {
+                let stamped = if !inline_media.is_empty() {
                     let supports_vision = self.current_model_supports_vision();
-                    let uses_vision_fallback =
-                        !supports_vision && self.config.plugins.vision.enabled;
-                    if !supports_vision {
+                    let needs_fallback = !supports_vision
+                        && inline_media
+                            .iter()
+                            .any(|item| item.kind == crate::state::INLINE_MEDIA_KIND_IMAGE);
+                    let uses_vision_fallback = needs_fallback && self.config.plugins.vision.enabled;
+                    if needs_fallback {
                         let message = if self.config.plugins.vision.enabled {
                             if crate::i18n::is_zh() {
                                 "视觉分析."
@@ -886,9 +882,9 @@ impl Agent {
                                 "Vision analysis."
                             }
                         } else if crate::i18n::is_zh() {
-                            "当前模型不支持图片，且未启用视觉模型，无法分析剪贴板图片。"
+                            "当前模型不支持图片，且未启用视觉模型，无法分析这张图片。"
                         } else {
-                            "The current model does not support images and the vision plugin is disabled, so the clipboard image cannot be analyzed."
+                            "The current model does not support images and the vision plugin is disabled, so the image cannot be analyzed."
                         };
                         on_event(AgentEvent::ToolProgress {
                             call_id: call_id.clone(),
@@ -896,9 +892,9 @@ impl Agent {
                             message: message.to_string(),
                         })?;
                     }
-                    let image_message = if uses_vision_fallback {
-                        let image_future = self.clipboard_image_message(img);
-                        tokio::pin!(image_future);
+                    let items = if uses_vision_fallback {
+                        let describe_future = self.describe_inline_media(inline_media);
+                        tokio::pin!(describe_future);
                         let mut spinner_interval = tokio::time::interval(self.spinner_interval);
                         spinner_interval
                             .set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -911,7 +907,7 @@ impl Agent {
                         let mut progress_tick = 0usize;
                         loop {
                             tokio::select! {
-                                result = &mut image_future => {
+                                result = &mut describe_future => {
                                     break result?;
                                 }
                                 _ = progress_interval.tick() => {
@@ -927,13 +923,36 @@ impl Agent {
                                 }
                             }
                         }
+                    } else if needs_fallback {
+                        Vec::new()
                     } else {
-                        self.clipboard_image_message(img).await?
+                        inline_media
                     };
-                    if let Some(message) = image_message {
-                        messages.push(message);
+                    // 先落库再推进对话:重放读的就是这批字节,活体与重放
+                    // 同源(1.2 化石化)。
+                    let stamped = items
+                        .into_iter()
+                        .enumerate()
+                        .map(|(seq, mut item)| {
+                            item.call_id = call.id.clone();
+                            item.seq = seq as i64;
+                            item
+                        })
+                        .collect::<Vec<_>>();
+                    if !stamped.is_empty() {
+                        self.state
+                            .save_turn_inline_media(current_turn_id, &stamped)?;
                     }
-                }
+                    stamped
+                } else {
+                    Vec::new()
+                };
+                push_tool_result_with_media(
+                    messages,
+                    tool_message,
+                    &stamped,
+                    self.config.active_pool_tool_result_media(),
+                );
                 if tool_succeeded {
                     let result_ok = tool_output_succeeded(&output);
                     if result_ok {

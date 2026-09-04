@@ -589,6 +589,8 @@ async fn responses_continuation_is_pinned_to_its_original_endpoint() {
         max_tokens_override: None,
         request_scope: "chat",
         claude_code: None,
+        antigravity: None,
+        codex: None,
         claude_code_dev_mode: false,
         continuation_health: ResponsesContinuationHealth::detached(),
     };
@@ -627,6 +629,8 @@ async fn responses_continuation_is_pinned_to_its_original_endpoint() {
         max_tokens_override: None,
         request_scope: "chat",
         claude_code: None,
+        antigravity: None,
+        codex: None,
         claude_code_dev_mode: false,
         continuation_health: ResponsesContinuationHealth::detached(),
     };

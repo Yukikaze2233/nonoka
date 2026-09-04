@@ -2,7 +2,7 @@ use crate::agent::{
     archive_and_delete_visible_turns, Agent, AgentEvent, AgentMode, AgentTurnControl,
 };
 use crate::args::WebArgs;
-use crate::config::{ActiveProviderModelConfig, AppConfig, PromptAudience};
+use crate::config::{ActiveProviderModelConfig, AppConfig, PromptAudience, ProviderConfig};
 use crate::i18n::text as t;
 use crate::ipc::{
     self, Command as IpcCommand, Frame as IpcFrame, ImageAttachment, Request as IpcRequest,
@@ -25,11 +25,13 @@ mod bridge_progress;
 mod bridge_question;
 mod commands_api;
 mod config_api;
+mod dashboards;
 mod dto;
 mod event_map;
 mod goal_driver;
 mod persona;
 mod prompt_files;
+mod providers_api;
 mod qq_history;
 mod security;
 mod server;
@@ -52,12 +54,18 @@ use bridge_progress::*;
 use bridge_question::*;
 use commands_api::*;
 use config_api::*;
+use dashboards::affection::*;
+use dashboards::kb::*;
+use dashboards::memes::*;
+use dashboards::memory::*;
+use dashboards::qq::*;
 use dto::*;
 use event_map::*;
 use goal_driver::*;
 use ipc_server::*;
 use persona::*;
 use prompt_files::*;
+use providers_api::*;
 use qq_history::*;
 use security::*;
 pub(crate) use server::run;
@@ -70,16 +78,17 @@ use turns::*;
 
 use crate::runtime::{
     cold_context, enqueue_turn_update, finish_run, random_id, random_token, release_admin,
-    reset_platform_persona_state, safe_error_message, validate_content, ActorCommand, AdminFailure,
-    AnswerFailure, ApiError, ContextSnapshot, DaemonState, EventHub, EventRecord, IpcRunGuard,
-    LoginFailure, ManagerState, PlatformPersonaResetError, PromptDocument, PromptDocuments,
-    QuestionBroker, RedoWebPrompt, RunInfo, RunOperation, SafeQueuedPrompt, SafeUserAttachment,
-    ThinkingVariantUpdate, TurnEngineState, TurnResourceCache, TurnUpdateMode, TurnUpdateRequest,
-    WebAuth,
+    reset_platform_persona_state, safe_error_message, startup_context, validate_content,
+    ActorCommand, AdminFailure, AnswerFailure, ApiError, ContextSnapshot, DaemonState, EventHub,
+    EventRecord, IpcRunGuard, LoginFailure, ManagerState, PlatformPersonaResetError,
+    PromptDocument, PromptDocuments, QuestionBroker, RedoWebPrompt, RunInfo, RunOperation,
+    SafeQueuedPrompt, SafeUserAttachment, ThinkingVariantUpdate, TurnEngineState,
+    TurnResourceCache, TurnUpdateMode, TurnUpdateRequest, WebAuth,
 };
 use crate::state::{
     ArtifactAsset, ImageAsset, PlatformPluginScopeKey, QueuedPrompt, StateStore, Turn,
-    TurnFollowup, TurnStatus, UsageSnapshot, UserAttachment,
+    TurnFollowup, TurnStatus, UsageSnapshot, UserAttachment, USER_ATTACHMENT_KIND_FILE,
+    USER_ATTACHMENT_KIND_IMAGE, USER_ATTACHMENT_KIND_TEXT,
 };
 use crate::tools::build_tool_registry;
 use crate::tools::{self, CommandOutputStream};
@@ -131,6 +140,7 @@ const LIGHTBOX_JS: &str = include_str!("../../web/lightbox.js");
 const TODOS_JS: &str = include_str!("../../web/todos.js");
 // 文件分享面板:独立文件,与 artifact 演示区无关。
 const SHARED_JS: &str = include_str!("../../web/shared.js");
+// 插件 dashboard 脚本走 assets.rs 的 DASH_SCRIPTS 静态表,加面板只改那一行。
 // KaTeX 0.18.4(vendored):公式渲染;字体只带 woff2(css 里 woff2 列首,
 // 现代浏览器不会去请求 woff/ttf 回退项)。
 const KATEX_JS: &str = include_str!("../../web/vendor/katex/katex.min.js");

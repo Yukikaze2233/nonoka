@@ -34,6 +34,7 @@ use connection::*;
 use dispatch::*;
 // 这三样 onebot 之外也要用（platforms 持有注册表与监听器，web 复用端口），
 // 子模块本身是私有的，得显式再导出一层
+pub(crate) use caches::cached_group_name;
 pub(crate) use connection::{onebot_ws_on_web_port, ConnectionRegistry, QqListenerManager};
 use files::*;
 use group_join::*;

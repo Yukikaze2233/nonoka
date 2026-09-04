@@ -1,3 +1,4 @@
+pub(crate) mod dashboard;
 pub(super) mod store;
 pub(super) mod tools;
 
@@ -40,7 +41,7 @@ pub(super) fn store_for_paths(paths: &NonokaPaths) -> HistoryStore {
         .clone()
 }
 
-fn history_db_path(paths: &NonokaPaths) -> PathBuf {
+pub(super) fn history_db_path(paths: &NonokaPaths) -> PathBuf {
     let path = paths.data_dir.join(HISTORY_DB);
     if path.exists() {
         return path;
@@ -529,7 +530,6 @@ mod tests {
         assert_eq!(forward_digest(truncated).unwrap(), "[forward x1] 阿: 一");
     }
 
-    use super::*;
     use crate::platforms::{
         PlatformConversation, PlatformInboundMedia, PlatformMediaKind, PlatformMessagePosition,
     };

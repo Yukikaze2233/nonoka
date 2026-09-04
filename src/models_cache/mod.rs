@@ -277,7 +277,9 @@ mod tests {
             models: vec!["m".to_string()],
             model_context_window: HashMap::new(),
             model_temperature: HashMap::new(),
+            model_tools_loading_mode: HashMap::new(),
             model_modalities: HashMap::new(),
+            tool_result_media: None,
             model_costs: HashMap::from([(
                 "m".to_string(),
                 crate::config::ModelCostConfig {

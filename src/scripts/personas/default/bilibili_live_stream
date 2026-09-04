@@ -763,9 +763,9 @@ def cache_dir():
     if system == "Windows":
         root = os.environ.get("LOCALAPPDATA") or os.path.expanduser(r"~\AppData\Local")
     elif system == "Darwin":
-        root = os.environ.get("MIYU_SCRIPT_CACHE_DIR") or os.path.expanduser("~/Library/Caches")
+        root = os.environ.get("NONOKA_SCRIPT_CACHE_DIR") or os.path.expanduser("~/Library/Caches")
     else:
-        root = (os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+        root = (os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
                 or os.environ.get("XDG_CACHE_HOME")
                 or os.path.expanduser("~/.cache"))
     path = os.path.join(root, APP_NAME)
@@ -1526,7 +1526,7 @@ def main(argv=None):
 
 
 def _argv_from_stdin():
-    """Miyu 的脚本工具把参数以 JSON 从 stdin 传入、argv 为空，这里转成 CLI 参数。"""
+    """Nonoka 的脚本工具把参数以 JSON 从 stdin 传入、argv 为空，这里转成 CLI 参数。"""
     if sys.argv[1:] or sys.stdin.isatty():
         return None
     try:

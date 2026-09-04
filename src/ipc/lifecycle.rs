@@ -194,16 +194,16 @@ pub async fn ensure_daemon(
     let mut current = daemon_info(&active_paths).await;
     if current.is_none() {
         let previous_paths = active_paths.clone();
-        active_paths =
-            match NonokaPaths::new().context("refreshing Nonoka paths before daemon startup") {
-                Ok(paths) => paths,
-                Err(error) => {
-                    if let Some(launch) = &pending_launch {
-                        abandon_daemon_launch_candidate(&previous_paths, launch);
-                    }
-                    return Err(error);
+        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths before daemon startup")
+        {
+            Ok(paths) => paths,
+            Err(error) => {
+                if let Some(launch) = &pending_launch {
+                    abandon_daemon_launch_candidate(&previous_paths, launch);
                 }
-            };
+                return Err(error);
+            }
+        };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }
@@ -226,16 +226,16 @@ pub async fn ensure_daemon(
             }
             return Err(error);
         }
-        active_paths =
-            match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown") {
-                Ok(paths) => paths,
-                Err(error) => {
-                    if let Some(launch) = &pending_launch {
-                        abandon_daemon_launch_candidate(&previous_paths, launch);
-                    }
-                    return Err(error);
+        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown")
+        {
+            Ok(paths) => paths,
+            Err(error) => {
+                if let Some(launch) = &pending_launch {
+                    abandon_daemon_launch_candidate(&previous_paths, launch);
                 }
-            };
+                return Err(error);
+            }
+        };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }
@@ -262,16 +262,16 @@ pub async fn ensure_daemon(
             return Err(error);
         }
         drop(starter);
-        active_paths =
-            match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown") {
-                Ok(paths) => paths,
-                Err(error) => {
-                    if let Some(launch) = &pending_launch {
-                        abandon_daemon_launch_candidate(&previous_paths, launch);
-                    }
-                    return Err(error);
+        active_paths = match NonokaPaths::new().context("refreshing Nonoka paths after daemon shutdown")
+        {
+            Ok(paths) => paths,
+            Err(error) => {
+                if let Some(launch) = &pending_launch {
+                    abandon_daemon_launch_candidate(&previous_paths, launch);
                 }
-            };
+                return Err(error);
+            }
+        };
         if let Some(launch) = &mut pending_launch {
             remap_managed_password(launch, &previous_paths, &active_paths);
         }
@@ -291,7 +291,8 @@ pub async fn ensure_daemon(
             return Err(error);
         }
     };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let ready_timeout = daemon_ready_timeout();
+    let deadline = tokio::time::Instant::now() + ready_timeout;
     loop {
         if let Some(info) = daemon_info(&active_paths).await {
             if let Err(error) = commit_daemon_launch_config(&active_paths, &launch) {
@@ -324,12 +325,28 @@ pub async fn ensure_daemon(
             let _ = child.wait();
             abandon_daemon_launch_candidate(&active_paths, &launch);
             bail!(
-                "Nonoka daemon did not become ready within 8 seconds{}",
+                "Nonoka daemon did not become ready within {} seconds (override with {DAEMON_READY_TIMEOUT_ENV}){}",
+                ready_timeout.as_secs(),
                 daemon_log_since(&active_paths, log_offset)
             );
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
+}
+
+/// daemon 就绪窗口的环境变量覆盖(秒)。默认 8 秒:daemon 自己的启动路径已经
+/// 把慢步骤(MCP 列举)限在 3 秒内放行(见 `startup_context`),8 秒够用;
+/// 留这个口子给机器特别慢、或想看清 daemon 到底卡在哪一步的人。
+pub const DAEMON_READY_TIMEOUT_ENV: &str = "NONOKA_DAEMON_READY_TIMEOUT_SECS";
+const DEFAULT_DAEMON_READY_TIMEOUT: Duration = Duration::from_secs(8);
+
+fn daemon_ready_timeout() -> Duration {
+    std::env::var(DAEMON_READY_TIMEOUT_ENV)
+        .ok()
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .filter(|secs| *secs > 0)
+        .map(Duration::from_secs)
+        .unwrap_or(DEFAULT_DAEMON_READY_TIMEOUT)
 }
 
 /// Shuts down a daemon left over from an older build so the caller can spawn

@@ -176,7 +176,11 @@ impl NonokaPaths {
             data_dir.clone()
         };
         let scripts_dir = resource_config_dir.join("scripts");
-        let system_scripts_dir = PathBuf::from("/usr/share/nonoka/scripts");
+        // 内置脚本目录默认在系统前缀下,`NONOKA_SYSTEM_SCRIPTS_DIR` 可覆盖——
+        // 打包到非标准前缀、或隔离测试时用得上。
+        let system_scripts_dir = std::env::var_os("NONOKA_SYSTEM_SCRIPTS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("/usr/share/nonoka/scripts"));
 
         Ok(Self {
             // The canonical home even inside the transient legacy window: that

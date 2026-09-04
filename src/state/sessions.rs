@@ -455,6 +455,29 @@ impl StateStore {
         self.conv_db.delete_platform_meme_ref(library, meme_id)
     }
 
+    pub fn plugin_rows(
+        &self,
+        plugin_id: &str,
+        conversation_kind: &str,
+    ) -> Result<Vec<crate::state::conversation_db::PlatformPluginRow>> {
+        self.conv_db.plugin_rows(plugin_id, conversation_kind)
+    }
+
+    pub fn plugin_scopes(
+        &self,
+        plugin_id: &str,
+        conversation_kind: Option<&str>,
+    ) -> Result<Vec<PlatformPluginScopeKey>> {
+        self.conv_db.plugin_scopes(plugin_id, conversation_kind)
+    }
+
+    pub fn platform_meme_ref_counts(
+        &self,
+        library: &str,
+    ) -> Result<Vec<crate::state::conversation_db::PlatformMemeRefCount>> {
+        self.conv_db.platform_meme_ref_counts(library)
+    }
+
     pub fn delete_subagent_sessions_older_than(&self, days: i64) -> Result<usize> {
         self.conv_db.delete_subagent_sessions_older_than(days)
     }

@@ -13,7 +13,7 @@ fn vision_support_requires_every_effective_text_pool_model() {
     let provider = config
         .providers
         .iter_mut()
-        .find(|provider| !provider.is_claude_code())
+        .find(|provider| !provider.is_builtin_cli_provider())
         .unwrap();
     provider.default_model = "vision-model".to_string();
     provider.models = vec!["vision-model".to_string(), "text-model".to_string()];
@@ -49,7 +49,7 @@ fn vision_preference_controls_direct_image_delivery_to_the_text_pool() {
     let provider = config
         .providers
         .iter_mut()
-        .find(|provider| !provider.is_claude_code())
+        .find(|provider| !provider.is_builtin_cli_provider())
         .unwrap();
     provider.model_modalities.insert(
         provider.default_model.clone(),
@@ -59,6 +59,34 @@ fn vision_preference_controls_direct_image_delivery_to_the_text_pool() {
     assert!(should_use_active_text_pool_for_images(&config));
     config.plugins.vision.prefer_current_multimodal_model = false;
     assert!(!should_use_active_text_pool_for_images(&config));
+}
+
+/// agy 中转线的模型目录里 Gemini 标着 image 输入,但 stdin 只收文本:图不能
+/// 内联进消息,只能留路径让模型自己 view_file(09-04 实测)。判成"能看图"
+/// 的后果是图被中转层降级丢掉、活体与化石字节不同、续传链逢图必断。
+#[test]
+fn antigravity_pool_never_inlines_media_but_views_it_natively() {
+    let mut config = AppConfig::default();
+    let provider = config
+        .providers
+        .iter_mut()
+        .find(|provider| provider.is_antigravity())
+        .unwrap();
+    provider.enabled = true;
+    let model = provider.default_model.clone();
+    provider
+        .model_modalities
+        .insert(model.clone(), vec!["text".to_string(), "image".to_string()]);
+    let provider_id = provider.id.clone();
+    config.active_provider_models = Some(vec![ActiveProviderModelConfig { provider_id, model }]);
+
+    assert!(!active_text_pool_supports_vision(&config));
+    assert!(!should_use_active_text_pool_for_images(&config));
+    assert!(config.active_pool_views_media_with_native_file_tool(false));
+    // 原生工具在本模式关着 ⇒ 没人能打开路径,退回视觉旁路。
+    config.plugins.antigravity.native_tools = "dev".to_string();
+    assert!(!config.active_pool_views_media_with_native_file_tool(false));
+    assert!(config.active_pool_views_media_with_native_file_tool(true));
 }
 
 #[tokio::test]
@@ -173,11 +201,13 @@ async fn binary_image_reaches_vision_pool_then_text_model() {
         models: vec!["vision-model".to_string()],
         model_context_window: Default::default(),
         model_temperature: HashMap::new(),
+        model_tools_loading_mode: HashMap::new(),
         model_modalities: [(
             "vision-model".to_string(),
             vec!["text".to_string(), "image".to_string()],
         )]
         .into(),
+        tool_result_media: None,
         model_costs: Default::default(),
         default_model: "vision-model".to_string(),
         timeout_seconds: 30,
@@ -301,7 +331,7 @@ async fn path_images_are_inlined_when_model_supports_vision() {
     let provider = config
         .providers
         .iter_mut()
-        .find(|provider| !provider.is_claude_code())
+        .find(|provider| !provider.is_builtin_cli_provider())
         .unwrap();
     provider.model_modalities.insert(
         provider.default_model.clone(),
@@ -400,7 +430,7 @@ async fn local_video_paths_inline_when_the_model_takes_video() {
     let state = StateStore::new(&paths).unwrap();
     let client =
         OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
-    let mut agent = Agent::new(
+    let agent = Agent::new(
         config,
         &paths,
         state,
@@ -424,7 +454,7 @@ async fn local_video_paths_inline_when_the_model_takes_video() {
     let state = StateStore::new(&paths).unwrap();
     let client =
         OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
-    let mut agent = Agent::new(
+    let agent = Agent::new(
         config,
         &paths,
         state,
@@ -457,7 +487,7 @@ async fn local_video_paths_inline_when_the_model_takes_video() {
     let state = StateStore::new(&paths).unwrap();
     let client =
         OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
-    let mut agent = Agent::new(
+    let agent = Agent::new(
         config,
         &paths,
         state,
@@ -509,7 +539,7 @@ async fn inlined_images_do_not_invite_the_vision_tool() {
             let client =
                 OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths)
                     .unwrap();
-            let mut agent = Agent::new(
+            let agent = Agent::new(
                 config,
                 &paths,
                 state,
@@ -535,7 +565,7 @@ async fn inlined_images_do_not_invite_the_vision_tool() {
             let client =
                 OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths)
                     .unwrap();
-            let mut agent = Agent::new(
+            let agent = Agent::new(
                 config,
                 &paths,
                 state,
@@ -596,4 +626,38 @@ async fn inlined_images_do_not_invite_the_vision_tool() {
         hints.contains("vision_analyze"),
         "看不了图的模型必须保留工具兜底，实际提示：{hints}"
     );
+}
+
+#[test]
+fn inline_media_message_uses_plain_for_text_and_parts_for_media() {
+    use crate::state::{TurnInlineMedia, INLINE_MEDIA_KIND_IMAGE, INLINE_MEDIA_KIND_TEXT};
+    let text = TurnInlineMedia {
+        call_id: "c".into(),
+        seq: 0,
+        kind: INLINE_MEDIA_KIND_TEXT.into(),
+        mime: "text/plain".into(),
+        source: String::new(),
+        data: Some(b"a cat".to_vec()),
+    };
+    let message = inline_media_message(&[text.clone()]).unwrap();
+    assert!(matches!(message.content, Some(crate::llm::ChatContent::Text(ref t)) if t == "a cat"));
+
+    let remote = TurnInlineMedia {
+        call_id: "c".into(),
+        seq: 1,
+        kind: INLINE_MEDIA_KIND_IMAGE.into(),
+        mime: String::new(),
+        source: "https://example.com/p.jpg".into(),
+        data: None,
+    };
+    let message = inline_media_message(&[text, remote]).unwrap();
+    let parts = match message.content.unwrap() {
+        crate::llm::ChatContent::Parts(parts) => parts,
+        _ => panic!("parts"),
+    };
+    assert_eq!(parts.len(), 2);
+    assert!(
+        matches!(&parts[1], crate::llm::ChatContentPart::ImageUrl { image_url } if image_url.url == "https://example.com/p.jpg")
+    );
+    assert!(inline_media_message(&[]).is_none());
 }

@@ -16,7 +16,7 @@ zhihu-search — 知乎检索 CLI
   zhihu-search https://www.zhihu.com/question/629151764
   zhihu-search login | doctor | setup
 
-也是 Miyu script 工具：无参数且 stdin 非终端时读 JSON，最短为 {"query": "..."}。
+也是 Nonoka script 工具：无参数且 stdin 非终端时读 JSON，最短为 {"query": "..."}。
 """
 import argparse
 import html as _html
@@ -34,10 +34,10 @@ import urllib.parse
 
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
-# 缓存根目录。`MIYU_SCRIPT_CACHE_DIR` 让 Miyu（或运维）把所有脚本的中间
+# 缓存根目录。`NONOKA_SCRIPT_CACHE_DIR` 让 Nonoka（或运维）把所有脚本的中间
 # 产物集中到一处；不设时退回 XDG 默认，脚本单独拿去用也不会往奇怪的地方写。
 DATA_DIR = os.path.join(
-    os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+    os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
     or os.environ.get("XDG_CACHE_HOME")
     or os.path.join(os.path.expanduser("~"), ".cache"),
     "zhihu-search")
@@ -673,14 +673,14 @@ LOGIN_STATUS_PATH = os.path.join(DATA_DIR, "login-status.json")
 def login_command_hint(tool):
     """给出**能真正生效**的登录命令。
 
-    Miyu 调脚本时会设 MIYU_SCRIPT_CACHE_DIR(指向 ~/.miyu/cache),登录态落在
+    Nonoka 调脚本时会设 NONOKA_SCRIPT_CACHE_DIR(指向 ~/.nonoka/cache),登录态落在
     那儿。用户照着裸命令在终端跑,会登到 ~/.cache/<tool> 去——登了等于没登。
     变量在场时把它带进命令里。
     """
-    root = os.environ.get("MIYU_SCRIPT_CACHE_DIR")
+    root = os.environ.get("NONOKA_SCRIPT_CACHE_DIR")
     if not root:
         return f"{tool} login"
-    return f"MIYU_SCRIPT_CACHE_DIR={root} {tool} login"
+    return f"NONOKA_SCRIPT_CACHE_DIR={root} {tool} login"
 
 
 
@@ -711,7 +711,7 @@ def start_login(timeout=300):
     """开一个后台进程去弹登录窗口，**立刻返回**。
 
     调用方(AI 或人)拿到返回值就去提示用户过验证码，之后轮询
-    `login --check`。原来是单次阻塞调用等满 300 秒——正好顶到 Miyu 脚本工具
+    `login --check`。原来是单次阻塞调用等满 300 秒——正好顶到 Nonoka 脚本工具
     的超时上限(index.rs 的 .min(300))，一秒余量都没有，而且整轮对话被卡住。
     """
     if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
@@ -1108,7 +1108,7 @@ def run(query, req):
 
 
 def stdin_json_mode():
-    """Miyu 工具入口：无命令行参数且 stdin 为 JSON 时启用。
+    """Nonoka 工具入口：无命令行参数且 stdin 为 JSON 时启用。
     最简调用就是 {"query": "..."} —— 关键词就搜索，链接就取全文。
     输出默认 Markdown；format=json 输出 JSON。"""
     global QUIET
@@ -1198,7 +1198,7 @@ def help_text():
 def main():
     global QUIET
     migrate_legacy_profile()
-    # Miyu 工具模式: 无参数 + stdin 非终端 → 按 stdin JSON 处理
+    # Nonoka 工具模式: 无参数 + stdin 非终端 → 按 stdin JSON 处理
     if len(sys.argv) == 1 and not sys.stdin.isatty():
         stdin_json_mode()
         return

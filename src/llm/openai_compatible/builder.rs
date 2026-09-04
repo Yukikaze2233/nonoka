@@ -48,6 +48,8 @@ impl OpenAiCompatibleClient {
             .with_context(|| "no active provider/model endpoint is configured")?;
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, &first.provider);
         let claude_code = claude_code_runtime(&endpoints, config);
+        let antigravity = antigravity_runtime(&endpoints, config);
+        let codex = codex_runtime(&endpoints, config);
         let mut client = Self {
             client: first.client.clone(),
             provider: first.provider.clone(),
@@ -62,6 +64,8 @@ impl OpenAiCompatibleClient {
             request_scope: "chat",
             continuation_health,
             claude_code,
+            antigravity,
+            codex,
             claude_code_dev_mode: false,
         };
         client.restore_saved_thinking_variants(paths);
@@ -101,7 +105,7 @@ impl OpenAiCompatibleClient {
             }
             provider.default_model = choice.model.clone();
             let client = endpoint_client(&provider)?;
-            if provider_uses_claude_code(&provider) {
+            if provider_uses_cli_relay(&provider) {
                 // CLI 用订阅登录态,没有 API key;单端点直进池。
                 endpoints.push(LlmEndpoint {
                     client: client.clone(),
@@ -137,6 +141,8 @@ impl OpenAiCompatibleClient {
         };
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, &first.provider);
         let claude_code = claude_code_runtime(&endpoints, config);
+        let antigravity = antigravity_runtime(&endpoints, config);
+        let codex = codex_runtime(&endpoints, config);
         let mut client = Self {
             client: first.client.clone(),
             provider: first.provider.clone(),
@@ -151,6 +157,8 @@ impl OpenAiCompatibleClient {
             request_scope: "chat",
             continuation_health,
             claude_code,
+            antigravity,
+            codex,
             claude_code_dev_mode: false,
         };
         client.restore_saved_thinking_variants(paths);
@@ -179,7 +187,7 @@ impl OpenAiCompatibleClient {
             );
         }
         let client = endpoint_client(provider)?;
-        let (key_value, key_index) = if provider_uses_claude_code(provider) {
+        let (key_value, key_index) = if provider_uses_cli_relay(provider) {
             (String::new(), 0)
         } else {
             let key = provider
@@ -198,6 +206,8 @@ impl OpenAiCompatibleClient {
         let continuation_health = ResponsesContinuationHealth::for_provider(paths, provider);
         let endpoints = vec![endpoint];
         let claude_code = claude_code_runtime(&endpoints, config);
+        let antigravity = antigravity_runtime(&endpoints, config);
+        let codex = codex_runtime(&endpoints, config);
         let mut client = Self {
             client,
             provider: provider.clone(),
@@ -212,6 +222,8 @@ impl OpenAiCompatibleClient {
             request_scope: "chat",
             continuation_health,
             claude_code,
+            antigravity,
+            codex,
             claude_code_dev_mode: false,
         };
         client.restore_saved_thinking_variants(paths);
@@ -333,6 +345,8 @@ impl OpenAiCompatibleClient {
             // failover 换端点共享同一健康位(续传本就钉在原端点)。
             continuation_health: self.continuation_health.clone(),
             claude_code: self.claude_code.clone(),
+            antigravity: self.antigravity.clone(),
+            codex: self.codex.clone(),
             claude_code_dev_mode: self.claude_code_dev_mode,
         }
     }
@@ -367,6 +381,28 @@ impl OpenAiCompatibleClient {
     pub(crate) fn uses_anthropic_messages(&self) -> bool {
         provider_looks_anthropic(&self.provider)
     }
+}
+
+/// 端点池里出现 codex 协议端点时,解析一份共享运行时参数。
+pub(in crate::llm::openai_compatible) fn codex_runtime(
+    endpoints: &[LlmEndpoint],
+    config: &AppConfig,
+) -> Option<Arc<CodexRuntime>> {
+    endpoints
+        .iter()
+        .any(|endpoint| provider_uses_codex(&endpoint.provider))
+        .then(|| Arc::new(CodexRuntime::from_config(config)))
+}
+
+/// 端点池里出现 antigravity 协议端点时,解析一份共享运行时参数。
+pub(in crate::llm::openai_compatible) fn antigravity_runtime(
+    endpoints: &[LlmEndpoint],
+    config: &AppConfig,
+) -> Option<Arc<AntigravityRuntime>> {
+    endpoints
+        .iter()
+        .any(|endpoint| provider_uses_antigravity(&endpoint.provider))
+        .then(|| Arc::new(AntigravityRuntime::from_config(config)))
 }
 
 /// 端点池里出现 claude-code 协议端点时,解析一份共享运行时参数。
