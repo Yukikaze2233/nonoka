@@ -125,17 +125,17 @@ fn concurrent_image_notice_appends_do_not_lose_records() {
 }
 
 #[tokio::test]
-async fn default_threshold_converts_only_after_one_hundred_characters() {
+async fn default_threshold_converts_only_after_two_hundred_fifty_characters() {
     let (_temp, mut context) = test_context(true);
     set_plugin_setting(&mut context, "mode", json!("forward"));
     let plugin = ReplyProcessorPlugin::new().unwrap();
 
-    let boundary = OutboundMessage::markdown(OutboundOrigin::FinalReply, "x".repeat(100));
+    let boundary = OutboundMessage::markdown(OutboundOrigin::FinalReply, "x".repeat(250));
     let unchanged = plugin.before_send(&context, boundary).await.unwrap();
     assert!(unchanged.fallback.is_none());
     assert!(matches!(unchanged.primary.body, OutboundBody::Segments(_)));
 
-    let over = OutboundMessage::markdown(OutboundOrigin::FinalReply, "x".repeat(101));
+    let over = OutboundMessage::markdown(OutboundOrigin::FinalReply, "x".repeat(251));
     let converted = plugin.before_send(&context, over).await.unwrap();
     assert!(converted.fallback.is_some());
     assert!(matches!(converted.primary.body, OutboundBody::Forward(_)));
@@ -158,12 +158,12 @@ async fn command_output_is_processed_like_a_model_reply() {
     set_plugin_setting(&mut context, "mode", json!("forward"));
     let plugin = ReplyProcessorPlugin::new().unwrap();
 
-    let long_listing = OutboundMessage::markdown(OutboundOrigin::Command, "x".repeat(101));
+    let long_listing = OutboundMessage::markdown(OutboundOrigin::Command, "x".repeat(251));
     let converted = plugin.before_send(&context, long_listing).await.unwrap();
     assert!(matches!(converted.primary.body, OutboundBody::Forward(_)));
 
     // 阈值以下照旧原样发,和 FinalReply 一致。
-    let short = OutboundMessage::markdown(OutboundOrigin::Command, "x".repeat(100));
+    let short = OutboundMessage::markdown(OutboundOrigin::Command, "x".repeat(250));
     let unchanged = plugin.before_send(&context, short).await.unwrap();
     assert!(matches!(unchanged.primary.body, OutboundBody::Segments(_)));
 }

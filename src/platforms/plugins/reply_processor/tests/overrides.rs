@@ -46,7 +46,7 @@ fn admin_commands_update_and_restore_only_the_current_scope() {
     ReplyProcessorPlugin::handle_admin_command(&context, "恢复默认").unwrap();
     let defaults = ReplyProcessorPlugin::effective_settings(&context).unwrap();
     assert!(defaults.enabled);
-    assert_eq!(defaults.threshold, 100);
+    assert_eq!(defaults.threshold, 250);
     assert_eq!(defaults.mode, ReplyMode::Image);
     assert!(!defaults.custom);
 }
