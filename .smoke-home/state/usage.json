@@ -1,0 +1,24 @@
+{
+  "requests": 3,
+  "prompt_tokens": 20597,
+  "completion_tokens": 603,
+  "total_tokens": 21200,
+  "conversation_tokens": 21200,
+  "cache_read_tokens": 0,
+  "cache_write_tokens": 0,
+  "reasoning_tokens": 205,
+  "last_usage": {
+    "prompt_tokens": 6892,
+    "completion_tokens": 310,
+    "total_tokens": 7202,
+    "reasoning_tokens": 99,
+    "cache_reported": true
+  },
+  "last_conversation_usage": {
+    "prompt_tokens": 6892,
+    "completion_tokens": 310,
+    "total_tokens": 7202,
+    "reasoning_tokens": 99,
+    "cache_reported": true
+  }
+}

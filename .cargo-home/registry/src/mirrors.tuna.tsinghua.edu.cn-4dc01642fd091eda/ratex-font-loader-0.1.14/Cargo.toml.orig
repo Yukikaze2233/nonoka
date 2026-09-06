@@ -1,0 +1,20 @@
+[package]
+name = "ratex-font-loader"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+description = "Shared lazy font loading and caching for RaTeX renderers"
+
+[features]
+default = []
+embed-fonts = ["dep:ratex-katex-fonts"]
+
+[dependencies]
+ratex-font = { workspace = true }
+ratex-katex-fonts = { workspace = true, optional = true }
+ratex-types = { workspace = true }
+ratex-unicode-font = { workspace = true }
+ab_glyph = "0.2"

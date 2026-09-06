@@ -1,0 +1,34 @@
+[package]
+name = "htmd"
+version = "0.5.5"
+edition = "2024"
+authors = ["letmutex"]
+description = "A turndown.js inspired HTML to Markdown converter."
+license = "Apache-2.0"
+repository = "https://github.com/letmutex/htmd"
+homepage = "https://github.com/letmutex/htmd"
+keywords = ["html", "markdown", "converter"]
+categories = ["text-processing", "parsing"]
+readme = "README.md"
+
+[dependencies]
+html5ever = "0.38"
+markup5ever_rcdom = "0.38"
+phf = { version = "0.13.1", features = ["macros"] }
+
+[dev-dependencies]
+indoc = "2.0.6"
+scraper = "0.26"
+criterion = { version = "0.8", features = ["html_reports"] }
+pretty_assertions = "1.4.1"
+
+[[bench]]
+name = "convert_bench"
+harness = false
+
+[[bench]]
+name = "str_concat_bench"
+harness = false
+
+[profile.release]
+debug = true

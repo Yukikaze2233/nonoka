@@ -218,7 +218,9 @@ pub(in crate::llm::openai_compatible) fn cooldown_for_error(
                 Some(Duration::from_secs(600))
             }
             HttpFailureKind::EndpointUnavailable => Some(Duration::from_secs(120)),
-            HttpFailureKind::EndpointIncompatible | HttpFailureKind::InvalidRequest => None,
+            HttpFailureKind::EndpointIncompatible
+            | HttpFailureKind::InvalidRequest
+            | HttpFailureKind::ContentPolicy => None,
             HttpFailureKind::Status => cooldown_for_status(failure.status),
         };
     }
@@ -251,7 +253,10 @@ pub(in crate::llm::openai_compatible) fn same_endpoint_retry_allowed(
         .is_some_and(|failure| {
             matches!(
                 failure.kind,
-                HttpFailureKind::Authentication | HttpFailureKind::RateLimit
+                // 内容策略拦截同理:同一条提示词再打同一端点必然再被拦。
+                HttpFailureKind::Authentication
+                    | HttpFailureKind::RateLimit
+                    | HttpFailureKind::ContentPolicy
             )
         })
 }
@@ -381,6 +386,7 @@ pub(in crate::llm::openai_compatible) fn stream_chunk_commits_attempt(
     (chunk.kind == ChatStreamKind::ReasoningPartEnd
         && reasoning_visibility != ReasoningVisibility::Hidden)
         || chunk.kind == ChatStreamKind::ToolCall
+        || chunk.kind == ChatStreamKind::RemoteToolPreparing
         || chunk.kind == ChatStreamKind::RemoteToolStarted
         || chunk.kind == ChatStreamKind::RemoteToolFinished
         || (chunk.kind == ChatStreamKind::Content && !chunk.text.is_empty())

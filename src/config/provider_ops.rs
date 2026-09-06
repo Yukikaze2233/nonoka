@@ -24,7 +24,7 @@ impl AppConfig {
             rename_provider_in_pool(entries, old_id, new_id);
         }
         for tier in ModelTier::ALL {
-            rename_provider_in_pool(self.subagent_tiers.pool_mut(tier), old_id, new_id);
+            rename_provider_in_pool(self.model_tiers.pool_mut(tier), old_id, new_id);
         }
         self.platforms.rename_provider_references(old_id, new_id);
         if self.plugins.vision.vision_provider_id == old_id {
@@ -43,7 +43,7 @@ impl AppConfig {
         retain_provider_pool(&mut self.active_provider_models, provider_id);
         retain_provider_pool(&mut self.active_multimodal_provider_models, provider_id);
         for tier in ModelTier::ALL {
-            self.subagent_tiers
+            self.model_tiers
                 .pool_mut(tier)
                 .retain(|entry| entry.provider_id != provider_id);
         }
@@ -83,7 +83,7 @@ impl AppConfig {
         self.prune_stale_active_provider_models();
         retain_nonempty_pool(&mut self.active_provider_models);
         retain_nonempty_pool(&mut self.active_multimodal_provider_models);
-        self.prune_subagent_tiers();
+        self.prune_model_tiers();
         self.prune_platform_model_routes();
 
         let vision_provider_id = self.plugins.vision.vision_provider_id.trim();
@@ -99,7 +99,7 @@ impl AppConfig {
                         vision_model
                     };
                     provider
-                        .input_modalities(model)
+                        .message_input_modalities(model)
                         .is_some_and(|modalities| modalities.iter().any(|item| item == "image"))
                 })
                 .unwrap_or(false);
@@ -315,7 +315,7 @@ impl AppConfig {
         }
         // A model gone from the text models must leave every tier pool too.
         for tier in ModelTier::ALL {
-            self.subagent_tiers
+            self.model_tiers
                 .pool_mut(tier)
                 .retain(|entry| !(entry.provider_id == provider_id && entry.model == model));
         }
@@ -394,6 +394,25 @@ impl AppConfig {
             .unwrap_or(false)
     }
 
+    /// 这些输入能不能直接放进**消息**发给该模型(内联图/视频、视觉旁路请求)。
+    /// 与 [`Self::model_supports_any_input`] 的差别见 `ProviderConfig::message_input_modalities`。
+    pub fn model_accepts_message_input(
+        &self,
+        provider_id: &str,
+        model: &str,
+        inputs: &[&str],
+    ) -> bool {
+        self.provider(Some(provider_id))
+            .ok()
+            .and_then(|provider| provider.message_input_modalities(model))
+            .map(|modalities| {
+                modalities
+                    .iter()
+                    .any(|m| inputs.iter().any(|input| m == input))
+            })
+            .unwrap_or(false)
+    }
+
     pub fn vision_provider_choice(&self) -> Result<(String, String)> {
         let vision = &self.plugins.vision;
         if !vision.vision_provider_id.trim().is_empty() {
@@ -404,11 +423,15 @@ impl AppConfig {
             } else {
                 vision.vision_model.trim().to_string()
             };
+            // 视觉旁路是往消息里塞图的请求:模型只能靠原生文件工具看媒体的线
+            // (agy)当不了旁路,哪怕目录里标着 image。
             if !provider
-                .input_modalities(&model)
+                .message_input_modalities(&model)
                 .is_some_and(|modalities| modalities.iter().any(|item| item == "image"))
             {
-                bail!("vision model does not declare image input: {provider_id} / {model}");
+                bail!(
+                    "vision model does not accept image input in messages: {provider_id} / {model}"
+                );
             }
             return Ok((provider_id, model));
         }
@@ -417,7 +440,7 @@ impl AppConfig {
                 .active_multimodal_provider_model_choices()
                 .into_iter()
                 .find(|choice| {
-                    self.model_supports_any_input(&choice.provider_id, &choice.model, &["image"])
+                    self.model_accepts_message_input(&choice.provider_id, &choice.model, &["image"])
                 })
             {
                 return Ok((choice.provider_id, choice.model));
@@ -436,8 +459,8 @@ impl AppConfig {
     /// models that still exist under their provider (entries whose model
     /// was removed from the text models are ignored, mirroring
     /// `active_provider_model_choices`).
-    pub fn subagent_tier_choices(&self, tier: ModelTier) -> Vec<ProviderModelChoice> {
-        self.subagent_tiers
+    pub fn tier_choices(&self, tier: ModelTier) -> Vec<ProviderModelChoice> {
+        self.model_tiers
             .pool(tier)
             .iter()
             .filter_map(|entry| {
@@ -454,8 +477,8 @@ impl AppConfig {
             .collect()
     }
 
-    pub fn is_subagent_tier_model(&self, tier: ModelTier, provider_id: &str, model: &str) -> bool {
-        self.subagent_tiers
+    pub fn is_tier_model(&self, tier: ModelTier, provider_id: &str, model: &str) -> bool {
+        self.model_tiers
             .pool(tier)
             .iter()
             .any(|entry| entry.provider_id == provider_id && entry.model == model)
@@ -463,7 +486,7 @@ impl AppConfig {
 
     /// Adds/removes a model in a tier pool. Returns `true` when the model
     /// is in the pool after the call.
-    pub fn toggle_subagent_tier_model(
+    pub fn toggle_tier_model(
         &mut self,
         tier: ModelTier,
         provider_id: &str,
@@ -473,7 +496,7 @@ impl AppConfig {
             bail!("model cannot be empty");
         }
         self.provider(Some(provider_id))?;
-        let pool = self.subagent_tiers.pool_mut(tier);
+        let pool = self.model_tiers.pool_mut(tier);
         if let Some(index) = pool
             .iter()
             .position(|entry| entry.provider_id == provider_id && entry.model == model)
@@ -492,10 +515,10 @@ impl AppConfig {
     /// Drops tier pool entries whose model no longer exists among the
     /// configured text models (a model removed from a provider must also
     /// leave every tier pool).
-    pub fn prune_subagent_tiers(&mut self) {
+    pub fn prune_model_tiers(&mut self) {
         for tier in ModelTier::ALL {
             let providers = &self.providers;
-            self.subagent_tiers
+            self.model_tiers
                 .pool_mut(tier)
                 .retain(|entry| active_model_exists(providers, entry));
         }

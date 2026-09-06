@@ -271,8 +271,7 @@ pub(in crate::platforms::onebot) fn execute_models_command(
         let effective = manager
             .config
             .qq_text_model_pool(kind, &conversation_id, false)
-            .unwrap_or(&[])
-            .to_vec();
+            .unwrap_or_default();
         // Plain numbered lines read best in QQ: no alignment padding (IM
         // fonts are proportional) and no empty checkbox noise — only the
         // effective models carry a marker.
@@ -323,6 +322,7 @@ pub(in crate::platforms::onebot) fn execute_models_command(
             multimodal_models: None,
             extra_prompt: String::new(),
             session_limits: None,
+            probability_reply: None,
         });
     route.text_models = Some(vec![crate::config::ActiveProviderModelConfig {
         provider_id: selected.provider_id.clone(),

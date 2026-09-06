@@ -11,6 +11,9 @@ use crate::memory::{MemoryOrganizer, MemoryStore};
 use crate::paths::NonokaPaths;
 mod args;
 mod daemon_cmds;
+mod dsh_chat;
+mod dsh_repl;
+mod dsh_test;
 mod inline_picker;
 mod localize;
 mod mcp_schema;
@@ -20,6 +23,9 @@ mod stdin_input;
 mod tool_cmds;
 mod usage_view;
 use args::*;
+use dsh_chat::*;
+use dsh_repl::*;
+use dsh_test::*;
 use daemon_cmds::*;
 use inline_picker::*;
 use localize::*;
@@ -31,9 +37,8 @@ use usage_view::*;
 mod alarm_worker;
 mod daemon_log;
 mod data_cmds;
-mod dsh_chat;
-mod dsh_repl;
-mod dsh_test;
+mod embed_cmds;
+use embed_cmds::*;
 mod footer;
 mod migrate_cmds;
 mod model_cmds;
@@ -41,20 +46,19 @@ mod pop_cmds;
 mod repl;
 mod select;
 mod shell_bridge;
+mod stt;
 
 // 日志读取与格式化已拆到 daemon_log。
 use alarm_worker::*;
 use daemon_log::*;
 use data_cmds::*;
-use dsh_chat::*;
-use dsh_repl::*;
-use dsh_test::*;
 use footer::*;
 use migrate_cmds::*;
 use model_cmds::*;
 use pop_cmds::*;
 use select::*;
 use shell_bridge::*;
+use stt::*;
 #[cfg(test)]
 mod tests;
 
@@ -200,24 +204,25 @@ pub async fn run(cli: Cli, paths: NonokaPaths) -> Result<()> {
         }
         Some(Command::Tool(args)) => run_tool(&paths, mode, args).await,
         Some(Command::Ask(args)) => {
-            let message = join_message(args.message);
-            if args.backend == BackendKind::Dsh {
-                if session_arg.is_some() || continue_session {
-                    bail!(
-                        "--backend dsh currently supports one-shot sessions only; omit --session and --continue"
-                    );
-                }
-                let message = append_stdin_if_piped(message).await;
-                if message.is_empty() {
-                    bail!("DSH backend requires a non-empty message");
-                }
-                run_dsh_ask(&paths, message, args.agent_preset, cli.stdout).await
-            } else {
-                let session =
-                    one_shot_session(&paths, session_arg.as_deref(), continue_session).await?;
-                run_chat_with_options(&paths, message, None, cli.stdout, mode, session).await
-            }
+            let session =
+                one_shot_session(&paths, session_arg.as_deref(), continue_session).await?;
+            run_chat_with_options(
+                &paths,
+                join_message(args.message),
+                None,
+                cli.stdout,
+                mode,
+                session,
+            )
+            .await
         }
+        Some(Command::Stt) => {
+            let session =
+                one_shot_session(&paths, session_arg.as_deref(), continue_session).await?;
+            run_stt_once(&paths, cli.stdout, mode, session).await
+        }
+        Some(Command::Listen) => run_listen(&paths).await,
+        Some(Command::Voice(args)) => run_voice_command(&paths, args.command).await,
         Some(Command::Init) => run_init(&paths, InitKind::Explicit),
         Some(Command::Paths) => {
             paths.print();
@@ -272,6 +277,7 @@ pub async fn run(cli: Cli, paths: NonokaPaths) -> Result<()> {
             }
         }
         Some(Command::Kb(args)) => run_kb(&paths, args).await,
+        Some(Command::Embed(args)) => run_embed(&paths, args).await,
         Some(Command::UpdateDefaultKb) => run_update_default_kb(&paths).await,
         Some(Command::Memory(args)) => run_memory(&paths, args),
         Some(Command::Skills(args)) => run_skills(&paths, args),
@@ -294,10 +300,10 @@ pub async fn run(cli: Cli, paths: NonokaPaths) -> Result<()> {
         Some(Command::Wipe(args)) => run_wipe(&paths, args.yes).await,
         Some(Command::ToolCallCmd(args)) => run_tool_call(&paths, args).await,
         Some(Command::McpServe) => run_mcp_serve(&paths).await,
-        Some(Command::DshRepl(args)) => run_dsh_repl(&paths, args).await,
-        Some(Command::DshTest(args)) => run_dsh_test(&paths, args).await,
         Some(Command::Normal) => run_repl(&paths, AgentMode::Normal).await,
         Some(Command::Dev) => run_repl(&paths, AgentMode::Dev).await,
+        Some(Command::DshRepl(args)) => run_dsh_repl(&paths, args).await,
+        Some(Command::DshTest(args)) => run_dsh_test(&paths, args).await,
         Some(Command::Web(args)) => run_web(&paths, args).await,
         Some(Command::Daemon(args)) => run_daemon_command(&paths, args).await,
         None => {

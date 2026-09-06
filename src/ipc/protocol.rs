@@ -255,6 +255,29 @@ pub enum Command {
         #[serde(default)]
         models: Vec<crate::config::ActiveProviderModelConfig>,
     },
+    /// `nonoka-voice` 进程注册的持久信令连接。应答 Ack 后双向裸交换 Event
+    /// 帧(见 `voice::worker` 模块文档的信令表)。
+    VoiceAttach,
+    /// 客户端(REPL `/stt`、`nonoka stt`)认领一条听写流:daemon 让语音前端
+    /// 开听写窗,识别文本以 Event 帧 `voice.dictation {text}` 流回,窗口
+    /// 结束发 `voice.dictation_ended`;连接断开即释放。
+    StartDictation,
+    /// 语音前端状态(二进制是否存在、是否在跑、设备名等)。应答
+    /// Event `voice.status`。
+    VoiceStatus,
+    /// 让语音前端不用唤醒词直接进入等待指令状态(`nonoka listen`,桌面
+    /// 快捷键呼叫)。应答 Ack;语音未启用/前端未就绪/听写中为 Error。
+    VoiceListen,
+    /// 合成并播出一段文本(`nonoka voice say`、设置页试听)。`tts` 为 Some 时用
+    /// 这份配置(TUI 里试听尚未保存的音色/语速),否则用 daemon 当前配置。
+    /// 应答 Ack(已交给前端播)或 Error。
+    VoiceSpeak {
+        text: String,
+        #[serde(default)]
+        tts: Option<crate::config::VoiceTtsConfig>,
+    },
+    /// 删除唤醒对话的专属会话,下次唤醒重建(`nonoka voice reset`)。应答 Ack。
+    VoiceReset,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

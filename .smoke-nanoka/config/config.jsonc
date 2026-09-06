@@ -1,0 +1,337 @@
+{
+  "config_version": 2,
+  "active_provider": "opencode",
+  "providers": [
+    {
+      "id": "claude-code",
+      "display_name": "Claude Code",
+      "base_url": "",
+      "enabled": false,
+      "protocol": "claude-code",
+      "models": [
+        "fable",
+        "opus",
+        "sonnet",
+        "haiku"
+      ],
+      "default_model": "sonnet"
+    },
+    {
+      "id": "opencode",
+      "display_name": "opencode Zen",
+      "base_url": "https://opencode.ai/zen/v1",
+      "models": [
+        "big-pickle"
+      ],
+      "default_model": "big-pickle"
+    },
+    {
+      "id": "opencodego",
+      "display_name": "OpenCode Go",
+      "base_url": "https://opencode.ai/zen/go/v1"
+    },
+    {
+      "id": "openai",
+      "display_name": "OpenAI",
+      "base_url": "https://api.openai.com/v1"
+    },
+    {
+      "id": "anthropic",
+      "display_name": "Anthropic",
+      "base_url": "https://api.anthropic.com/v1",
+      "protocol": "anthropic",
+      "api_key": "$env:ANTHROPIC_API_KEY"
+    },
+    {
+      "id": "deepseek",
+      "display_name": "DeepSeek",
+      "base_url": "https://api.deepseek.com"
+    },
+    {
+      "id": "gemini",
+      "display_name": "Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai"
+    },
+    {
+      "id": "xiaomi",
+      "display_name": "Xiaomi",
+      "base_url": "https://token-plan-sgp.xiaomimimo.com/v1"
+    },
+    {
+      "id": "minimax",
+      "display_name": "Minimax",
+      "base_url": "https://api.minimaxi.com/v1"
+    },
+    {
+      "id": "openrouter",
+      "display_name": "OpenRouter",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "ollama",
+      "display_name": "Ollama",
+      "base_url": "http://localhost:11434/v1"
+    },
+    {
+      "id": "lmstudio",
+      "display_name": "LMStudio",
+      "base_url": "http://localhost:1234/v1"
+    }
+  ],
+  "context": {
+    "tool_output_spill_bytes": 50000,
+    "trim_at_ratio": 0.8,
+    "trim_batch_ratio": 0.15,
+    "on_overflow": "compact",
+    "default_context_window": 168000,
+    "compact_force_ratio": 0.9,
+    "compact_tail_tokens": null,
+    "compact_soft_ratio": 0.5,
+    "compact_snip_ratio": 0.6,
+    "prune_stale_tool_reports": true,
+    "tool_result_prune_chars": 8192,
+    "tool_result_prune_head_chars": 4096,
+    "tool_result_prune_tail_chars": 1024,
+    "cold_prune_after_minutes": 1440,
+    "compact_cache_reuse": true
+  },
+  "tools": {
+    "enabled": true,
+    "max_rounds": 0,
+    "loading_mode": "stub",
+    "persist_loaded_tools": true,
+    "subagent_concurrency": 4,
+    "default_timeout_secs": 180,
+    "command_deny": [
+      "rm -rf /",
+      "rm -rf ~",
+      "mkfs.",
+      "dd if=/dev/zero of=/dev/",
+      ":(){ :|:& };:"
+    ]
+  },
+  "mcp": {
+    "enabled": false,
+    "servers": []
+  },
+  "skills": {
+    "enabled": true,
+    "allow_command_execution": true
+  },
+  "display": {
+    "language": "auto",
+    "reasoning": "summary",
+    "tool_calls": "summary",
+    "readable_tool_names": true,
+    "show_token_usage": false,
+    "mixed_model_endpoint_display": "interactive",
+    "command_output_lines": 10,
+    "repl_replay_turns": 3
+  },
+  "notifications": {
+    "enabled": true,
+    "on_turn_complete": true,
+    "job_writeback_to_terminal": true
+  },
+  "prompt": {
+    "prompts_dir": "prompts",
+    "identities_dir": "identities",
+    "user_identity_file": "user-identity.md",
+    "active_persona": "",
+    "active_identity": "",
+    "persona_reminder": false,
+    "persona_reminder_interval": 3
+  },
+  "plugins": {
+    "weather": {
+      "enabled": true
+    },
+    "web": {
+      "enabled": true,
+      "max_results": 4,
+      "tavily_api_keys": [],
+      "firecrawl_api_keys": [],
+      "anysearch_api_keys": [],
+      "exa_api_keys": [],
+      "searxng_base_url": ""
+    },
+    "web_images": {
+      "enabled": true,
+      "source_mode": "auto",
+      "max_results": 5,
+      "max_download_mb": 4.0,
+      "safe_search": true,
+      "vision_screening_enabled": true,
+      "auto_preview": true,
+      "preview_count": 1,
+      "timeout_seconds": 20
+    },
+    "deep_research": {
+      "enabled": true,
+      "output_dir": "/home/yukikaze/Documents/workspace/nanoka/.smoke-nanoka/data/documents/deep-thinking",
+      "thinking_depth": "high",
+      "max_review_revisions": 0,
+      "max_tool_steps_per_round": 0,
+      "max_final_answer_chars": 0,
+      "tool_call_timeout_seconds": 90,
+      "show_progress": true
+    },
+    "vision": {
+      "enabled": true,
+      "prefer_current_multimodal_model": true,
+      "vision_provider_id": "",
+      "vision_model": "",
+      "response_header_timeout_seconds": 15,
+      "stream_idle_timeout_seconds": 20,
+      "image_timeout_seconds": 60,
+      "preview_with_chafa": true
+    },
+    "exchange_rate": {
+      "enabled": false,
+      "api_key": "",
+      "free_fallback_enabled": true
+    },
+    "xuanxue": {
+      "enabled": true
+    },
+    "image_generation": {
+      "enabled": false,
+      "provider_type": "openai",
+      "base_url": "https://api.openai.com",
+      "api_keys": [],
+      "model": "gpt-image-1",
+      "default_aspect_ratio": "自动",
+      "default_resolution": "1K",
+      "output_dir": "/home/yukikaze/Documents/workspace/nanoka/.smoke-nanoka/data/pictures/generated-images",
+      "auto_print": true,
+      "timeout_seconds": 180
+    },
+    "print_image": {
+      "enabled": true,
+      "width_percent": 45,
+      "height_percent": 35
+    },
+    "memes": {
+      "enabled": true,
+      "persona_libraries": {},
+      "width_percent": 35,
+      "height_percent": 25,
+      "max_image_mb": 10,
+      "search_max_results": 1,
+      "allow_gif_animation": false,
+      "auto_send_enabled": true,
+      "auto_send_platform_enabled": true,
+      "auto_send_probability": 0.05
+    },
+    "knowledge_base": {
+      "enabled": true,
+      "data_dir": "",
+      "max_search_results": 5,
+      "snippet_context_chars": 240,
+      "proximity_window_chars": 512,
+      "max_read_lines": 200,
+      "max_file_size_kb": 1024,
+      "allowed_extensions": ".txt,.md,.json,.jsonc,.json5,.yaml,.yml,.csv,.log,.py,.js,.ts,.jsx,.tsx,.mjs,.cjs,.html,.css,.scss,.sass,.less,.cfg,.ini,.conf,.toml,.kdl,.desktop,.service,.timer,.socket,.target,.mount,.rules,.network,.netdev,.properties,.hjson,.ron,.rst,.xml,.sh,.bash,.zsh,.fish,.nu,.ps1,.lua,.nix,.rasi,.yuck,.sql,.rs,.go,.c,.h,.cpp,.hpp,.java,.kt,.php,.rb,.pl,.org,.adoc,.tex",
+      "allowed_filenames": ".env,.env.local,.env.example,.env.sample,.envrc,.editorconfig,.gitignore,.gitattributes,.npmrc,.vimrc,.bashrc,.zshrc,.profile,.xinitrc,.xresources,config,dockerfile,containerfile,makefile,justfile,procfile,pkgbuild",
+      "upload_tool_enabled": true,
+      "embedding_enabled": false,
+      "embedding_provider_id": "",
+      "embedding_model": "",
+      "semantic_chunk_chars": 512,
+      "semantic_chunk_overlap": 80,
+      "semantic_top_k": 5,
+      "semantic_min_score": 0.25,
+      "keyword_strong_score_threshold": 180.0,
+      "embedding_timeout_seconds": 60
+    },
+    "archlinux": {
+      "enabled": true
+    },
+    "man": {
+      "enabled": true
+    },
+    "moegirl": {
+      "enabled": true
+    },
+    "hash_codec": {
+      "enabled": true
+    },
+    "calculator": {
+      "enabled": false,
+      "backend": "rust-simple"
+    },
+    "package_advisor": {
+      "enabled": true
+    },
+    "diagnostics": {
+      "enabled": true,
+      "command_timeout_seconds": 5,
+      "max_stdout_chars": 8000,
+      "max_stderr_chars": 4000
+    },
+    "api_quota": {
+      "enabled": true,
+      "deepseek": {
+        "api_key": "",
+        "accounts": [
+          {
+            "id": "account-1",
+            "name": "默认账号",
+            "api_key": ""
+          }
+        ]
+      },
+      "openrouter": {
+        "api_key": "",
+        "accounts": [
+          {
+            "id": "account-1",
+            "name": "默认账号",
+            "api_key": ""
+          }
+        ]
+      }
+    },
+    "memory": {
+      "enabled": true,
+      "evicted_context_enabled": true,
+      "association_enabled": true,
+      "auto_diary_enabled": true,
+      "auto_fact_enabled": true,
+      "diary_batch_size": 14,
+      "short_diary_retention_days": 14,
+      "diary_promotion_recalls": 3,
+      "organizer_timeout_seconds": 120,
+      "auto_skill_enabled": false,
+      "association_facts": 2,
+      "association_episodes": 1,
+      "association_max_chars": 1800,
+      "association_entry_chars": 120,
+      "association_dedup": true,
+      "snippet_chars": 500,
+      "forget_after_days": 90,
+      "forgetting_enabled": true,
+      "forgetting_half_life_days": 7.0,
+      "forgetting_min_strength": 0.15,
+      "forgetting_review_boost": 0.35,
+      "learning_min_task_chars": 16,
+      "learning_min_method_chars": 120
+    },
+    "file_sharing": {
+      "enabled": true,
+      "max_shared_file_bytes": 0
+    },
+    "claude_code": {
+      "binary": "",
+      "permission_mode": "bypassPermissions",
+      "timeout_seconds": 600,
+      "max_output_bytes": 524288,
+      "native_tools": "all",
+      "nanoka_tools": "all",
+      "idle_timeout_seconds": 300,
+      "prefer_subscription": true
+    }
+  },
+  "system_prompt_file": "system-prompt.md",
+  "default_mode": ""
+}

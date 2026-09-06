@@ -43,6 +43,13 @@ if [ -f "$dir/fail.txt" ]; then
   echo "{\"event\":\"result\",\"result\":{\"conversation_id\":\"$sid\",\"status\":\"ERROR\",\"response\":\"\",\"error\":\"Quota exceeded for this model\",\"num_turns\":1,\"usage\":{\"input_tokens\":0,\"output_tokens\":0,\"thinking_tokens\":0,\"cache_read_tokens\":0,\"total_tokens\":0}}}"
   exit 0
 fi
+if [ -f "$dir/policy.txt" ]; then
+  echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":0,\"state\":\"DONE\",\"step_type\":\"user_input\"}}"
+  echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":1,\"state\":\"ACTIVE\",\"step_type\":\"agent_response\",\"text_delta\":\"The prompt could not be submitted. The prompt contains sensitive words that violate Google's [Generative AI Prohibited Use policy](https://policies.google.com/terms/generative-ai/use-policy).\"}}"
+  echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":1,\"state\":\"DONE\",\"step_type\":\"agent_response\",\"text_delta\":\" Try rephrasing the prompt.\",\"usage\":{\"input_tokens\":5,\"output_tokens\":0,\"thinking_tokens\":0,\"cache_read_tokens\":0,\"total_tokens\":5}}}"
+  echo "{\"event\":\"result\",\"result\":{\"conversation_id\":\"$sid\",\"status\":\"SUCCESS\",\"response\":\"The prompt could not be submitted. Try rephrasing the prompt.\",\"num_turns\":1,\"usage\":{\"input_tokens\":5,\"output_tokens\":0,\"thinking_tokens\":0,\"cache_read_tokens\":0,\"total_tokens\":5}}}"
+  exit 0
+fi
 if [ -f "$dir/empty.txt" ]; then
   echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":0,\"state\":\"DONE\",\"step_type\":\"user_input\"}}"
   echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":1,\"state\":\"DONE\",\"step_type\":\"error_message\",\"text_delta\":\"failed to resolve components\"}}"
@@ -289,6 +296,54 @@ async fn second_turn_resumes_with_only_the_delta() {
     assert!(!stdin.contains("\"one\""), "{stdin}");
 }
 
+/// 全量重放超过 agy 的 192K 字节上限时,stdin 必须收在预算内、本轮消息与
+/// 尾巴块完整在末尾、历史从最老的丢(09-04 案卷缺陷 A)。修复前 stdin 是
+/// 整段历史,agy 从尾部截断、模型答旧残片。
+#[tokio::test]
+async fn oversized_full_replay_is_cut_to_the_stdin_budget_keeping_the_live_tail() {
+    use crate::llm::openai_compatible::antigravity::STDIN_BYTE_BUDGET;
+    let dir = tempfile::tempdir().unwrap();
+    let client = antigravity_client(dir.path(), "agy-budget", "all", "off");
+    let mut messages = vec![ChatMessage::system("persona")];
+    for index in 0..60 {
+        messages.push(ChatMessage::plain(
+            "user",
+            format!("q{index} {}", "问".repeat(1000)),
+        ));
+        messages.push(ChatMessage::assistant(
+            format!("a{index} {}", "答".repeat(1000)),
+            None,
+        ));
+    }
+    messages.push(ChatMessage::plain("user", "本轮真正的问题 PUMPKIN"));
+    messages.push(ChatMessage::turn_context("<runtime now=\"x\"/>"));
+    let (result, _) = run(&client, messages, Vec::new()).await;
+    result.unwrap();
+    let stdin = read(dir.path(), "stdin.txt");
+    let line: serde_json::Value = serde_json::from_str(stdin.trim()).unwrap();
+    let blocks = line["message"]["content"].as_array().unwrap();
+    let text_bytes: usize = blocks
+        .iter()
+        .filter_map(|block| block["text"].as_str())
+        .map(str::len)
+        .sum();
+    assert!(
+        text_bytes <= STDIN_BYTE_BUDGET,
+        "stdin 文本 {text_bytes} 字节超过预算 {STDIN_BYTE_BUDGET}"
+    );
+    let transcript = blocks[0]["text"].as_str().unwrap();
+    assert!(transcript.contains("<conversation-history>"));
+    assert!(
+        transcript.contains("[earlier turns omitted"),
+        "{}",
+        &transcript[..200]
+    );
+    assert!(!transcript.contains("q0 "), "最老的回合该被丢掉");
+    assert!(transcript.contains("q59 "), "最新的回合该保留");
+    assert_eq!(blocks[blocks.len() - 2]["text"], "本轮真正的问题 PUMPKIN");
+    assert_eq!(blocks[blocks.len() - 1]["text"], "<runtime now=\"x\"/>");
+}
+
 /// 续传目标丢失:agy 静默新开会话,init 的 id 对不上 → 杀掉重来,整段重放。
 #[tokio::test]
 async fn lost_conversation_is_detected_from_init_and_replayed() {
@@ -336,6 +391,44 @@ async fn quota_failure_is_classified_as_rate_limit() {
         .expect("quota error should classify as an HTTP-style failure");
     assert_eq!(failure.kind, HttpFailureKind::RateLimit);
     assert_eq!(failure.status, 429);
+}
+
+/// Google 策略拦截:agy 把「The prompt could not be submitted…」当普通正文流出,
+/// result 还是 SUCCESS。必须一个 Content 分片都不发(否则原样漏到 QQ),并按
+/// ContentPolicy 判错——不冷却、可切别的端点、不重打同一端点。
+#[tokio::test]
+async fn google_policy_block_is_suppressed_and_classified() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("policy.txt"), "").unwrap();
+    let client = antigravity_client(dir.path(), "agy-policy", "all", "off");
+    let mut chunks = Vec::new();
+    let error = client
+        .chat_antigravity_stream(
+            vec![ChatMessage::plain("user", "hi")],
+            Vec::new(),
+            "req-test",
+            &mut |chunk| {
+                chunks.push(chunk);
+                Ok(())
+            },
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        !chunks
+            .iter()
+            .any(|chunk| chunk.kind == ChatStreamKind::Content && !chunk.text.is_empty()),
+        "拦截文案不该作为正文流出: {chunks:?}"
+    );
+    let failure = error
+        .downcast_ref::<HttpStatusFailure>()
+        .expect("policy block should classify as an HTTP-style failure");
+    assert_eq!(failure.kind, HttpFailureKind::ContentPolicy);
+    assert!(cooldown_for_error(&error).is_none(), "内容裁定不该让端点冷却");
+    assert!(endpoint_failover_allowed(&error), "应允许切到池里下一个端点");
+    assert!(!same_endpoint_retry_allowed(&error), "同端点重打必然再撞");
+    let text = format!("{error:#}");
+    assert!(text.contains("content policy") || text.contains("内容策略"), "{text}");
 }
 
 /// 静默失败:SUCCESS + 空正文 + 零用量 → 报错并带 error_message 步的正文。

@@ -1,0 +1,29 @@
+[package]
+name = "coolor"
+version = "1.1.0"
+edition = "2021"
+authors = ["dystroy <denys.seguret@gmail.com>"]
+repository = "https://github.com/Canop/coolor"
+description = "conversion between color formats"
+keywords = ["ansi", "hsl", "rgb", "color", "no-std"]
+categories = ["no-std"]
+license = "MIT"
+readme = "README.md"
+
+[features]
+default = []
+
+[dependencies]
+crossterm = { optional=true, version="0.29" }
+
+[dev-dependencies]
+crossterm = { version="0.29" }
+rand = { version = "0.9", features = ["std_rng"] }
+
+[[example]]
+name = "rgb-to-ansi"
+required-features = ["crossterm"]
+
+[[example]]
+name = "ansi-grey"
+required-features = ["crossterm"]

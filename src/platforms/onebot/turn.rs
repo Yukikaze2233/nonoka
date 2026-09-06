@@ -91,13 +91,10 @@ pub(crate) async fn wake_conversation_for_job(
     let profile = crate::platforms::TurnProfile {
         active_persona: Some(context.config.prompt.active_persona.clone()),
         text_models: context.config.active_provider_models.clone(),
-        multimodal_models: context
-            .config
-            .qq_multimodal_model_pool(
-                conversation_kind_enum,
-                &context.conversation.conversation_id,
-            )
-            .map(<[_]>::to_vec),
+        multimodal_models: context.config.qq_multimodal_model_pool(
+            conversation_kind_enum,
+            &context.conversation.conversation_id,
+        ),
         system_context: prepared.system_context,
         turn_system_context,
         memory_content: Some(prepared.memory_content),
@@ -502,6 +499,9 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
     }
     let mut prepared = context.prepare_turn(content).await;
     prepared.context_files.extend(current_files);
+    // 历史里的 + 当前消息里的文件/视频引用一起登记,供看图工具(含 MCP 桥
+    // 另建的工具面)按 id 懒下载(09-04)。
+    context.set_context_files(prepared.context_files.clone());
     let content = prepared.content;
     let group_name = context
         .inbound_event()
@@ -580,8 +580,7 @@ pub(in crate::platforms::onebot) async fn build_and_run_turn(
         text_models: context.config.active_provider_models.clone(),
         multimodal_models: context
             .config
-            .qq_multimodal_model_pool(conversation_kind, &context.conversation.conversation_id)
-            .map(<[_]>::to_vec),
+            .qq_multimodal_model_pool(conversation_kind, &context.conversation.conversation_id),
         system_context,
         turn_system_context,
         memory_content: Some(prepared.memory_content),

@@ -147,6 +147,9 @@ pub async fn run(paths: NonokaPaths, args: WebArgs) -> Result<()> {
         .commit();
     let (ipc_lease, ipc_task) = start_ipc_server(&state)?;
     install_background_job_hook(&state);
+    // 语音前端(独立 nonoka-voice 进程):只在 voice.enabled 时拉起。
+    voice_bridge::install_state(&state);
+    voice_bridge::spawn_if_enabled(&state);
     // 目标续轮驱动器。启动时故意**不**恢复任何自动续跑：目标还在库里，但
     // 「是否自动跑」驻内存、重启即失，必须由人 `/goal resume` 重新授权。
     // 不然一次崩溃重启就能让机器在无人看管的情况下继续自己开轮。
@@ -186,6 +189,7 @@ pub async fn run(paths: NonokaPaths, args: WebArgs) -> Result<()> {
     };
     let _ = actor_tx.send(ActorCommand::Shutdown);
     tools::jobs::shutdown_all();
+    voice_bridge::shutdown();
     state.platforms.qq_listener.shutdown(&state).await;
     ipc_task.abort();
     let _ = ipc_task.await;
@@ -311,6 +315,15 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         )
         .route("/api/config", get(get_config).put(update_config))
         .route("/api/providers/models", post(provider_models))
+        .route("/api/voice/status", get(voice_status))
+        .route("/api/voice/devices", get(voice_devices))
+        .route("/api/voice/stream", get(voice_stream))
+        .route("/api/voice/tts/voices", get(voice_tts_voices))
+        .route("/api/voice/tts/preview", post(voice_tts_preview))
+        .route(
+            "/api/voice/transcribe",
+            post(voice_transcribe).layer(DefaultBodyLimit::max(VOICE_UPLOAD_LIMIT)),
+        )
         .route(
             "/api/qq-group-management/history",
             get(qq_group_history_http),
@@ -381,6 +394,16 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         )
         .route("/api/dash/kb/default", get(dash_kb_default))
         .route("/api/dash/kb/default/update", post(dash_kb_default_update))
+        .route("/api/dash/scripts/personas", get(dash_scripts_personas))
+        .route("/api/dash/scripts/overview", get(dash_scripts_overview))
+        .route("/api/dash/scripts/source", get(dash_scripts_source))
+        .route("/api/dash/scripts/enable", post(dash_scripts_enable))
+        .route("/api/dash/scripts/disable", post(dash_scripts_disable))
+        .route(
+            "/api/dash/scripts/item",
+            axum::routing::delete(dash_scripts_delete),
+        )
+        .route("/api/dash/scripts/register", post(dash_scripts_register))
         .route("/api/dash/memes/libraries", get(dash_memes_libraries))
         .route(
             "/api/dash/memes/items",

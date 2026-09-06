@@ -90,12 +90,20 @@ pub struct PlatformsConfig {
         skip_serializing_if = "is_default_platform_max_tool_rounds"
     )]
     pub max_tool_rounds: usize,
+    /// 允许 AI 从终端/WebUI/shellhook 会话主动发消息到通讯平台(`send_qq_message`
+    /// 工具)。收件人只能是各平台配置的管理员,QQ 即 `qq.admin_users`,第一个为主管理员。
+    #[serde(default = "default_terminal_outreach")]
+    pub terminal_outreach: bool,
     #[serde(default, skip_serializing_if = "OneBotConfig::is_default")]
     pub qq: OneBotConfig,
 }
 
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+fn default_terminal_outreach() -> bool {
+    true
 }
 
 pub(crate) fn default_platform_max_tool_rounds() -> usize {
@@ -112,6 +120,7 @@ impl Default for PlatformsConfig {
             command_prefix: default_platform_command_prefix(),
             commands: BTreeMap::new(),
             max_tool_rounds: default_platform_max_tool_rounds(),
+            terminal_outreach: default_terminal_outreach(),
             qq: OneBotConfig::default(),
         }
     }
@@ -156,6 +165,18 @@ impl PlatformsConfig {
             .conversations
             .iter()
             .find(|route| route.matches(kind, conversation_id))
+    }
+
+    /// 本会话允不允许概率抽样的主动回复判断(专属配置未覆盖时为 true,
+    /// 真正的开关与概率仍由 real_context 插件设置决定)。
+    pub fn probability_reply_allowed(
+        &self,
+        kind: PlatformConversationKind,
+        conversation_id: &str,
+    ) -> bool {
+        self.model_route(kind, conversation_id)
+            .and_then(|route| route.probability_reply)
+            .unwrap_or(true)
     }
 
     pub fn model_route_mut(
@@ -241,9 +262,9 @@ impl PlatformsConfig {
             .trim()
             .trim_end_matches('/')
             .to_string();
-        normalize_route_pool(&mut self.qq.text_models);
-        normalize_route_pool(&mut self.qq.multimodal_models);
-        normalize_route_pool(&mut self.qq.non_whitelist_text_models);
+        self.qq.text_models.normalize();
+        self.qq.multimodal_models.normalize();
+        self.qq.non_whitelist_text_models.normalize();
         for route in &mut self.qq.conversations {
             route.normalize();
         }
@@ -260,72 +281,53 @@ impl PlatformsConfig {
     }
 
     pub fn prune_model_references(&mut self, providers: &[ProviderConfig]) {
-        prune_pool(&mut self.qq.text_models, providers, false);
-        prune_pool(&mut self.qq.multimodal_models, providers, true);
-        prune_pool(&mut self.qq.non_whitelist_text_models, providers, false);
+        self.qq.text_models.prune(providers, false);
+        self.qq.multimodal_models.prune(providers, true);
+        self.qq.non_whitelist_text_models.prune(providers, false);
         for route in &mut self.qq.conversations {
             route.prune_model_references(providers);
         }
         mutate_real_context_settings(&mut self.qq.plugins, |settings| {
-            for pool in [&mut settings.text_models] {
-                if let Some(models) = pool {
-                    models.retain(|model| active_model_exists(providers, model));
-                }
-                normalize_route_pool(pool);
-            }
+            settings.text_models.prune(providers, false);
+            settings.affection_text_models.prune(providers, false);
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
-            if let Some(models) = &mut settings.text_models {
-                models.retain(|model| active_model_exists(providers, model));
-            }
-            normalize_route_pool(&mut settings.text_models);
+            settings.text_models.prune(providers, false);
         });
         self.normalize_model_routes();
     }
 
     pub fn remove_model_references(&mut self, provider_id: &str, model: &str) {
-        for pool in [
-            &mut self.qq.text_models,
-            &mut self.qq.multimodal_models,
-            &mut self.qq.non_whitelist_text_models,
-        ] {
-            if let Some(entries) = pool {
-                entries.retain(|entry| !(entry.provider_id == provider_id && entry.model == model));
-            }
-            normalize_route_pool(pool);
+        for pool in self.qq_pool_refs_mut() {
+            pool.remove_model(provider_id, model);
         }
         for route in &mut self.qq.conversations {
             route.remove_model_references(provider_id, model);
         }
         mutate_real_context_settings(&mut self.qq.plugins, |settings| {
-            for pool in [&mut settings.text_models] {
-                if let Some(models) = pool {
-                    models.retain(|entry| {
-                        !(entry.provider_id == provider_id && entry.model == model)
-                    });
-                }
-                normalize_route_pool(pool);
-            }
+            settings.text_models.remove_model(provider_id, model);
+            settings
+                .affection_text_models
+                .remove_model(provider_id, model);
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
-            if let Some(models) = &mut settings.text_models {
-                models.retain(|entry| !(entry.provider_id == provider_id && entry.model == model));
-            }
-            normalize_route_pool(&mut settings.text_models);
+            settings.text_models.remove_model(provider_id, model);
         });
         self.normalize_model_routes();
     }
 
-    pub fn remove_provider_references(&mut self, provider_id: &str) {
-        for pool in [
+    /// The three QQ-wide pool references, for reference maintenance.
+    fn qq_pool_refs_mut(&mut self) -> [&mut ModelPoolRef; 3] {
+        [
             &mut self.qq.text_models,
             &mut self.qq.multimodal_models,
             &mut self.qq.non_whitelist_text_models,
-        ] {
-            if let Some(entries) = pool {
-                entries.retain(|entry| entry.provider_id != provider_id);
-            }
-            normalize_route_pool(pool);
+        ]
+    }
+
+    pub fn remove_provider_references(&mut self, provider_id: &str) {
+        for pool in self.qq_pool_refs_mut() {
+            pool.remove_provider(provider_id);
         }
         for route in &mut self.qq.conversations {
             for pool in [&mut route.text_models, &mut route.multimodal_models] {
@@ -336,91 +338,48 @@ impl PlatformsConfig {
             }
         }
         mutate_real_context_settings(&mut self.qq.plugins, |settings| {
-            for pool in [&mut settings.text_models] {
-                if let Some(models) = pool {
-                    models.retain(|entry| entry.provider_id != provider_id);
-                }
-                normalize_route_pool(pool);
-            }
+            settings.text_models.remove_provider(provider_id);
+            settings.affection_text_models.remove_provider(provider_id);
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
-            if let Some(models) = &mut settings.text_models {
-                models.retain(|entry| entry.provider_id != provider_id);
-            }
-            normalize_route_pool(&mut settings.text_models);
+            settings.text_models.remove_provider(provider_id);
         });
         self.normalize_model_routes();
     }
 
     pub fn rename_provider_references(&mut self, old_id: &str, new_id: &str) {
-        for pool in [
-            &mut self.qq.text_models,
-            &mut self.qq.multimodal_models,
-            &mut self.qq.non_whitelist_text_models,
-        ] {
-            if let Some(entries) = pool {
-                rename_provider_in_pool(entries, old_id, new_id);
-            }
-            normalize_route_pool(pool);
+        for pool in self.qq_pool_refs_mut() {
+            pool.rename_provider(old_id, new_id);
         }
         for route in &mut self.qq.conversations {
             route.rename_provider_references(old_id, new_id);
         }
         mutate_real_context_settings(&mut self.qq.plugins, |settings| {
-            for pool in [&mut settings.text_models] {
-                if let Some(models) = pool {
-                    rename_provider_in_pool(models, old_id, new_id);
-                }
-                normalize_route_pool(pool);
-            }
+            settings.text_models.rename_provider(old_id, new_id);
+            settings
+                .affection_text_models
+                .rename_provider(old_id, new_id);
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
-            if let Some(models) = &mut settings.text_models {
-                rename_provider_in_pool(models, old_id, new_id);
-            }
-            normalize_route_pool(&mut settings.text_models);
+            settings.text_models.rename_provider(old_id, new_id);
         });
     }
 
     pub fn rename_model_references(&mut self, provider_id: &str, old: &str, new: &str) {
-        for pool in [
-            &mut self.qq.text_models,
-            &mut self.qq.multimodal_models,
-            &mut self.qq.non_whitelist_text_models,
-        ] {
-            if let Some(entries) = pool {
-                for entry in entries {
-                    if entry.provider_id == provider_id && entry.model == old {
-                        entry.model = new.to_string();
-                    }
-                }
-            }
-            normalize_route_pool(pool);
+        for pool in self.qq_pool_refs_mut() {
+            pool.rename_model(provider_id, old, new);
         }
         for route in &mut self.qq.conversations {
             route.rename_model_references(provider_id, old, new);
         }
         mutate_real_context_settings(&mut self.qq.plugins, |settings| {
-            for pool in [&mut settings.text_models] {
-                if let Some(models) = pool {
-                    for entry in models {
-                        if entry.provider_id == provider_id && entry.model == old {
-                            entry.model = new.to_string();
-                        }
-                    }
-                }
-                normalize_route_pool(pool);
-            }
+            settings.text_models.rename_model(provider_id, old, new);
+            settings
+                .affection_text_models
+                .rename_model(provider_id, old, new);
         });
         mutate_group_join_approval_settings(&mut self.qq.plugins, |settings| {
-            if let Some(models) = &mut settings.text_models {
-                for entry in models {
-                    if entry.provider_id == provider_id && entry.model == old {
-                        entry.model = new.to_string();
-                    }
-                }
-            }
-            normalize_route_pool(&mut settings.text_models);
+            settings.text_models.rename_model(provider_id, old, new);
         });
     }
 }
@@ -557,6 +516,10 @@ pub struct PlatformModelRoute {
     pub extra_prompt: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_limits: Option<PlatformSessionLimits>,
+    /// 概率抽样触发的主动回复判断:None = 继承插件设置,Some(false) = 本会话
+    /// 不做概率抽样(@、关键词、引用、接话、覆盖顶替、群管审核照旧)。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub probability_reply: Option<bool>,
 }
 
 impl PlatformModelRoute {
@@ -687,6 +650,10 @@ pub struct OneBotConfig {
     /// Empty tokens are accepted only from a loopback peer.
     pub access_token: String,
     pub admin_users: Vec<i64>,
+    /// 管理员别名(键 = QQ 号字符串):终端发消息工具的 `to` 选项用它列出
+    /// 能发给谁;没有别名的显示号码。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub admin_aliases: BTreeMap<String, String>,
     /// Grants full host tools only to non-admin users in `private_chats.whitelist`.
     pub allow_non_admin_host_tools: bool,
     /// Send each model round's text to group chats as its own message while
@@ -721,16 +688,17 @@ pub struct OneBotConfig {
         skip_serializing_if = "PlatformGroupContextConfig::is_default"
     )]
     pub group_context: PlatformGroupContextConfig,
-    /// QQ-wide text model pool. None inherits the global pool.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text_models: Option<Vec<ActiveProviderModelConfig>>,
-    /// QQ-wide multimodal model pool. None inherits the global pool.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub multimodal_models: Option<Vec<ActiveProviderModelConfig>>,
-    /// Text model pool for non-whitelisted private chats and groups.
-    /// None inherits the QQ-wide text model pool.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub non_whitelist_text_models: Option<Vec<ActiveProviderModelConfig>>,
+    /// QQ default text pool: `inherit` = the global text pool.
+    #[serde(default, skip_serializing_if = "ModelPoolRef::is_inherit")]
+    pub text_models: ModelPoolRef,
+    /// QQ default multimodal pool: `inherit` = the global multimodal pool.
+    /// Tiers are text pools and may not be referenced here.
+    #[serde(default, skip_serializing_if = "ModelPoolRef::is_inherit")]
+    pub multimodal_models: ModelPoolRef,
+    /// Text pool for non-whitelisted private chats and groups: `inherit` =
+    /// the QQ default text pool.
+    #[serde(default, skip_serializing_if = "ModelPoolRef::is_inherit")]
+    pub non_whitelist_text_models: ModelPoolRef,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub conversations: Vec<PlatformModelRoute>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -883,6 +851,7 @@ impl Default for OneBotConfig {
             reverse_ws_port: 8300,
             access_token: String::new(),
             admin_users: Vec::new(),
+            admin_aliases: BTreeMap::new(),
             allow_non_admin_host_tools: false,
             group_intermediate_messages: false,
             private_intermediate_messages: true,
@@ -894,9 +863,9 @@ impl Default for OneBotConfig {
             session_parallel: false,
             session_limits: PlatformSessionLimits::default(),
             group_context: PlatformGroupContextConfig::default(),
-            text_models: None,
-            multimodal_models: None,
-            non_whitelist_text_models: None,
+            text_models: ModelPoolRef::inherit(),
+            multimodal_models: ModelPoolRef::inherit(),
+            non_whitelist_text_models: ModelPoolRef::inherit(),
             conversations: Vec::new(),
             plugins: PlatformPluginsConfig::new(),
             asset_base_url: String::new(),

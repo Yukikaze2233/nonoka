@@ -17,6 +17,15 @@ pub(crate) use resource_migration::*;
 /// 所以：第一次调用就把结果缓存下来（daemon 启动时立刻预热，那时文件还在），
 /// 并且把 `(deleted)` 后缀剥掉——路径本身通常仍指向新装上的那个二进制。
 pub fn nonoka_executable() -> Result<PathBuf> {
+    // cargo test 下 current_exe 是 libtest 测试二进制:拿它当 nonoka 去 spawn,
+    // 子进程会把参数当测试过滤器再跑一遍测试,里面再 spawn 孙进程——指数级
+    // 复制。09-05 知识库改动后的后台 `kb embed reindex` 就这样把机器连续三次
+    // 吃到 OOM 死机。测试里一律拒绝,让依赖它的代码路径明确失败而不是复制自己。
+    if cfg!(test) {
+        // 给一个必然不存在的路径:只拼字符串的用法(MCP 配置、命令行)照常,
+        // 真去 spawn 的会得到 ENOENT 而不是复制测试进程。
+        return Ok(PathBuf::from("/nonexistent/nonoka-test-harness"));
+    }
     static EXECUTABLE: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     if let Some(path) = EXECUTABLE.get() {
         return Ok(path.clone());
@@ -27,6 +36,14 @@ pub fn nonoka_executable() -> Result<PathBuf> {
 }
 
 /// 进程启动早期预热一次，趁二进制还没被换掉。
+/// `~/.nonoka` (or `NONOKA_HOME`) without building the whole `NonokaPaths`, for
+/// asset lookups that run before or outside path setup.
+pub fn nonoka_home_dir() -> Option<PathBuf> {
+    std::env::var_os("NONOKA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| BaseDirs::new().map(|dirs| dirs.home_dir().join(".nonoka")))
+}
+
 pub fn prime_nonoka_executable() {
     let _ = nonoka_executable();
 }

@@ -32,6 +32,7 @@ mod memory;
 mod moegirl;
 mod package_advisor;
 mod patch_preview;
+pub(crate) mod platform_outreach;
 mod protondb_query;
 mod registry;
 mod scripts;
@@ -39,6 +40,8 @@ mod skills;
 mod subagent_runner;
 mod task;
 mod todowrite;
+pub(crate) mod voice_chat;
+pub(crate) mod voice_speak;
 pub(crate) use todowrite::{clear_session_todos, session_todos};
 pub mod tool_descriptions;
 pub(crate) mod usage_query;
@@ -61,7 +64,11 @@ pub use registry::{
     empty_parameters, CommandOutputStream, GuardCtx, ToolFuture, ToolGuard, ToolPermission,
     ToolProgress, ToolProgressEvent, ToolRegistry, ToolSpec,
 };
-pub(crate) use scripts::rescan_scripts;
+pub(crate) use scripts::{
+    apply_script_refresh, prepare_script_refresh, scripts_dashboard_delete,
+    scripts_dashboard_disable, scripts_dashboard_enable, scripts_dashboard_overview,
+    scripts_dashboard_register, scripts_dashboard_source,
+};
 pub(crate) use skills::{apply_skill_refresh, prepare_skill_refresh};
 pub use skills::{register_authoring as register_skill_authoring, register_skills};
 
@@ -194,6 +201,13 @@ pub fn preparing_phase(name: &str) -> Option<&'static str> {
         | "edit_file"
         | "edit_string" => t("Preparing edit", "准备编辑"),
         "run_command" => t("Preparing command", "准备执行"),
+        // claude 原生工具(claude-code 中转,原名不剥):同一张表,否则中转
+        // 线的 RemoteToolPreparing 只剩批量兜底。
+        "Edit" | "Write" | "MultiEdit" | "NotebookEdit" => t("Preparing edit", "准备编辑"),
+        "Bash" => t("Preparing command", "准备执行"),
+        "Task" | "Agent" => t("Preparing task", "准备任务"),
+        "TodoWrite" => t("Preparing list", "准备清单"),
+        "AskUserQuestion" => t("Preparing question", "准备问题"),
         // 批量删的参数是一整串路径,条数一多就是几百字节,正好落在
         // 「工具名已解码、参数还在流」的那个窗口里。
         "trash_path" => t("Preparing delete", "准备删除"),
@@ -252,6 +266,10 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "generate_image" => t("Generate image", "生成图片"),
         "use_meme" => t("Meme", "表情包"),
         "manage_meme" => t("Manage memes", "管理表情包"),
+        "end_voice_chat" => t("End voice chat", "结束语音对话"),
+        "speak" => t("Speak", "说话"),
+        "send_qq_message" => t("Send to QQ", "发送到 QQ"),
+        "send_voice_message" => t("Send voice message", "发送语音"),
         "deep_research" => t("Deep research", "深度研究"),
         "upload_knowledge_base_file" | "upload_text_to_knowledge_base" => {
             t("Import knowledge base", "导入知识库")
@@ -430,6 +448,21 @@ pub fn builtin_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry
     vision::register_print(&mut registry, config.clone());
     if config.plugins.memes.enabled {
         memes::register(&mut registry, config.clone(), paths.clone());
+    }
+    if config.voice.enabled {
+        voice_chat::register(&mut registry);
+    }
+    if config.voice.tts.is_active() {
+        voice_speak::register(&mut registry);
+    }
+    // 本地会话专属:平台会话有 send_message_to_user,不在 restricted 注册表里重复。
+    // 只在 QQ 的 ws 已连上时注册(TurnResources 的缓存键带了连接位,连上/掉线
+    // 会各自重建一份)。
+    if config.platforms.terminal_outreach
+        && config.platforms.qq.enabled
+        && platform_outreach::qq_connected()
+    {
+        platform_outreach::register(&mut registry, config);
     }
     if config.plugins.web.enabled {
         web::register(&mut registry, config.plugins.web.clone());
@@ -628,6 +661,15 @@ pub fn dev_registry(config: &AppConfig, paths: &NonokaPaths) -> ToolRegistry {
     task::register(&mut registry, config.clone(), paths.clone(), task_tools);
     if config.mcp.enabled {
         mcp::register(&mut registry, config.clone());
+    }
+    // 写代码时「跑完把结果发我手机」是真需求(09-05 用户拍板):dev 也给
+    // send_qq_message,条件与 normal 一致(终端外发开着、QQ 连着)。speak
+    // 不给——dev 提示词极简、没有语音协议,编码回合里开口念代码只是噪音。
+    if config.platforms.terminal_outreach
+        && config.platforms.qq.enabled
+        && platform_outreach::qq_connected()
+    {
+        platform_outreach::register(&mut registry, config);
     }
     // load_tools 常驻注册(09-01):full 模式下调用它无害(返回契约文本),
     // 而会话中途从需加载模型切到完整模型时,历史里的 load_tools 调用记录
@@ -935,6 +977,37 @@ mod tests {
         }
     }
 
+    /// claude-code 中转线的原生工具名(不剥前缀)也要有提示词,否则那条线
+    /// 只剩批量兜底的「准备工具」。
+    #[test]
+    fn preparing_phase_covers_claude_native_tools() {
+        for name in ["Edit", "Write", "MultiEdit", "NotebookEdit"] {
+            assert_eq!(
+                preparing_phase(name),
+                Some(crate::i18n::text("Preparing edit", "准备编辑")),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            preparing_phase("Bash"),
+            Some(crate::i18n::text("Preparing command", "准备执行"))
+        );
+        for name in ["Task", "Agent"] {
+            assert_eq!(
+                preparing_phase(name),
+                Some(crate::i18n::text("Preparing task", "准备任务")),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            preparing_phase("TodoWrite"),
+            Some(crate::i18n::text("Preparing list", "准备清单"))
+        );
+        for name in ["Read", "Glob", "Grep", "WebFetch"] {
+            assert_eq!(preparing_phase(name), None, "{name}");
+        }
+    }
+
     /// 续轮提示词必须自报来历。
     ///
     /// 实测过一次：一个会话正在排查游戏的 VC++ 运行库，用户设了个「查询东京
@@ -1187,32 +1260,45 @@ mod tier_schema_probe {
         assert!(!task.function.description.contains("cheap=["));
     }
 
-    /// The description suffix lists the concrete models per tier pool.
+    /// The description is constant bytes: configuring tier pools must not
+    /// change it (a config-derived suffix would re-key the prompt cache on
+    /// every pool edit), and the tier enum carries the four current names.
     #[test]
-    fn task_description_lists_configured_tier_models() {
-        let mut config = crate::config::AppConfig::default();
-        let provider_id = config.providers[0].id.clone();
-        config.providers[0].models.push("mini-a".to_string());
-        config.providers[0].models.push("mini-b".to_string());
-        config
-            .toggle_subagent_tier_model(crate::config::ModelTier::Cheap, &provider_id, "mini-a")
-            .unwrap();
-        config
-            .toggle_subagent_tier_model(crate::config::ModelTier::Balanced, &provider_id, "mini-a")
-            .unwrap();
-        config
-            .toggle_subagent_tier_model(crate::config::ModelTier::Balanced, &provider_id, "mini-b")
-            .unwrap();
+    fn task_description_is_constant_and_lists_the_four_tiers() {
         let paths = crate::paths::NonokaPaths::new().unwrap();
-        let registry = super::builtin_registry(&config, &paths);
-        let defs = registry.definitions();
-        let task = defs.iter().find(|d| d.function.name == "task").unwrap();
-        assert!(task.function.description.contains("cheap=[mini-a]"));
-        assert!(task
-            .function
-            .description
-            .contains("balanced=[mini-a, mini-b]"));
-        assert!(task.function.description.contains("strong=["));
+        let bare = crate::config::AppConfig::default();
+        let bare_task = super::builtin_registry(&bare, &paths)
+            .definitions()
+            .into_iter()
+            .find(|d| d.function.name == "task")
+            .unwrap();
+
+        let mut config = crate::config::AppConfig::default();
+        let provider_id = config.active_provider.clone();
+        let provider = config
+            .providers
+            .iter_mut()
+            .find(|provider| provider.id == provider_id)
+            .unwrap();
+        provider.models.push("mini-a".to_string());
+        config
+            .toggle_tier_model(crate::config::ModelTier::Cheap, &provider_id, "mini-a")
+            .unwrap();
+        let task = super::builtin_registry(&config, &paths)
+            .definitions()
+            .into_iter()
+            .find(|d| d.function.name == "task")
+            .unwrap();
+        assert_eq!(task.function.description, bare_task.function.description);
+        assert!(!task.function.description.contains("cheap=["));
+        let schema = serde_json::to_string(&task.function.parameters).unwrap();
+        for tier in ["lite", "cheap", "standard", "flagship"] {
+            assert!(schema.contains(&format!("\"{tier}\"")), "{schema}");
+        }
+        assert!(
+            !schema.contains("balanced") && !schema.contains("strong"),
+            "{schema}"
+        );
     }
 
     /// 量尺：`cargo test --lib token_diet_baseline -- --ignored --nocapture`

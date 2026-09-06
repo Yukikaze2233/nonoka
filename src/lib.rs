@@ -7,8 +7,8 @@
 
 mod agent;
 mod alarm;
-mod args;
 pub(crate) mod backend;
+mod args;
 mod cli;
 mod clipboard;
 mod config;
@@ -17,6 +17,7 @@ mod daemon;
 mod default_kb;
 mod default_models;
 mod dsh;
+mod embedding;
 mod host_info;
 mod i18n;
 mod ipc;
@@ -45,6 +46,8 @@ mod token_counter;
 mod token_estimate;
 mod tools;
 mod transfer;
+#[cfg(feature = "voice")]
+pub mod voice;
 mod web;
 
 use anyhow::Result;
@@ -57,6 +60,9 @@ pub async fn run() -> Result<()> {
     paths::prime_nonoka_executable();
     if platforms::plugins::renderer_worker_requested() {
         return platforms::plugins::run_renderer_worker().await;
+    }
+    if embedding::embedding_worker_requested() {
+        return embedding::run_embedding_worker().await;
     }
     let paths = paths::NonokaPaths::new()?;
     let language = config::AppConfig::display_language_hint(&paths);

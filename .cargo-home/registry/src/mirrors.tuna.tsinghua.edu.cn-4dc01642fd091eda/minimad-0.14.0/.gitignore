@@ -1,0 +1,4 @@
+.bacon-locations
+/target
+**/*.rs.bk
+Cargo.lock

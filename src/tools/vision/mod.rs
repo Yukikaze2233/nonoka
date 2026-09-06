@@ -9,7 +9,9 @@ use crate::clipboard::write_image_cache_file;
 use crate::config::{AppConfig, PrintImagePluginConfig};
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
 use crate::paths::NonokaPaths;
-use crate::platform_types::{PlatformContextImageRef, PlatformImageData};
+use crate::platform_types::{
+    PlatformContextFileRef, PlatformContextImageRef, PlatformFileDownload, PlatformImageData,
+};
 // 工具层只认这个 trait：主体身份、管理员标志、宿主工具放行、按消息取图。
 // 依赖 PlatformTurnContext 本身等于把整个平台运行时钉进工具层。
 use crate::platform_types::PlatformToolContext;
@@ -69,6 +71,7 @@ pub fn register_scoped_local(
         paths,
         allowed_images,
         Vec::new(),
+        Vec::new(),
         None,
         false,
     );
@@ -80,6 +83,7 @@ pub fn register_scoped_platform(
     paths: NonokaPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
+    context_files: Vec<PlatformContextFileRef>,
     platform_context: Arc<dyn PlatformToolContext>,
 ) {
     let allow_general_access = platform_context.host_tools_allowed();
@@ -89,17 +93,20 @@ pub fn register_scoped_platform(
         paths,
         allowed_images,
         context_images,
+        context_files,
         Some(platform_context),
         allow_general_access,
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn register_scoped(
     registry: &mut ToolRegistry,
     config: AppConfig,
     paths: NonokaPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
+    context_files: Vec<PlatformContextFileRef>,
     platform_context: Option<Arc<dyn PlatformToolContext>>,
     allow_general_access: bool,
 ) {
@@ -111,6 +118,10 @@ fn register_scoped(
         .into_iter()
         .map(|image| (image.id.clone(), image))
         .collect::<HashMap<_, _>>();
+    let context_files = context_files
+        .into_iter()
+        .map(|file| (file.id.clone(), file))
+        .collect::<HashMap<_, _>>();
     // Register even with an empty scope: keeping the tool pinned keeps the
     // provider-visible tools array byte-stable across turns (cache prefix).
     // Analysis calls against an empty scope fail with the existing clear
@@ -118,10 +129,12 @@ fn register_scoped(
     let state = Arc::new(ScopedVisionState {
         allowed_paths,
         context_images,
+        context_files,
         platform_context,
         allow_general_access,
         resolve_lock: tokio::sync::Mutex::new(()),
         resolved: Mutex::new(HashMap::new()),
+        resolved_files: Mutex::new(HashMap::new()),
         content_images: Mutex::new(HashMap::new()),
         analyses: Mutex::new(HashMap::new()),
         calls: AtomicUsize::new(0),
@@ -146,14 +159,15 @@ fn register_scoped(
         // 只为生图的参考图建作用域:看图插件关着就不注册 vision_analyze。
         return;
     }
+    let native_viewer = active_pool_views_media_natively(&config);
     registry.register(ToolSpec::new(
         "vision_analyze",
-        "Analyze an image. image can be an image path from this turn's prompt or context_image_N; historical context images are fetched on demand.",
+        "Analyze an image or a video. image can be an image path from this turn's prompt, context_image_N, or a file_<message_id>_<n> id from chat history (videos and image files shared in the chat); context media is fetched on demand.",
         json!({
             "type": "object",
             "properties": {
-                "image": { "type": "string", "description": "A path listed in this turn's image prompt, or a historical image ID such as context_image_1." },
-                "images": { "type": "array", "items": { "type": "string" }, "description": "Several images to analyze in one call. Overrides image." },
+                "image": { "type": "string", "description": "A path listed in this turn's image prompt, a historical image ID such as context_image_1, or a file id such as file_<message_id>_1 for a video or image file from the chat." },
+                "images": { "type": "array", "items": { "type": "string" }, "description": "Several images to analyze in one call. Overrides image. Videos are analyzed one at a time — pass a single video through `image`." },
                 "prompt": { "type": "string", "description": "Question or instruction for the image analysis. Defaults to a concise description." }
             },
             "required": [],
@@ -166,12 +180,18 @@ fn register_scoped(
             async move { analyze_scoped_image(args, config, paths, state).await }
         },
     ));
+    if native_viewer {
+        registry.amend_description(
+            "vision_analyze",
+            " On this relay the tool does not analyze anything: it fetches the referenced media into a local file and returns the absolute path for you to open with view_file.",
+        );
+    }
     registry.amend_description(
         "vision_analyze",
         if allow_general_access {
-            " Historical image IDs from this turn (context_image_N) are fetched on demand; plain local paths and URLs still work as well."
+            " Historical image IDs from this turn (context_image_N) and file ids (file_<message_id>_<n>, for videos or image files) are fetched on demand; plain local paths and URLs still work as well."
         } else {
-            " Only these images may be analyzed: this turn's paths from the current or quoted message, context_image_N IDs explicitly listed in earlier group-chat history, or avatar_url links returned by the group query tools. No other paths or URLs are allowed."
+            " Only these may be analyzed: this turn's paths from the current or quoted message, context_image_N IDs explicitly listed in earlier group-chat history, file_<message_id>_<n> ids for videos or image files listed in the chat, or avatar_url links returned by the group query tools. No other paths or URLs are allowed."
         },
     );
 }
@@ -441,6 +461,11 @@ fn video_client(config: &AppConfig, paths: &NonokaPaths) -> Result<OpenAiCompati
             bail!("plugins.vision.video_provider_id 与 video_model 需同时配置");
         }
         let mut provider = config.provider(Some(provider_id))?.clone();
+        if provider.views_media_with_native_file_tool() {
+            bail!(
+                "plugins.vision.video_provider_id={provider_id} cannot serve as a video model: that relay accepts text only (the model views media with its own view_file)"
+            );
+        }
         provider.default_model = model.to_string();
         if !provider
             .models
@@ -455,7 +480,7 @@ fn video_client(config: &AppConfig, paths: &NonokaPaths) -> Result<OpenAiCompati
         .active_multimodal_provider_model_choices()
         .into_iter()
         .filter(|choice| {
-            config.model_supports_any_input(&choice.provider_id, &choice.model, &["video"])
+            config.model_accepts_message_input(&choice.provider_id, &choice.model, &["video"])
         })
         .collect::<Vec<_>>();
     if !choices.is_empty() {
@@ -514,6 +539,9 @@ async fn analyze_scoped_image_one(
         .trim();
     if state.context_images.contains_key(image) {
         let resolved = resolve_context_image(&paths, &state, image).await?;
+        if active_pool_views_media_natively(&config) {
+            return Ok(native_viewer_handoff(&resolved.cache_path));
+        }
         let cache_key = (resolved.digest.clone(), prompt.to_string());
         if let Some(cached) = state.analyses.lock().unwrap().get(&cache_key).cloned() {
             return Ok(cached);
@@ -537,6 +565,13 @@ async fn analyze_scoped_image_one(
             .insert(cache_key, result.clone());
         return Ok(result);
     }
+    if state.context_files.contains_key(image) {
+        let download = resolve_context_file(&paths, &state, image).await?;
+        if active_pool_views_media_natively(&config) {
+            return Ok(native_viewer_handoff(&download.path));
+        }
+        return analyze_platform_cache_file(&config, &paths, &download.path, prompt).await;
+    }
     if state.allow_general_access {
         return analyze_image_one(args, config, paths).await;
     }
@@ -552,13 +587,54 @@ async fn analyze_scoped_image_one(
     let image = expand_path(image)
         .canonicalize()
         .context("failed to resolve the requested image")?;
+    // 已经懒下载进 platform_files 缓存的文件(read_platform_file / 上一次
+    // vision_analyze 落下的)按路径也放行:目录只装本会话链路下来的东西。
+    if is_platform_cache_path(&paths.cache_dir, &image) {
+        if active_pool_views_media_natively(&config) {
+            return Ok(native_viewer_handoff(&image));
+        }
+        return analyze_platform_cache_file(&config, &paths, &image, prompt).await;
+    }
     if !state.allowed_paths.iter().any(|allowed| allowed == &image) {
         bail!("image is not attached to the current platform turn")
+    }
+    if active_pool_views_media_natively(&config) {
+        return Ok(native_viewer_handoff(&image));
     }
     if let Some(output) = try_inline_targets(&config, &[image.display().to_string()])? {
         return Ok(output);
     }
     analyze_local_image_with_prompt(&config, &paths, &image, prompt).await
+}
+
+/// 看一个已落在 platform_files 缓存里的文件:视频走视频路由,图片走图片
+/// 路由,其余扩展名明确拒绝(文本请用 read_platform_file)。
+async fn analyze_platform_cache_file(
+    config: &AppConfig,
+    paths: &NonokaPaths,
+    path: &Path,
+    prompt: &str,
+) -> Result<String> {
+    let target = path.display().to_string();
+    if let Some(mime) = video_mime(&target) {
+        if let Some(output) = try_inline_targets(config, std::slice::from_ref(&target))? {
+            return Ok(output);
+        }
+        let video_url = local_video_data_url(&target, mime)?;
+        return analyze_video_url_with_prompt(config, paths, &video_url, prompt).await;
+    }
+    if mime_from_path(path).is_err() {
+        bail!(
+            "`{}` is neither a video nor an image; text files go through read_platform_file",
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("file")
+        )
+    }
+    if let Some(output) = try_inline_targets(config, std::slice::from_ref(&target))? {
+        return Ok(output);
+    }
+    analyze_local_image_with_prompt(config, paths, path, prompt).await
 }
 
 pub async fn analyze_local_image_with_prompt(
@@ -656,9 +732,38 @@ fn active_text_pool_for_vision(
     let pool = config.active_provider_model_choices();
     let usable = !pool.is_empty()
         && pool.iter().all(|choice| {
-            config.model_supports_any_input(&choice.provider_id, &choice.model, &["image"])
+            config.model_accepts_message_input(&choice.provider_id, &choice.model, &["image"])
         });
     usable.then_some(pool)
+}
+
+/// 活跃池整池走"模型自己用原生文件工具看媒体"的线(agy 中转,09-04):消息
+/// 只收文本、视觉旁路又多半没配,这种池上 vision_analyze 的正确产出是**把
+/// 媒体落成本地文件、把绝对路径交出去**,让模型自己 `view_file`。
+fn active_pool_views_media_natively(config: &AppConfig) -> bool {
+    let pool = config.active_provider_model_choices();
+    !pool.is_empty()
+        && pool.iter().all(|choice| {
+            config
+                .provider(Some(&choice.provider_id))
+                .map(|provider| provider.views_media_with_native_file_tool())
+                .unwrap_or(false)
+        })
+}
+
+/// 原生看媒体线的工具回执:只给路径与体积,不做任何分析。
+fn native_viewer_handoff(path: &Path) -> String {
+    let size = std::fs::metadata(path).map(|meta| meta.len()).unwrap_or(0);
+    let kind = if video_mime(&path.display().to_string()).is_some() {
+        "video"
+    } else {
+        "image"
+    };
+    format!(
+        "Saved the {kind} to {} ({} bytes). This relay carries text only, so open that path with view_file to look at it yourself.",
+        path.display(),
+        size
+    )
 }
 
 /// 活跃文本池整池支持某种输入(image/video)。池是负载均衡的,有一个不认
@@ -670,7 +775,7 @@ fn active_text_pool_supports(config: &AppConfig, input: &str) -> bool {
     let pool = config.active_provider_model_choices();
     !pool.is_empty()
         && pool.iter().all(|choice| {
-            config.model_supports_any_input(&choice.provider_id, &choice.model, &[input])
+            config.model_accepts_message_input(&choice.provider_id, &choice.model, &[input])
         })
 }
 
@@ -768,7 +873,7 @@ fn vision_client(config: &AppConfig, paths: &NonokaPaths) -> Result<OpenAiCompat
             .active_multimodal_provider_model_choices()
             .into_iter()
             .filter(|choice| {
-                config.model_supports_any_input(&choice.provider_id, &choice.model, &["image"])
+                config.model_accepts_message_input(&choice.provider_id, &choice.model, &["image"])
             })
             .collect::<Vec<_>>();
         if !choices.is_empty() {
@@ -1111,10 +1216,12 @@ mod tests {
                 (duplicate_source.id.clone(), duplicate_source),
             ]
             .into(),
+            context_files: HashMap::new(),
             platform_context: Some(context),
             allow_general_access: false,
             resolve_lock: tokio::sync::Mutex::new(()),
             resolved: Mutex::new(HashMap::new()),
+            resolved_files: Mutex::new(HashMap::new()),
             content_images: Mutex::new(HashMap::new()),
             analyses: Mutex::new(HashMap::new()),
             calls: AtomicUsize::new(0),

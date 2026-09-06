@@ -1,9 +1,8 @@
-mod search;
-mod store;
-pub(crate) use search::embed_text;
 mod dashboard;
 mod files;
 mod index;
+mod search;
+mod store;
 #[cfg(test)]
 use index::keyword_search_blocking;
 pub(in crate::tools) use store::reject_non_kb_upload;
@@ -12,18 +11,17 @@ use search::*;
 use store::*;
 
 use super::{ToolRegistry, ToolSpec};
-use crate::config::{AppConfig, KnowledgeBasePluginConfig, ProviderConfig};
+use crate::config::{AppConfig, KnowledgeBasePluginConfig};
 use crate::paths::NonokaPaths;
 use anyhow::{bail, Context, Result};
 use chrono::Local;
-use reqwest::Client;
 use rusqlite::{params, Connection};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 use std::process::Stdio;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::process::Command;
 
 // 08-21 Edit/Read 统一(用户裁定):upload/edit/remove/read 四个 CRUD 工具退场,
@@ -177,11 +175,7 @@ impl KnowledgeBase {
     }
 }
 
-async fn tool_search_readonly(
-    args: Value,
-    config: AppConfig,
-    paths: NonokaPaths,
-) -> Result<String> {
+async fn tool_search_readonly(args: Value, config: AppConfig, paths: NonokaPaths) -> Result<String> {
     ensure_enabled(&config)?;
     let query = args
         .get("query")
@@ -249,7 +243,10 @@ mod tests {
     fn edit_lines_replaces_inclusive_range() {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
-        let config = AppConfig::default();
+        let mut config = AppConfig::default();
+        // 内置本地 embedding 成为默认后,不关掉这一项编辑就会排语义重建;
+        // 这条测的是行编辑本身。
+        config.plugins.knowledge_base.embedding_enabled = false;
         let kb = KnowledgeBase::new(config, paths).unwrap();
         let source = temp.path().join("note.md");
         std::fs::write(&source, "one\ntwo\nthree\n").unwrap();

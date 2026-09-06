@@ -1,0 +1,23 @@
+[package]
+name = "proc-macro-error-attr3"
+version = "3.0.3"
+authors = [
+  "CreepySkeleton <creepy-skeleton@yandex.ru>",
+  "GnomedDev <david2005thomas@gmail.com>",
+  "gamma0987 <gamma0987@posteo.de>",
+]
+edition = "2021"
+rust-version = "1.61"
+description = "Attribute macro for the proc-macro-error3 crate"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/gamma0987/proc-macro-error3"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.74"
+quote = "1.0.35"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }

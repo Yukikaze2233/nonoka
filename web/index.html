@@ -23,6 +23,7 @@
   <script defer src="/dash/dash-qq.js"></script>
   <script defer src="/dash/dash-groups.js"></script>
   <script defer src="/dash/dash-affection.js"></script>
+  <script defer src="/dash/dash-scripts.js"></script>
   <script defer src="/dash/settings-schema.js"></script>
   <script defer src="/dash/settings.js"></script>
   <script defer src="/app.js"></script>
@@ -159,6 +160,10 @@
         </button>
 
         <footer class="composer-dock" id="composerDock">
+          <div class="voice-float" id="voiceIndicator" role="status" aria-label="正在听写" hidden>
+            <span class="icon-slot" data-icon="mic" aria-hidden="true"><span class="icon-fallback">●</span></span>
+            <i class="voice-level" aria-hidden="true"><b id="voiceLevel"></b></i>
+          </div>
           <!-- 目标状态行：目标是长期存在的东西，不该只在对话流里闪一下。
                贴在输入框上方随状态刷新，操作直接在这儿点。 -->
           <div class="goal-bar" id="goalBar" aria-label="当前目标" hidden></div>
@@ -194,6 +199,9 @@
                 <span class="character-count" id="characterCount" hidden>0 / 20,000</span>
                 <button class="icon-button artifact-toggle-button" id="artifactToggleButton" type="button" title="打开预览" aria-label="打开预览" hidden>
                   <span class="icon-slot" data-icon="panel-right" aria-hidden="true"><span class="icon-fallback">▥</span></span>
+                </button>
+                <button class="attach-button mic-button" id="micButton" type="button" title="语音输入" aria-label="语音输入" aria-pressed="false" hidden>
+                  <span class="icon-slot" data-icon="mic" aria-hidden="true"><span class="icon-fallback">●</span></span>
                 </button>
                 <button class="attach-button" id="attachButton" type="button" title="添加附件" aria-label="添加附件" disabled>
                   <span class="icon-slot" data-icon="paperclip" aria-hidden="true"><span class="icon-fallback">+</span></span>
@@ -300,6 +308,10 @@
             <span class="icon-slot" data-icon="sparkles" aria-hidden="true"><span class="icon-fallback">♥</span></span>
             <span>好感·情绪</span>
           </button>
+          <button class="con-rail-item" type="button" data-console-panel="scripts">
+            <span class="icon-slot" data-icon="file-code" aria-hidden="true"><span class="icon-fallback">▶</span></span>
+            <span>脚本</span>
+          </button>
           <button class="con-rail-item" type="button" data-console-panel="settings">
             <span class="icon-slot" data-icon="sliders-horizontal" aria-hidden="true"><span class="icon-fallback">⚙</span></span>
             <span>设置</span>
@@ -392,6 +404,9 @@
         </div>
         <div class="con-panel" data-console-panel="affection" hidden>
           <div class="con-inner is-wide" id="dashAffectionRoot"></div>
+        </div>
+        <div class="con-panel" data-console-panel="scripts" hidden>
+          <div class="con-inner is-wide" id="dashScriptsRoot"></div>
         </div>
         <div class="con-panel" data-console-panel="settings" hidden>
         <div class="settings-layout">
