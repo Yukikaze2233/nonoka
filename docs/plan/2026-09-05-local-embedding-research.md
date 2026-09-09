@@ -1,6 +1,6 @@
 # 2026-09-05 · 是否内置本地 embedding 模型 —— 调研报告
 
-> 目标：别人装上 Miyu 时没有 embedding，只有关键词检索；评估「内置一个本地嵌入模型」
+> 目标：别人装上 Nonoka 时没有 embedding，只有关键词检索；评估「内置一个本地嵌入模型」
 > 在检索质量上值不值，以及资源上扛不扛得住。全部数据在本机（Ryzen 9 7940H, 16 线程,
 > AVX-512）实测，语料是本机真实数据。基准工程与脚本在会话 scratchpad（`embed-bench/`、
 > `candle-bench/`、`run_bench*.sh`、`run_quality.sh`、`gen_queries.py`、`distill.py`）。
@@ -12,7 +12,7 @@
    表情包 hit@3 从 16% → 33%，记忆 hit@3 从 51% → 69%（关键词+语义融合）。
 2. **「内置」应该是内置推理后端 + 首次启用时下载模型**，不是把模型塞进二进制：
    二进制只多 ~5 MB；ONNX Runtime 走动态加载（Arch `extra/onnxruntime-cpu` 现成，
-   其他发行版由 Miyu 自动下载官方预编译库到 `~/.miyu/lib`）。静态链接 ORT 会让二进制
+   其他发行版由 Nonoka 自动下载官方预编译库到 `~/.nonoka/lib`）。静态链接 ORT 会让二进制
    +22 MB，且 `build.rs` 联网下载与 AUR `cargo build --locked` 离线构建冲突。
 3. **三个坑必须避开**：批量推理（batch 32 → RSS 2.1 GB，逐条最快且只 129 MB）、
    ORT 线程数不锁（默认吃满 16 核）、向量继续存 JSON 文本（现状 136 MB，每次查询解析 2.1 s）。
@@ -29,7 +29,7 @@
 | 表情包 `search_meme` | 标签/名称/用法/描述子串 + 双字 bigram (`memes/library.rs:379`) | **没有** |
 
 - 远程嵌入接口的实现是通用的（`knowledge_base::embed_text`），任何 OpenAI 兼容 `/embeddings` 都能接，Ollama/LM Studio 也行——但默认配置里为空，新用户等于没有。
-- `kb embed reindex` 已经是**子进程**形态（`spawn_embedding_reindex` 起 `miyu kb embed reindex --quiet`），本地模型的索引负载天然不落在 daemon 上。
+- `kb embed reindex` 已经是**子进程**形态（`spawn_embedding_reindex` 起 `nonoka kb embed reindex --quiet`），本地模型的索引负载天然不落在 daemon 上。
 
 本机真实数据规模（默认人格）：facts 193 条（均 154 字）、episodes 904 条（均 185 字，p99 613 字）；表情包 83 张（说明文本均 117 字）；知识库 6507 文件 / 10548 语义块（均 337 字，bge-m3 1024 维）。
 
@@ -65,7 +65,7 @@
 要点：
 - ORT 的内存池会把峰值一直攥着，**批量推理是 RSS 炸掉的根源**；逐条推理反而最快（padding 是浪费）。
 - 卸载测试（用完 drop 模型 + `malloc_trim`）：ORT 91 → 33 MB，静态模型 39 → 13 MB。所以「空闲 N 分钟卸载」策略能把常驻压回 +24 MB。
-- 二进制体积：ORT 静态链接 +22 MB（基准工程 28.3 MB vs 动态加载 5.9 MB）；candle 版 5.8 MB。动态加载/纯 Rust 两条路对 Miyu 二进制都只是 +4~5 MB。
+- 二进制体积：ORT 静态链接 +22 MB（基准工程 28.3 MB vs 动态加载 5.9 MB）；candle 版 5.8 MB。动态加载/纯 Rust 两条路对 Nonoka 二进制都只是 +4~5 MB。
 - 现有 KB 语义索引：10548 条 JSON 文本 136 MB，每次查询读+解析 2.1 s；同样数据存 f32 BLOB 只要 43 MB（512 维模型 21 MB），全量点积毫秒级。
 
 ## 3. 检索质量实测
@@ -108,8 +108,8 @@
 **方案 A（推荐）：内置本地推理后端，模型按需下载。**
 
 - 依赖：`ort`（`load-dynamic`）+ `tokenizers`（或 fastembed 薄封装），二进制 +~5 MB，`--locked` 离线可构建。
-- 运行库：Arch 加 `optdepends=('onnxruntime-cpu: 本地语义检索')`；找不到系统库时由 Miyu 下载 ONNX Runtime 官方预编译包到 `~/.miyu/lib`（`ORT_DYLIB_PATH`）。
-- 模型：`bge-small-zh-v1.5` int8 + tokenizer，约 24 MB，首次启用时下载到 `~/.miyu/models/`，来源顺序 hf-mirror → huggingface → GitHub Release 资产（校验 sha256）。
+- 运行库：Arch 加 `optdepends=('onnxruntime-cpu: 本地语义检索')`；找不到系统库时由 Nonoka 下载 ONNX Runtime 官方预编译包到 `~/.nonoka/lib`（`ORT_DYLIB_PATH`）。
+- 模型：`bge-small-zh-v1.5` int8 + tokenizer，约 24 MB，首次启用时下载到 `~/.nonoka/models/`，来源顺序 hf-mirror → huggingface → GitHub Release 资产（校验 sha256）。
 - 运行策略：单线程逐条推理、max_length 512、**空闲 10 分钟卸载**（与 renderer worker 同款）；索引走现有 `kb embed reindex` 子进程形态，记忆/表情包的索引也复用它。
 - 存储：向量一律 f32 BLOB + `(model, dims, content_sha256)` 键，替换 `embedding_json`；记忆库新增 `memory_embeddings` 表按内容哈希缓存（904 条一次性 11 s）。
 - 融合：RRF 取代现在的固定权重（`SEMANTIC_SCORE_WEIGHT=30`、`0.6` 是给远程 bge-m3 调的），远程模型与本地模型共用同一融合逻辑。
@@ -144,14 +144,14 @@ scratchpad/
 
 ## 7. 施工记录（09-05 下午，分支 `embedding-research`）
 
-用户拍板：模型做成可换、内置一个优秀模型默认启用、可关、占用轻量；模型当资产进仓库；其他发行版由用户装运行库；embedding 不可用绝不能拖垮 Miyu 或检索。
+用户拍板：模型做成可换、内置一个优秀模型默认启用、可关、占用轻量；模型当资产进仓库；其他发行版由用户装运行库；embedding 不可用绝不能拖垮 Nonoka 或检索。
 
 落地形态：
 
-- **资产**：`assets/models/bge-small-zh-v1.5-int8/`（int8 ONNX 23.9 MB + tokenizer + manifest.json + MIT LICENSE），照 `assets/fonts` 的查找链（`MIYU_EMBEDDING_MODELS_DIR` → `~/.miyu/models` → 源码树 → `/usr/share/miyu/models` → 可执行文件前缀）。`assets/models/export-embedding-model.py` 可复现导出。三份 PKGBUILD 装到 `/usr/share/miyu/models/`，`onnxruntime-cpu` 进 depends。
+- **资产**：`assets/models/bge-small-zh-v1.5-int8/`（int8 ONNX 23.9 MB + tokenizer + manifest.json + MIT LICENSE），照 `assets/fonts` 的查找链（`NONOKA_EMBEDDING_MODELS_DIR` → `~/.nonoka/models` → 源码树 → `/usr/share/nonoka/models` → 可执行文件前缀）。`assets/models/export-embedding-model.py` 可复现导出。三份 PKGBUILD 装到 `/usr/share/nonoka/models/`，`onnxruntime-cpu` 进 depends。
 - **推理**：`src/embedding/`（`local.rs` ORT 会话单线程逐条、`worker.rs` 独立子进程 + 长度前缀帧 + 握手 + 空闲退出 + 失败冷却 5 分钟、`remote.rs` 原 `/embeddings`、`manifest.rs` 资产查找、`vectors.rs` BLOB/余弦/RRF）。`ort` 走 `load-dynamic`，显式 `init_from(路径)`，找不到库只是 `Err`。二进制 +~5 MB。
 - **配置**：`embedding.{enabled=true, backend=auto|local|remote, local_model, idle_unload_seconds=600}`；`auto` = 配了远程就远程否则本地，老配置零迁移。`plugins.knowledge_base.embedding_enabled` 默认改为 true。设置页与 config TUI 同步。
-- **接入**：表情包 `use_meme search` 关键词 + 语义 RRF（向量缓存 `cache/meme-embeddings/<lib>.db`）；记忆联想 `association_with_semantic()`（`memory_embeddings` 表，每轮补 32 条 + 后台补齐）；知识库/被淘汰上下文改用统一 Embedder，向量改 f32 BLOB 并按模型过滤；`miyu embed status|models|reindex`。
+- **接入**：表情包 `use_meme search` 关键词 + 语义 RRF（向量缓存 `cache/meme-embeddings/<lib>.db`）；记忆联想 `association_with_semantic()`（`memory_embeddings` 表，每轮补 32 条 + 后台补齐）；知识库/被淘汰上下文改用统一 Embedder，向量改 f32 BLOB 并按模型过滤；`nonoka embed status|models|reindex`。
 - **退化**：任何一环失败 → debug 日志 + 关键词结果；测试 `a_missing_runtime_degrades_to_keyword_results`、`disabled_semantic_matches_keyword_only_exactly` 锁死。
 
 验收：`testkit/embedding/run.sh`（沙箱黑盒）+ `cargo test --lib`（真实推理用例在没装运行库的机器上自动跳过）+ `memory::tests::semantic::eval_real_corpus`（真实语料量尺）。

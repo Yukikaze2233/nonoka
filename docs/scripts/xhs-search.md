@@ -1,7 +1,7 @@
 # xhs-search —— 给 AI 用的小红书检索工具
 
-一个单文件脚本，形态对齐 `~/Documents/github/Miyu/src/scripts/goofish-search`：
-可以直接当命令行用，也可以作为 Miyu script 工具给 AI 调（stdin JSON → stdout JSON）。
+一个单文件脚本，形态对齐 `~/Documents/github/Nonoka/src/scripts/goofish-search`：
+可以直接当命令行用，也可以作为 Nonoka script 工具给 AI 调（stdin JSON → stdout JSON）。
 只依赖系统 `python3` + playwright + 一个 Chromium 系浏览器。
 
 ## 可行性结论（2026-08-29 实测）
@@ -48,7 +48,7 @@ cd ~/Projects/xhs-search
 命令只有两种形态：**给关键词就是搜，给链接就是读**。`search` / `note` 子命令还在，
 但不用手写 —— 参数长得像链接或 24 位 note_id 就去读正文，否则当关键词搜。
 
-Miyu script 工具（stdin JSON）：
+Nonoka script 工具（stdin JSON）：
 
 ```bash
 echo '{"query":"手冲咖啡","limit":10}' | ./xhs-search      # 关键词 → 搜索
@@ -58,7 +58,7 @@ echo '{"action":"status"}' | ./xhs-search
 
 `action` 不用传，按 `query` 的内容自动判断 —— 模型少一个字段要想。
 
-**已装进 Miyu**（2026-08-29）：安装副本在 `~/.miyu/data/scripts/xhs-search`，
+**已装进 Nonoka**（2026-08-29）：安装副本在 `~/.nonoka/data/scripts/xhs-search`，
 注册 id `xhs_search`，归入 `research` / `shopping` 组，超时 300 秒。
 schema 里刻意**不设 `required`** —— `action=status` 不需要 `query`，
 硬性 required 会把这个动作彻底堵死；漏传时脚本自己会报清晰的错。
@@ -125,5 +125,5 @@ schema 里刻意**不设 `required`** —— `action=status` 不需要 `query`�
 
 ```
 xhs-search         脚本本体，全部逻辑在这一个文件里
-index-entry.json   Miyu index.json 的条目，待并入
+index-entry.json   Nonoka index.json 的条目，待并入
 ```

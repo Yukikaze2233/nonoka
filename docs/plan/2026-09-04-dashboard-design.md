@@ -1,6 +1,6 @@
 # 控制台 Dashboard 设计（2026-09-04）
 
-状态：**P0–P6 已落地（09-04），P7 待做**。基于 09-04 对 Miyu 各域真实实现的复核（不是 AstrBot 原型），原型只当功能启发。上一份分期方案见 `docs/plan/2026-09-03-plugin-dashboard-and-io.md`，本文覆盖其"一、插件 Dashboard 移植"部分。
+状态：**P0–P6 已落地（09-04），P7 待做**。基于 09-04 对 Nonoka 各域真实实现的复核（不是 AstrBot 原型），原型只当功能启发。上一份分期方案见 `docs/plan/2026-09-03-plugin-dashboard-and-io.md`，本文覆盖其"一、插件 Dashboard 移植"部分。
 
 ---
 
@@ -8,10 +8,10 @@
 
 | 疑问 | 结论 | 证据 |
 |---|---|---|
-| 赞助统计 | **Miyu 没有**，不做 | `src`/`web` 全文无 sponsor/赞助/donat |
-| 情绪状态（valence/arousal） | **Miyu 没有**。全部分支 `src` 无 valence/arousal/mood 状态；`emotion` 只出现在表情包分类门 `emotion_or_meme`，`mood` 只在提示词里 | `src/tools/memes/validate.rs:112`、`real_context/targeting.rs:564` |
+| 赞助统计 | **Nonoka 没有**，不做 | `src`/`web` 全文无 sponsor/赞助/donat |
+| 情绪状态（valence/arousal） | **Nonoka 没有**。全部分支 `src` 无 valence/arousal/mood 状态；`emotion` 只出现在表情包分类门 `emotion_or_meme`，`mood` 只在提示词里 | `src/tools/memes/validate.rs:112`、`real_context/targeting.rs:564` |
 | 最接近"情绪"的东西 | ① 好感度分（每用户、账号级、按人格分键）② `reply_heat`（每会话内存值，重启即丢，是限流不是情绪）| `affection/mod.rs:34`、`real_context/runtime.rs:71` |
-| 主动回复裁决日志 | **已落盘，但是文本**：tracing 写到 `~/.miyu/cache/logs/miyu.<日期>.log`，按天轮转只留 8 天，`miyu::qq` 默认 INFO 级，每条判断都在。是本地化多行文本不是结构化数据 | `src/logging.rs:32-46`、`inject.rs:462/487/560/578` |
+| 主动回复裁决日志 | **已落盘，但是文本**：tracing 写到 `~/.nonoka/cache/logs/nonoka.<日期>.log`，按天轮转只留 8 天，`nonoka::qq` 默认 INFO 级，每条判断都在。是本地化多行文本不是结构化数据 | `src/logging.rs:32-46`、`inject.rs:462/487/560/578` |
 | 记忆 demo 的"已归档"过滤 | 空集：代码从不写 `archived`，真实第三态是 `forgotten` | `schema.rs:546`、`dash-memory.js:45` |
 | 记忆 stats 接口 | 调 `init()` → 会建库并跑一次遗忘衰减，浏览接口不该有副作用 | `write.rs:135`、`dashboards/memory.rs:93` |
 
@@ -149,7 +149,7 @@ rail 顺序：用量 · 记忆 · 知识库 · 表情包 · QQ 消息记录 · �
 
 **标签**：时间线 · 违规者 · 踢人。
 
-- 时间线：`load_all_events` 合并三键去重 → `dash-timeline`。动作 chip 六种（ban/unban/kick/kick_black/title_set/title_clear），来源标签（Miyu 工具 / 外部管理员通知 / 旧记录），禁言事件带派生状态（进行中/已过期/已解除/被覆盖，`ban_statuses`）。**这是新端点**，`management_events` 目前无 HTTP。
+- 时间线：`load_all_events` 合并三键去重 → `dash-timeline`。动作 chip 六种（ban/unban/kick/kick_black/title_set/title_clear），来源标签（Nonoka 工具 / 外部管理员通知 / 旧记录），禁言事件带派生状态（进行中/已过期/已解除/被覆盖，`ban_statuses`）。**这是新端点**，`management_events` 目前无 HTTP。
 - 违规者：榜单（次数 / 累计时长 / 首末次 / 最近理由），抽屉里 `reason_history` 时间线（当前 UI 完全没渲染）。
 - 踢人：含踢黑标记与操作者。
 
@@ -193,9 +193,9 @@ rail 顺序：用量 · 记忆 · 知识库 · 表情包 · QQ 消息记录 · �
 
 ### 3.8 主动回复裁决（群聊面板第五标签，需先补结构化写入）
 
-**现状**：每条判断已经写进 `~/.miyu/cache/logs/miyu.<日期>.log`（`src/logging.rs`：按天轮转、留 8 个文件、`miyu::qq` 默认 INFO），本机 09-01/03/04 的日志里都能 grep 到"【主动回复判断：回复】"整段。所以"记录"这个目的已经满足。
+**现状**：每条判断已经写进 `~/.nonoka/cache/logs/nonoka.<日期>.log`（`src/logging.rs`：按天轮转、留 8 个文件、`nonoka::qq` 默认 INFO），本机 09-01/03/04 的日志里都能 grep 到"【主动回复判断：回复】"整段。所以"记录"这个目的已经满足。
 
-**面板不能直接读它的原因**：① 内容按 locale 本地化（中文/英文两套字段名），② 多行自由文本，格式随代码演进，③ 只留 8 天，④ 和其他 126 处 `miyu::qq` 日志混在一起。写解析器会很脆。
+**面板不能直接读它的原因**：① 内容按 locale 本地化（中文/英文两套字段名），② 多行自由文本，格式随代码演进，③ 只留 8 天，④ 和其他 126 处 `nonoka::qq` 日志混在一起。写解析器会很脆。
 
 **建议**：在 `inject.rs` 四个打日志的调用点旁边，**同时**把同一个 `ActiveReplyDecisionLog` 序列化成一行 JSON 写进 `history.sqlite3` 新表 `decisions`（账号、群、消息 id、发送者、触发类型、raw/final/threshold、五项调整 + 情绪调整、是否回复、模型判断、违规判定、端点、理由、时间），保留 30 天，索引 `(account, group, created_at)`。文本日志照旧不动。约 120 行。
 

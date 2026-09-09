@@ -1,11 +1,11 @@
-# 2026-09-05 OpenSquilla 路由/融合研究与 Miyu 适配方案
+# 2026-09-05 OpenSquilla 路由/融合研究与 Nonoka 适配方案
 
 调研对象：<https://github.com/TokenRhythm/opensquilla>（浅克隆 `94ac35eb`，2026-09-04，v0.5.4；
 Python 微内核 Agent，源码约 66 万行含测试）。附带技术报告 *Agentic Routing: The
 Harness-Native Data Flywheel*（arXiv 2607.11399，仓库内 `docs/report/*.pdf`）。
 
-本文回答三个问题：它的「智能路由」和「多模型融合」在代码里究竟是怎么做的；Miyu
-能不能做；怎么做才不违背 Miyu 自己的缓存契约，并在它的基础上更进一步。
+本文回答三个问题：它的「智能路由」和「多模型融合」在代码里究竟是怎么做的；Nonoka
+能不能做；怎么做才不违背 Nonoka 自己的缓存契约，并在它的基础上更进一步。
 
 ## 0. 一句话结论
 
@@ -16,12 +16,12 @@ Harness-Native Data Flywheel*（arXiv 2607.11399，仓库内 `docs/report/*.pdf`
   工具**，只有 aggregator 能执行工具。它自己的实验也显示：只在深度研究类开放任务上
   赚（DRACO 60.82 vs Fable 5 59.80，成本 −69%，token 用量 ×6），在短任务基准上只是
   持平。
-- **Miyu 已经有它没有的东西**：主模型自己给 `task` 选档（LLM-as-router，opensquilla
+- **Nonoka 已经有它没有的东西**：主模型自己给 `task` 选档（LLM-as-router，opensquilla
   为省 token 刻意不用 LLM 做路由）、每个子代理是完整工具循环。缺的是：三档池只服务
   `task`；主池异构时逐 round 轮换伤缓存；没有「合稿」形态。
 - 适配路线：**先把三档池扩展到辅助请求（本次已做，待验收）→ 再给 `task` 加
   council 合稿模式（proposer 带工具，反过来超越它）→ 主池缓存粘性（需实测）→
-  路由决策日志攒数据。** 按轮切换主对话模型这条路，Miyu 不走：它和「前缀即契约」
+  路由决策日志攒数据。** 按轮切换主对话模型这条路，Nonoka 不走：它和「前缀即契约」
   正面冲突，opensquilla 自己也是靠 anti_downgrade / sticky 一层层补。
 
 ## 1. SquillaRouter：智能路由是怎么做到的
@@ -149,9 +149,9 @@ c2 `adjacent_tier_check` + `orthogonal_family`；c3 `strong_critic` + `orthogona
 读法：融合的收益集中在**开放式、证据依赖**的任务；代价是 token ×6、延迟 = 最慢
 proposer + aggregator。短任务上只是省一点钱。
 
-## 3. Miyu 现状对照
+## 3. Nonoka 现状对照
 
-| 维度 | OpenSquilla | Miyu（main @ 51486180） |
+| 维度 | OpenSquilla | Nonoka（main @ 51486180） |
 |---|---|---|
 | 主对话选模型 | 每轮本地分类 → c0–c3 → 模型 | `active_provider_models` 池，端点级 round-robin（`LlmScheduler.cursor` 每请求 +1）+ 冷却/故障转移 |
 | 缓存态度 | 分类后加 anti_downgrade / sticky 补丁 | 前缀即契约（`docs/理念.md`），逐字节 |
@@ -166,23 +166,23 @@ proposer + aggregator。短任务上只是省一点钱。
 1. **主池异构时的缓存问题真实存在。** 同一回合连续 round 由 cursor 轮换到不同模型，
    在前缀缓存视角就是 miss；`cache_keepalive` 已为此钉住 `last_request_endpoint`，但真
    实请求没有。这正是 opensquilla `anti_downgrade` / `sticky_tier` 要解决的问题，只是
-   Miyu 的形态更简单：不是「别降档」，而是「别换家」。
+   Nonoka 的形态更简单：不是「别降档」，而是「别换家」。
 2. **三档池只被 `task` 使用**，用户自己也觉得不常用。opensquilla 的经验是：路由的钱
-   省在高频低价值请求上（确认、整理、标题）。Miyu 的高频低价值请求是 organizer、
+   省在高频低价值请求上（确认、整理、标题）。Nonoka 的高频低价值请求是 organizer、
    标题、judge，它们不走池。
 
-## 4. Miyu 能不能做？怎么做？
+## 4. Nonoka 能不能做？怎么做？
 
 ### 4.1 不照抄的三条理由
 
 - **按轮切主对话模型与前缀契约冲突。** 换模型 = 换供应商缓存空间，整段前缀重算。
-  opensquilla 用 anti_downgrade 兜，Miyu 一个 10 万 token 的会话兜不起。主对话的路由
+  opensquilla 用 anti_downgrade 兜，Nonoka 一个 10 万 token 的会话兜不起。主对话的路由
   粒度只能是会话级（`session_model_override` 已有）或「回合内粘性」。
 - **本地 ML 分类器移植价值低。** 权重走 LFS、训练数据不公开；390 维里真正可移植的
   是 51 维手工特征 + 旗标规则 + 六层后处理，而这些恰恰是它的降级策略也在用的东西。
   Rust 里不需要 ONNX 也能写出同等的规则路由器。
-- **Miyu 已有 LLM-as-router。** 主模型看着完整上下文给 `task` 选档，比任何 390 维
-  分类器都更知道任务难度；opensquilla 不用 LLM 路由是为了省 token，Miyu 的 `tier`
+- **Nonoka 已有 LLM-as-router。** 主模型看着完整上下文给 `task` 选档，比任何 390 维
+  分类器都更知道任务难度；opensquilla 不用 LLM 路由是为了省 token，Nonoka 的 `tier`
   参数几乎不花 token。两者应该互补：规则做准入过滤，模型做判断。
 
 ### 4.2 四阶段（2026-09-05 用户裁定：只做 Phase 1，其余搁置，理由见 §6）
@@ -202,7 +202,7 @@ notice 打进日志。compact 明确排除（fork 式复用主对话前缀）。
   稿；只有 1 个成功则直接返回它，0 个成功报错。
 - 超越点：proposer 带工具、带证据——这是 opensquilla 明确放弃的（它的 proposer 只能
   「凭记忆起草」）。DRACO 的收益机制正是「一个模型搜到更好的证据、另一个综合得
-  更连贯」，Miyu 的形态天然对得上。
+  更连贯」，Nonoka 的形态天然对得上。
 - aggregator 提示词英文、候选 `<candidate n>` 包裹、打乱顺序；每个 proposer 各记一条
   subagent 审计会话；stats 汇总。
 - 成本上限：K ≤ min(池大小, 4)；工具描述里注明成本 K+1×。默认关。
@@ -213,7 +213,7 @@ notice 打进日志。compact 明确排除（fork 式复用主对话前缀）。
 
 **Phase 3（搁置，若做需实测）：主池缓存粘性。**
 同一会话内优先复用上一次成功应答的端点（`Agent.last_request_endpoint` 已有），仅在
-冷却/失败/用户切换时才轮换。这是 opensquilla anti_downgrade 的 Miyu 版本，作用对象
+冷却/失败/用户切换时才轮换。这是 opensquilla anti_downgrade 的 Nonoka 版本，作用对象
 是「换家」而非「降档」。验收：异构主池下连聊三轮，cache-usage jsonl 第二、三轮的
 `cache_read` 应明显高于现在。单模型多 key 的池不受影响（key 轮换不影响供应商侧缓存
 键时可继续轮换；这一点要先探针确认）。
@@ -228,7 +228,7 @@ notice 打进日志。compact 明确排除（fork 式复用主对话前缀）。
 
 1. `cargo test --offline`：全过，用例数不降（新增 7 个：`subagent_tier_roles_*` 2 个、
    `tier_pool::*` 5 个）。
-2. `MIYU_HOME` 沙箱里改 `config.jsonc`：
+2. `NONOKA_HOME` 沙箱里改 `config.jsonc`：
    ```jsonc
    "subagent_tiers": {
      "cheap": [ { "provider_id": "<某供应商>", "model": "<便宜模型>" } ],
@@ -239,7 +239,7 @@ notice 打进日志。compact 明确排除（fork 式复用主对话前缀）。
    `scope=session-title` 那行的 `model` 应是便宜模型；主对话行不变。
 4. 累计 14 条短期日记触发 organizer → 同一文件 `scope=memory-organizer` 行的 `model`
    为便宜模型。
-5. 把 `roles.session_title` 改成 `"chep"` → `miyu` 启动即报
+5. 把 `roles.session_title` 改成 `"chep"` → `nonoka` 启动即报
    `subagent_tiers.roles.session_title: unknown tier 'chep'; accepted: cheap, balanced, strong, main`。
 6. 把 cheap 池里的模型从供应商 `models` 删掉 → daemon.log 出现
    `tier 'cheap' pool has no usable model … fell back to the main model pool` 的 warn，
@@ -345,9 +345,9 @@ council 合稿、缓存粘性、规则路由建议一并搁置，将来若重提
 ### 7.5 验收流程
 
 1. `cargo test --offline`：全过，用例数不降。
-2. `MIYU_HOME` 沙箱起 `miyu config`：主菜单三项改名；「配置分级模型池」四档 + 三旁路，
+2. `NONOKA_HOME` 沙箱起 `nonoka config`：主菜单三项改名；「配置分级模型池」四档 + 三旁路，
    Enter / `d` 行为如 demo；「腾讯 QQ → 模型分配」五到六行，Enter 打开合并选择框。
-3. 沙箱 `config.jsonc` 手写旧键 `subagent_tiers.balanced`，启动后 `miyu config` 保存，文件
+3. 沙箱 `config.jsonc` 手写旧键 `subagent_tiers.balanced`，启动后 `nonoka config` 保存，文件
    变成 `model_tiers.standard`。
 4. 配一个 lite 池，WebUI 新建会话 → `cache-usage` 日志 `scope=session-title` 行的 model 为
    lite 模型；QQ 群发一条消息 → `scope=qq-judge` 行同理。

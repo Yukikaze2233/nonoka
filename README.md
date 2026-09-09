@@ -1,32 +1,30 @@
 <p align="center">
-  <img src="pics/miyu-logo.png" alt="Miyu" width="180">
+  <img src="pics/nonoka-logo.png" alt="Nonoka" width="180">
 </p>
 
-# Miyu
+# Nonoka
 
-一个活在终端里的二次元少女。开箱即用的开源 AI 助手，支持接入通讯平台。
+一个活在终端里的二次元少女，开箱即用的开源 AI 助手，支持接入通讯平台。
 
->暂时
+## 谁是 Nonoka？
 
-## 谁是 Miyu？
-
-Miyu 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚构角色。
+Nonoka 是 Yukikaze 设计的人工生命：主业陪聊与排障，偶尔客串工具人。她跑在你的机器上，通过终端、局域网 WebUI 或 QQ 与你对话。
 
 ## 有什么功能？
 
-`miyu` 由大模型驱动，默认接入了 [opencode](https://github.com/anomalyco/opencode) 的公共模型服务，你也可以配置自己的大模型服务。
+Nonoka 由大模型驱动，默认接入了公共模型服务，推荐配置自己的大模型服务（OpenAI / Anthropic 协议兼容均可）。
 
-`miyu` 拥有两个模式
+Nonoka 拥有两个模式：
 
 - Normal 普通模式
-  
-  拥有全部功能和工具，可以完成角色扮演、游戏娱乐、系统排障、天气查询、汇率换算、二手市场行情查询等日用场景。
+
+  拥有全部功能和工具，可以完成角色扮演、游戏娱乐、系统排障、天气查询、汇率换算等日用场景。
 
 - Dev 开发模式
 
   和普通模式隔离，移除所有和开发无关的功能和工具，通过极简设计最大限度发挥模型自身的能力。
 
-`miyu` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
+Nonoka 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
 
 ![](./pics/shell-init.png)
 
@@ -37,12 +35,12 @@ Miyu 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚
 自带了 TUI 方便修改配置。
 
 ```
-miyu config
+nonoka config
 ```
 
 ![](./pics/tui.png)
 
-还有 WebUI 
+还有 WebUI，内置控制台：数据统计、记忆管理、知识库、表情包库、QQ 消息记录、群管、好感·情绪、设置八栏面板，浏览器里直接管理。
 
 ![](./pics/webui.png)
 
@@ -50,286 +48,108 @@ miyu config
 
 ![](./pics/qq私聊.png)
 
+内置可扩展的 MCP 工具生态：仓库自带的 `aoe4world-mcp` 扩展提供《帝国时代 IV》电竞数据能力——天梯查询、文明胜率（支持段位过滤）、基于官方对局摘要的深度战报（APM/击杀/战损/时代 timing/Build Order/MVP 与战犯判定）与知识库克制查询。
 
 ## 如何安装？
-
-- Arch Linux
-
-  ```
-  yay -S miyu
-  ```
-
-  语音唤醒和本地语音识别是可选组件，单独打成 `miyu-voice` 包（依赖 `miyu`，大约 30MB，不装不影响其他功能）：
-
-  ```
-  yay -S miyu-voice
-  ```
-
-  装好后运行 `miyu config`，在「全局设置」里开启「语音功能」，daemon 会自动拉起 `miyu-voice` 进程。
 
 - 从源码构建
 
   ```
-  git clone https://github.com/SHORiN-KiWATA/Miyu.git
-  cd Miyu
-  cargo build --release                    # 只出 miyu
-  cargo build --release --features voice   # 再出 miyu-voice(可选,链接 sherpa-onnx)
+  git clone https://github.com/Yukikaze2233/nonoka.git
+  cd nonoka
+  cargo build --release                    # 只出 nonoka
+  cargo build --release --features voice   # 再出 nonoka-voice(可选,链接 sherpa-onnx)
   ```
 
-  源码构建时把 `target/release/miyu`（以及可选的 `miyu-voice`）放到同一个 `PATH` 目录里即可，daemon 在主程序同目录寻找 `miyu-voice`。
+  源码构建时把 `target/release/nonoka`（以及可选的 `nonoka-voice`）放到同一个 `PATH` 目录里即可，daemon 在主程序同目录寻找 `nonoka-voice`。
 
-安装完成后可以运行 `miyu init` 初始化配置和状态文件；也可以直接运行 `miyu daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `miyu -h`。
+安装完成后可以运行 `nonoka init` 初始化配置和状态文件；也可以直接运行 `nonoka daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `nonoka -h`。
 
 ## 三种触发
 
-> 与 `miyu` 运行最适配的是 `kitty`终端
+> 与 `nonoka` 运行最适配的是 `kitty` 终端
 
 - REPL TUI
 
-  `miyu normal` 进入普通模式的 REPL； `miyu dev` 进入开发模式的 REPL。
+  `nonoka normal` 进入普通模式的 REPL；`nonoka dev` 进入开发模式的 REPL。
 
 - webui 局域网网页
 
   ```
-  miyu web
+  nonoka web
   ```
 
 - shell hook 终端集成
 
-  最好的集成效果要求使用 `fish`，`zsh` 和`bash` 只能做到单行对话，`fish` 可以完整无缝集成。
-  
+  最好的集成效果要求使用 `fish`，`zsh` 和 `bash` 只能做到单行对话，`fish` 可以完整无缝集成。
+
   ```
-  miyu fish-init
+  nonoka fish-init
   ```
+
   初始化后可以直接在终端打字对话。
 
-- 语音唤醒(可选,需装 `miyu-voice`)
+- 语音唤醒(可选,需装 `nonoka-voice`)
 
-  设置里开启「语音功能」后 daemon 会拉起独立的 `miyu-voice` 进程常开麦克风:
-  喊唤醒词(默认「未有未有 / 密友密友 / miyumiyu / みゆみゆ」)→ 提示音 + 桌面通知「在听」→ 说指令 → 执行完
+  设置里开启「语音功能」后 daemon 会拉起独立的 `nonoka-voice` 进程常开麦克风:
+  喊唤醒词(默认「诺娜诺娜 / nonokanonoka」)→ 提示音 + 桌面通知「在听」→ 说指令 → 执行完
   提示音 + 通知回复摘要。识别全在本机(SenseVoice,不联网);不开语音时零占用。
-  REPL 里 `/stt`、终端 `miyu stt`、WebUI 麦克风按钮可用同一套识别做听写。
-  可选回复播报(MiniMax / 小米 MiMo 语音合成);`miyu listen` 绑快捷键一键收听(再按一次关闭)。
+  REPL 里 `/stt`、终端 `nonoka stt`、WebUI 麦克风按钮可用同一套识别做听写。
+  可选回复播报(MiniMax / 小米 MiMo 语音合成);`nonoka listen` 绑快捷键一键收听(再按一次关闭)。
   详见 `docs/voice.md`。
+
+## 部署形态参考
+
+Nonoka 的典型部署是一台常驻机器跑 daemon：
+
+```
+nonoka daemon start --port 8300     # WebUI/控制台与平台接入共用此端口
+```
+
+- **QQ 接入**：NapCat 提供 OneBot v11 反向 WebSocket，接入 `nonoka` 后即可私聊/群聊
+- **WebUI 控制台**：浏览器访问 daemon 端口，管理会话、记忆、知识库与表情包
+- **MCP 扩展**：在 `config.jsonc` 的 `mcp.servers` 里挂载独立 MCP 二进制（仓库自带 `aoe4world-mcp`，见上文）
 
 ## 重要配置调整
 
-运行 `miyu config` 命令打开配置 TUI。
+运行 `nonoka config` 命令打开配置 TUI。
 
 - 供应商和模型
 
-  `miyu` 默认使用 opencode 的公共 API，推荐配置自己的 API。
+  Nonoka 默认使用公共模型服务，推荐配置自己的 API。
 
 - 自定义提示词
 
-  `miyu`的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。 
+  Nonoka 的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。
 
 ## 搬到另一台机器
 
-`miyu export` 把当前安装打成一个 `.tar.gz`（权限 0600），`miyu import` 在新机器上还原：
+`nonoka export` 把当前安装打成一个 `.tar.gz`（权限 0600），`nonoka import` 在新机器上还原：
 
 ```bash
-miyu export                      # 配置、会话历史、记忆、知识库原文、用户资源
-miyu export --index --platforms  # 额外带上向量索引与平台聊天历史
-miyu export --no-secrets         # 清空 API key 与令牌，导入后自行补填
-miyu export --dry-run            # 只看清单与体积，不写文件
+nonoka export                      # 配置、会话历史、记忆、知识库原文、用户资源
+nonoka export --index --platforms  # 额外带上向量索引与平台聊天历史
+nonoka export --no-secrets         # 清空 API key 与令牌，导入后自行补填
+nonoka export --dry-run            # 只看清单与体积，不写文件
 
-miyu daemon stop                 # daemon 占着数据库，导入前必须停
-miyu import miyu-export-*.tar.gz
+nonoka daemon stop                 # daemon 占着数据库，导入前必须停
+nonoka import nonoka-export-*.tar.gz
 ```
 
-默认**不含**知识库向量索引（很大，且 `miyu kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
+默认**不含**知识库向量索引（很大，且 `nonoka kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
 
 ## 内置插件
 
-<details><summary>[展开/收起] 具体介绍</summary>
-<br>
-
-- 表情包
-  
-  表情包毫无疑问是聊天时最重要的部分，在对话时，Miyu 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
-
-  ![](./pics/nvidiafuckyou.png)
-
-  Miyu 自带了一些表情，存放在`/usr/share/miyu`，对应的用户空间目录位于`~/.miyu/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 Miyu 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。Miyu 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
-
-- 玄学算命
-
-  >心理学。
-  
-  算命就像看天气预报一般稀松平常。Miyu 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
-
-  ![](./pics/玄学.png)
-
-  ![](./pics/吉凶占.png)
-
-- 投骰子
-
-  >赌！
-
-  闲来无事可以和 AI 比比大小。
-
-  ![](./pics/骰子.png)
-
-- 闹钟
-
-  >要我说，这比GNOME时钟的闹钟好用多了
-  
-  Miyu 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
-
-  ![](./pics/set_alarm.png)
-
-- 知识库
-
-  Miyu 自带了 [ShorinWiki](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide) 中的内容和一些日用 Linux 会遇到的问题作为默认知识库。
-
-  当然，你也可以通过 `miyu kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
-
-  ![](./pics/kb.png)
-
-- ProtonDB 查询
-
-  可以查询 ProtonDB 上的游戏信息和相应的评论，为 Linux 玩游戏提供参考建议。
-
-- Linux 游戏兼容性调查
-
-  >这个游戏 Linux 能玩吗？
-
-  这是桌面端使用 Linux 的日经问题，Miyu 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
-
-  ![](./pics/gaming.png)
-
-- 网络搜索
-
-  即使不配置网络搜索 API，Miyu 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
-
-  ![](./pics/web-search-config.png)
-
-- 搜图
-
-  Miyu 还能帮你找图片喔！搜图会根据网络环境并行使用多个来源，并通过视觉模型筛选相关且安全的结果。图片会默认保存至`~/.miyu/data/pictures/web-images`。
-
-  >NSFW 禁止！
-
-  ![](./pics/搜图.png)
-
-- 生图
-
-  支持 OpenAI 的画图服务喔。图片会默认保存至`~/.miyu/data/pictures/generated-images`。
-
-  >这个功能默认用不了，要自己在插件设置里开启并配置 API
-
-  ![](./pics/生图.png)
-
-- 天气查询
-
-  查询天气是每天的必做活动，当然少不了。
-
-  ![](./pics/weather.png)
-
-- 汇率查询
-
-  国际社会，查个汇率也很合理吧？
-
-  ![](./pics/汇率.png)
-
-- Man 手册查询
-
-  >Man！
-
-  专门的手册查询工具，虽然网络搜索也能做到，但这值得做成单独的插件。
-  
-  ![](./pics/man.png)
-
-- Arch Linux相关
-
-  Arch Linux 是桌面 Linux 的热门之选，Miyu 有一系列插件可以帮助提高 Arch Linux 的日用体验。
-
-  - AUR 状态查询
-
-    >AUR 还在被 DDos 吗！
-
-    AUR 的状态是日用 Arch 时的重要信息之一，不访问网站就能查询的话，在 AUR 安装出现异常时查起来会方便很多。
-
-    ![](./pics/aur-status.png)
-
-  - AUR 包查询
-
-    可以查询 AUR 上的包的具体信息
-
-  - Arch Wiki 查询
-
-    作为 “Linux 圣经”，查询 Arch Wiki 不仅能提高日用 Arch 的体验，对其他发行版也大有裨益。
-
-    ![](./pics/archwiki.png)
-
-  - PKGBUILD 审查
-
-    AUR 投毒的事件搞得人心惶惶，但现在，Miyu 可以帮忙审查 PKGBUILD 啦！
-
-    ![](./pics/pkgbuild审核.png)
-
-- 文件操作
-
-  >自不必说。
-
-  Miyu 支持读写文件、搜索内容、查找文件、删除文件等。
-
-- 计算器和哈希编解码
-
-  为了计算结果的准确性，Miyu 自带了科学计算器和哈希编解码的能力。
-
-  ![](./pics/hash.png)
-
-- 记忆系统
-
-  Miyu 的记忆分为短期日记、长期日记和知识点。每个成功完成的对话轮次会立即写入短期日记；同一人格累计 14 条未整理日记后，由独立后台线程并行提炼长期知识点和有回溯价值的长期经历，不会阻塞正常回复。成功整理的短期日记默认保留 14 天，每次有效联想会刷新保留时间；召回达到 3 次时会立即进入长期化整理。尚未成功整理的原文超期后会退出自动联想但不会丢失，后台仍可继续整理；整理成功后再物理清理。已经长期化的日记不再刷新短期原文的清理时间。
-
-  联想会同时检索三类记忆，并使用 `jieba-rs` 中文分词进行低成本匹配。Embedding 后续可以作为可选辅助接入，但不是记忆系统运行的前提。长期知识点和长期日记会随时间衰减为“已遗忘”，不物理删除；显式搜索仍可找回。
-
-  `/reset` 只清理当前会话，不删除人格记忆；终端或 WebUI 的 `/reset all` 会清空当前人格的短期日记、长期日记、知识点、修订记录和待整理状态。主体记忆在一个事务中清理，淘汰上下文随后独立清理。即使后台模型当时正在整理，旧结果也会因数据库身份或记忆代数变化而被拒绝，不能在清理后重新写回；重置前已经启动的其他会话也不能再写入旧日记。
-
-  ![](./pics/记忆.png)
-
-- 深度研究
-
-  >Token 燃烧警告
-
-  重量级插件。对于一个命题，Miyu 可以引经据典，有理有据地进行深度研究并写出研究报告。
-
-  ![](./pics/深度研究.png)
-
-- Linux 输入法问题诊断
-
-  从 Linux 输入法实现原理出发，对软件输入法问题进行深度诊断。
-
-- Fcitx5 wiki 查询
-
-  阅读 Fcitx5 wiki，为输入法问题提供参考。
-
-</details>
-
-## 致谢
-
-#### 功能参考
-
-- [Opencode](https://github.com/anomalyco/opencode) 
-- [Claude Code](https://github.com/anthropics/claude-code)
-- [Pi](https://github.com/earendil-works/pi)
-- [Deepseek-Reasonix](https://github.com/esengine/deepseek-reasonix)
-- [Deeepseek-Harness](https://github.com/deepseek-ai/deepseek-harness)
-- [Astrbot](https://github.com/AstrBotDevs/AstrBot) 
-- [NapCatQQ](https://github.com/NapNeko/NapCatQQ) 
-
-#### 插件设计参考
-
-- [Yue-bin/astrbot_plugin_maskoff](https://github.com/Yue-bin/astrbot_plugin_maskoff)
-- [nuomicici/astrbot_plugin_GroupMemberQuery](nuomicici/astrbot_plugin_GroupMemberQuery)
-- [advent259141/Astrbot_plugin_Heartflow](advent259141/Astrbot_plugin_Heartflow)
-- [Railgun19457/astrbot_plugin_image_generation](Railgun19457/astrbot_plugin_image_generation)
-- [xiewoc/astrbot_plugin_weather_wttr_in](xiewoc/astrbot_plugin_weather_wttr_in)
-- [muyouzhi6/astrbot_plugin_recall_cancel](muyouzhi6/astrbot_plugin_recall_cancel)
-
-## 许可
-
-Miyu 使用 MIT License 发布，见 `LICENSE`。
+- **real_context**：群聊主动参与（可调触发概率与回复阈值）、好感度与情绪系统
+- **message_history**：QQ 消息落库与 WebUI 查询面板
+- **group_management**：群管操作与台账（踢人/禁言/撤回记录）
+- **reply_processor**：长回复自动渲染为图片（默认阈值 250 字），渲染失败自动降级文本
+- **meme_collector / manage_meme**：表情包收集与人格化表情库（识图自动打标）
+- **scheduled_messages**：定时消息
+- **message_recall**：撤回监控
+
+当然，你也可以通过 `nonoka kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
+
+## License
+
+本项目基于 MIT 协议开源，详见 [LICENSE](./LICENSE)。

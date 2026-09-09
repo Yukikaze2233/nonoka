@@ -1,6 +1,6 @@
 # bilibili_live_stream —— 给 AI 用的哔哩哔哩直播控制脚本
 
-单文件 CLI，同时是 Miyu script 工具（stdin 传 JSON、stdout 出纯文本或 JSON）。
+单文件 CLI，同时是 Nonoka script 工具（stdin 传 JSON、stdout 出纯文本或 JSON）。
 **只依赖 Python 标准库**，Python ≥ 3.8——二维码是自己生成的，没有 `qrcode` / `Pillow` 依赖。
 
 接口逻辑取自 [bili-live-hime](https://github.com/Rsplwe/bili-live-hime)：APP 签名见
@@ -122,6 +122,6 @@ echo '{"command":"start","json":true}'                        | bilibili_live_st
 ## 目录
 
 ```
-bilibili_live_stream   单文件脚本(CLI + Miyu 工具)
-index-entry.json       Miyu src/scripts/index.json 的注册项(尚未安装)
+bilibili_live_stream   单文件脚本(CLI + Nonoka 工具)
+index-entry.json       Nonoka src/scripts/index.json 的注册项(尚未安装)
 ```

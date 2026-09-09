@@ -210,7 +210,11 @@ pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &NonokaPaths
 
 /// 源码预览只放行扫描根顶层里的文件:面板传回来的路径来自 overview,但仍按
 /// 「(目录, 文件名)」重新解析,不接受任意路径。
-fn resolve_previewable(config: &AppConfig, paths: &NonokaPaths, requested: &str) -> Result<PathBuf> {
+fn resolve_previewable(
+    config: &AppConfig,
+    paths: &NonokaPaths,
+    requested: &str,
+) -> Result<PathBuf> {
     let roots = script_scan_roots(config, paths);
     let canonical = canonical_roots(&roots);
     let path = Path::new(requested);

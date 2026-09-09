@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """voice-test 基线量尺:PipeWire 虚拟 sink 注入 test_wavs(monitor 口 pw-link 直连
 采集口),采样 RSS/HWM/CPU,记录事件与阶段耗时。
-用法: measure.py <miyu-bin> <label> [--cpus 0,1] [--quick] [--sub test]
---sub 指定子命令形态(旧分支 voice-test;新 miyu-voice 用 test)。"""
+用法: measure.py <nonoka-bin> <label> [--cpus 0,1] [--quick] [--sub test]
+--sub 指定子命令形态(旧分支 voice-test;新 nonoka-voice 用 test)。"""
 import subprocess, sys, os, time, threading, json, argparse, statistics as st
 ap = argparse.ArgumentParser()
 ap.add_argument('bin'); ap.add_argument('label')
@@ -12,8 +12,8 @@ ap.add_argument('--keyword', default='周望军')
 ap.add_argument('--extra', default='')
 args = ap.parse_args()
 SP = os.path.dirname(os.path.abspath(__file__))
-SINK = 'miyu_test_sink'
-KWS = os.path.expanduser('~/.miyu/state/models/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/test_wavs')
+SINK = 'nonoka_test_sink'
+KWS = os.path.expanduser('~/.nonoka/state/models/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/test_wavs')
 t0 = time.time()
 log = open(f'{SP}/measure-{args.label}.log', 'w')
 def say(kind, msg):
@@ -25,7 +25,7 @@ if SINK not in mods:
     subprocess.run(['pactl', 'load-module', 'module-null-sink', f'sink_name={SINK}', 'channel_map=front-left,front-right'], check=True, capture_output=True)
     say('fixture', f'loaded null sink {SINK}')
 
-env = dict(os.environ, MIYU_HOME=f'{SP}/home', PIPEWIRE_NODE=SINK, LANG='zh_CN.UTF-8', MIYU_VOICE_DEBUG='1',
+env = dict(os.environ, NONOKA_HOME=f'{SP}/home', PIPEWIRE_NODE=SINK, LANG='zh_CN.UTF-8', NONOKA_VOICE_DEBUG='1',
            PIPEWIRE_PROPS='{ stream.capture.sink = true }')
 cmd = [args.bin] + args.sub.split() + ['--keyword', args.keyword] + (args.extra.split() if args.extra else [])
 if args.cpus: cmd = ['taskset', '-c', args.cpus] + cmd
@@ -65,7 +65,7 @@ if not wait_ready():
     say('fatal', f'进程提前退出 rc={proc.returncode}'); sys.exit(1)
 
 def link_capture():
-    """把 sink 的 monitor 口接到本进程的 ALSA 采集口(按 pid 找,别撞别的 miyu)。"""
+    """把 sink 的 monitor 口接到本进程的 ALSA 采集口(按 pid 找,别撞别的 nonoka)。"""
     time.sleep(1.0)
     dump = json.loads(subprocess.run(['pw-dump'], capture_output=True, text=True).stdout)
     node_id = None
@@ -74,7 +74,7 @@ def link_capture():
         props = obj.get('info', {}).get('props', {})
         if props.get('media.class') != 'Stream/Input/Audio': continue
         pid_match = str(props.get('application.process.id')) == str(proc.pid) or str(props.get('pipewire.sec.pid')) == str(proc.pid)
-        name_match = 'miyu' in str(props.get('node.name', '')).lower() or 'miyu' in str(props.get('application.process.binary', '')).lower()
+        name_match = 'nonoka' in str(props.get('node.name', '')).lower() or 'nonoka' in str(props.get('application.process.binary', '')).lower()
         if pid_match or (node_id is None and name_match):
             node_id = obj['id']; say('fixture', f"capture node {node_id} {props.get('node.name')} pid={props.get('application.process.id')} secpid={props.get('pipewire.sec.pid')}")
     if node_id is None:
@@ -109,7 +109,7 @@ def link_capture():
             say('fixture', f"unlink foreign source node {info.get('output-node-id')} (link {o['id']}): {r.returncode}")
     out = subprocess.run(['pw-link', '-l', '-i'], capture_output=True, text=True).stdout
     for l in out.splitlines():
-        if 'miyu' in l.lower() or SINK in l: say('fixture', l.rstrip())
+        if 'nonoka' in l.lower() or SINK in l: say('fixture', l.rstrip())
     return True
 if not link_capture(): sys.exit(1)
 

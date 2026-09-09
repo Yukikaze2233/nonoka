@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """语音"通知 vs 音效/播报"同步量尺(隔离环境,不碰线上 daemon、不碰真实麦克风)。
 
-夹具与 e2e.py 同源:隔离 MIYU_HOME + XDG_RUNTIME_DIR、桩 LLM、PipeWire null sink
+夹具与 e2e.py 同源:隔离 NONOKA_HOME + XDG_RUNTIME_DIR、桩 LLM、PipeWire null sink
 注入音频、假 notify-send(记 epoch 时间戳)。播报走真实 MiniMax(从本机
 config.jsonc 拿 voice.tts 配置),播放被 PIPEWIRE_NODE 引到同一个 null sink,
 用户扬声器听不到;播放流再用 pw-link 直连到第二个 null sink(见 relink_playback,
@@ -35,17 +35,17 @@ ap.add_argument("--wake-wav", default=str(Path(__file__).parent / "samples" / "w
 ap.add_argument("--rounds", type=int, default=2)
 args = ap.parse_args()
 BIN_DIR = Path(args.bin_dir).resolve()
-MIYU, VOICE = BIN_DIR / "miyu", BIN_DIR / "miyu-voice"
-assert MIYU.is_file() and VOICE.is_file(), f"缺二进制: {MIYU} / {VOICE}"
+NONOKA, VOICE = BIN_DIR / "nonoka", BIN_DIR / "nonoka-voice"
+assert NONOKA.is_file() and VOICE.is_file(), f"缺二进制: {NONOKA} / {VOICE}"
 
-WORK = Path("/tmp/miyu-voice-sync")
+WORK = Path("/tmp/nonoka-voice-sync")
 HOME, RUN_DIR, FAKEBIN = WORK / "home", WORK / "run", WORK / "bin"
 NOTIFY_LOG, STUB_LOG = WORK / "notify.log", WORK / "stub.jsonl"
 STUB_PORT, WEB_PORT = 18495, 18494
-SINK = "miyu_sync_sink"
-MODELS = Path(os.environ.get("MIYU_VOICE_MODELS_DIR", Path.home() / ".miyu/state/models"))
+SINK = "nonoka_sync_sink"
+MODELS = Path(os.environ.get("NONOKA_VOICE_MODELS_DIR", Path.home() / ".nonoka/state/models"))
 KWS = MODELS / "sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/test_wavs"
-REAL_CONFIG = Path.home() / ".miyu/config/config.jsonc"
+REAL_CONFIG = Path.home() / ".nonoka/config/config.jsonc"
 t0 = time.time()
 def say(msg): print(f"{time.time()-t0:7.2f}s {msg}", flush=True)
 
@@ -83,34 +83,34 @@ if SINK not in mods:
     load_null_sink(SINK)
 
 env = dict(os.environ)
-for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "MIYU_DIRECT"): env.pop(k, None)
-env.update(MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUN_DIR), NOTIFY_LOG=str(NOTIFY_LOG), LANG="zh_CN.UTF-8",
+for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "NONOKA_DIRECT"): env.pop(k, None)
+env.update(NONOKA_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUN_DIR), NOTIFY_LOG=str(NOTIFY_LOG), LANG="zh_CN.UTF-8",
            PATH=f"{FAKEBIN}:{env.get('PATH', '')}",
            PIPEWIRE_RUNTIME_DIR=os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"),
-           PIPEWIRE_NODE=SINK, PIPEWIRE_PROPS="{ stream.capture.sink = true }", MIYU_VOICE_DEBUG="1")
+           PIPEWIRE_NODE=SINK, PIPEWIRE_PROPS="{ stream.capture.sink = true }", NONOKA_VOICE_DEBUG="1")
 
 stub = subprocess.Popen([sys.executable, str(REPO / "testkit/low-footprint/stub_llm.py")],
                         env={**os.environ, "STUB_PORT": str(STUB_PORT), "STUB_LOG": str(STUB_LOG), "STUB_CHUNKS": "8", "STUB_DELAY_MS": "50"},
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 daemon_log = open(WORK / "daemon.log", "w")
-daemon = subprocess.Popen([str(MIYU), "__daemon", "--port", str(WEB_PORT), "--bind", "127.0.0.1"], env=env,
+daemon = subprocess.Popen([str(NONOKA), "__daemon", "--port", str(WEB_PORT), "--bind", "127.0.0.1"], env=env,
                           stdout=daemon_log, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
 
 # ---------- 播放探针 ----------
-# miyu-voice 的提示音流和播报流在 pactl 里长得一样(都是 "PipeWire ALSA [miyu-voice]"),
-# 光看流出现的时刻分不清谁是谁(提示音流会常开 30s)。做法:新出现的 miyu-voice 流
+# nonoka-voice 的提示音流和播报流在 pactl 里长得一样(都是 "PipeWire ALSA [nonoka-voice]"),
+# 光看流出现的时刻分不清谁是谁(提示音流会常开 30s)。做法:新出现的 nonoka-voice 流
 # 立刻挪到第二个 null sink(OUT),parec 录 OUT 的 monitor,按能量判"什么时候真的
 # 有声音":短促(<0.6s)的是提示音,持续的是播报。注入的测试音频在 SINK,不会串进来。
-OUT = "miyu_sync_out"
+OUT = "nonoka_sync_out"
 if OUT not in mods:
     load_null_sink(OUT)
 
 def relink_playback(node_id):
-    """把 miyu-voice 新出现的播放流用 pw-link 直连到 OUT。
+    """把 nonoka-voice 新出现的播放流用 pw-link 直连到 OUT。
 
     **不能用 `pactl move-sink-input`**:WirePlumber 会把 move 当成用户意愿记进
     ~/.local/state/wireplumber/stream-properties(按 application.name 记),此后每个
-    "PipeWire ALSA [miyu-voice]" 播放流——线上的提示音和播报——都永久落进这个 null
+    "PipeWire ALSA [nonoka-voice]" 播放流——线上的提示音和播报——都永久落进这个 null
     sink,用户就此"提示音消失、没有播报"(09-06 事故)。pw-link 直连不会被记住。"""
     nid = int(node_id)
     for _ in range(5):
@@ -135,12 +135,12 @@ def relink_playback(node_id):
         subprocess.run(["pw-link", str(port), str(dst)], capture_output=True)
 
 def check_wp_pins():
-    """回归哨兵:夹具跑完后 WirePlumber 不该记住任何 miyu-voice 流的固定目标。"""
+    """回归哨兵:夹具跑完后 WirePlumber 不该记住任何 nonoka-voice 流的固定目标。"""
     state = Path.home() / ".local/state/wireplumber/stream-properties"
     if not state.exists(): return
     for line in state.read_text().splitlines():
-        if "miyu-voice" in line and '"target"' in line:
-            say(f"!! WirePlumber 记住了 miyu-voice 流的固定目标,线上会失声,请手动清掉: {line[:140]}")
+        if "nonoka-voice" in line and '"target"' in line:
+            say(f"!! WirePlumber 记住了 nonoka-voice 流的固定目标,线上会失声,请手动清掉: {line[:140]}")
 streams = []  # (epoch, id)
 seen = set()
 stop_probe = threading.Event()
@@ -154,7 +154,7 @@ def probe():
             seen.add(sid)
             detail = subprocess.run(["pactl", "list", "sink-inputs"], capture_output=True, text=True).stdout
             block = next((part for part in detail.split("Sink Input #") if part.startswith(sid + "\n")), "")
-            if "miyu-voice" in block:
+            if "nonoka-voice" in block:
                 relink_playback(sid)  # pactl 的 sink-input id 就是 PipeWire 节点 id
                 streams.append((now, sid))
         time.sleep(0.01)
@@ -230,7 +230,7 @@ def notify_time(after, title):
     return None
 
 def socket_path():
-    found = sorted(RUN_DIR.glob("miyu*/core.sock"))
+    found = sorted(RUN_DIR.glob("nonoka*/core.sock"))
     return found[0] if found else None
 
 def play(path):
@@ -239,7 +239,7 @@ def play(path):
 rows = []
 try:
     assert wait_for(lambda: socket_path() is not None, 20, "daemon socket") and daemon.poll() is None
-    assert wait_for(lambda: http("GET", "/api/voice/status").get("attached") is True, 60, "miyu-voice attach")
+    assert wait_for(lambda: http("GET", "/api/voice/status").get("attached") is True, 60, "nonoka-voice attach")
     time.sleep(2)
     # 预热:第一次唤醒常被能量门/噪声底自适应吃掉,先喊一次不计数。
     play(Path(args.wake_wav)); time.sleep(10)
@@ -295,7 +295,7 @@ finally:
     check_wp_pins()
     label = args.label or BIN_DIR.name
     print(f"\n== {label} ({BIN_DIR})")
-    print(f"  探针: miyu-voice 流 {len(streams)} 条 {[round(s[0]-t0, 2) for s in streams]};能量样本 {len(levels)} 个,峰值 {max(levels, default=0):.3f},有声样本 {sum(1 for r in levels if r >= 0.01)}")
+    print(f"  探针: nonoka-voice 流 {len(streams)} 条 {[round(s[0]-t0, 2) for s in streams]};能量样本 {len(levels)} 个,峰值 {max(levels, default=0):.3f},有声样本 {sum(1 for r in levels if r >= 0.01)}")
     for row in rows:
         print("  " + "  ".join(f"{k}={v:.3f}" if isinstance(v, float) else f"{k}={v}" for k, v in row.items()))
     (WORK / f"result-{label}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2))

@@ -1,11 +1,11 @@
 # Nonoka 复刻路线图（自用）
 
-基线：Miyu v0.4.5，完整 fork 并全局改名为 `nonoka`。
+基线：Nonoka v0.4.5，完整 fork 并全局改名为 `nonoka`。
 
 ## 已完成
 
 - [x] 建立仓库，保留上游完整 git 历史
-- [x] 包/二进制/数据目录品牌改名：`miyu` → `nonoka`
+- [x] 包/二进制/数据目录品牌改名：`nonoka` → `nonoka`
 - [x] 资源改名：logo、壁纸、默认人格文件、表情库、matugen 模板
 - [x] 补充 NOTICE.md 与上游署名
 - [x] Rust 原生 DSH 协议客户端：RPC + `events.mux` WebSocket

@@ -1,12 +1,12 @@
 ---
 name: script-creator
-description: Write and register a Miyu script tool. Use when the user wants a new command-line script that Miyu can call as a tool, or when a script fails to register or run.
-compatibility: Miyu built-in script authoring workflow
+description: Write and register a Nonoka script tool. Use when the user wants a new command-line script that Nonoka can call as a tool, or when a script fails to register or run.
+compatibility: Nonoka built-in script authoring workflow
 ---
 
 # Script Creator
 
-A script tool is one executable file. Miyu reads the tool contract from comment lines at the top of the file, runs the file with JSON arguments, and hands stdout back to the model.
+A script tool is one executable file. Nonoka reads the tool contract from comment lines at the top of the file, runs the file with JSON arguments, and hands stdout back to the model.
 
 ## Workflow
 
@@ -18,13 +18,13 @@ A script tool is one executable file. Miyu reads the tool contract from comment 
 
 ## Runtime contract
 
-- The first line must be a shebang such as `#!/usr/bin/env python3` or `#!/bin/bash`. Miyu executes the file directly.
-- Arguments arrive as one JSON object on stdin. The same JSON is also in the environment variable `MIYU_ARGS_JSON` when it is under 64 KB.
+- The first line must be a shebang such as `#!/usr/bin/env python3` or `#!/bin/bash`. Nonoka executes the file directly.
+- Arguments arrive as one JSON object on stdin. The same JSON is also in the environment variable `NONOKA_ARGS_JSON` when it is under 64 KB.
 - Nothing is passed on argv unless the header says `# Argv: flags`. That mode additionally expands `{"query":"x","limit":5,"json":true,"dry":false}` to `--query=x --limit=5 --json`. Keys are sorted, false and null are omitted, arrays and objects become JSON strings.
 - Without a `Parameters` header the tool accepts any JSON object. The special key `stdin` then replaces the JSON on stdin with raw text.
-- Print the result to stdout and exit 0. On failure exit non-zero and print a JSON object with `ok:false`, `error` and, when the user must act, `fix`. Miyu reports the exit code and the model reads your JSON.
+- Print the result to stdout and exit 0. On failure exit non-zero and print a JSON object with `ok:false`, `error` and, when the user must act, `fix`. Nonoka reports the exit code and the model reads your JSON.
 - Default timeout is 120 seconds, maximum 300. Output beyond 20000 characters is cut before the model sees it, so cap lists and offer a `limit` parameter.
-- `MIYU_SCRIPT_CACHE_DIR` points at Miyu's cache directory. Keep login profiles, cookies and caches under it. Fall back to XDG defaults when the variable is missing so the script also works from a terminal.
+- `NONOKA_SCRIPT_CACHE_DIR` points at Nonoka's cache directory. Keep login profiles, cookies and caches under it. Fall back to XDG defaults when the variable is missing so the script also works from a terminal.
 - Default to compact human-readable output and offer `format=json` for field-by-field processing.
 
 ## Header
@@ -74,7 +74,7 @@ def fail(error, fix=None, code=2):
 
 
 def main():
-    raw = os.environ.get("MIYU_ARGS_JSON") or sys.stdin.read() or "{}"
+    raw = os.environ.get("NONOKA_ARGS_JSON") or sys.stdin.read() or "{}"
     args = json.loads(raw)
     query = args.get("query")
     if not query:
@@ -107,7 +107,7 @@ echo "result for $query"
 
 ## Rules
 
-- Never ask the user to copy files into `~/.miyu`. Register does that.
+- Never ask the user to copy files into `~/.nonoka`. Register does that.
 - Never put secrets in the header or the description.
 - Do not report the tool as working until you have called it once.
 - Keep the script self-contained. Name third-party dependencies in a comment and fail with a `fix` message when they are missing.

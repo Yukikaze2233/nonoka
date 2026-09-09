@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """claude-code 中转线「准备xx」终端真机验证(花真实订阅额度,不进 CI)。
 
-隔离 home + MIYU_DIRECT 直连 REPL(PTY),让 claude 用原生 Bash/Write 干活,
+隔离 home + NONOKA_DIRECT 直连 REPL(PTY),让 claude 用原生 Bash/Write 干活,
 然后在 PTY 原始字节里找 spinner 写出的「准备执行 / 准备编辑」。
 
-    MIYU_HOME=/tmp/miyu-ccprep/home python3 testkit/claude-code/preparing_pty.py
+    NONOKA_HOME=/tmp/nonoka-ccprep/home python3 testkit/claude-code/preparing_pty.py
 
-前提:MIYU_HOME 下 config.jsonc 激活 claude-code 供应商(建议
-plugins.claude_code.miyu_tools=off,只走原生工具,少一条桥的变量);
+前提:NONOKA_HOME 下 config.jsonc 激活 claude-code 供应商(建议
+plugins.claude_code.nonoka_tools=off,只走原生工具,少一条桥的变量);
 XDG_RUNTIME_DIR 建议同时隔离。09-06 实测(haiku):准备执行 ×11 tick、
 准备编辑 ×123 tick(Write 一个 60 行文件的窗口整段被盖住)。
 """
@@ -19,14 +19,14 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-os.environ.setdefault("MIYU_HOME", "/tmp/miyu-ccprep/home")
+os.environ.setdefault("NONOKA_HOME", "/tmp/nonoka-ccprep/home")
 os.environ.setdefault("XDG_RUNTIME_DIR", "/tmp/mx-ccprep")
 Path(os.environ["XDG_RUNTIME_DIR"]).mkdir(exist_ok=True)
 
 import run as harness  # noqa: E402
 
-HOME = Path(os.environ["MIYU_HOME"])
-WORK = Path(os.environ.get("MIYU_PROBE_WORK", "/tmp/miyu-ccprep/work"))
+HOME = Path(os.environ["NONOKA_HOME"])
+WORK = Path(os.environ.get("NONOKA_PROBE_WORK", "/tmp/nonoka-ccprep/work"))
 WORK.mkdir(parents=True, exist_ok=True)
 os.chdir(WORK)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """视频链路 E2E:假 NapCat 往隔离 daemon(8401)发带视频段的消息,本地 HTTP 供片。
 场景 A 私聊·视频段带 url;场景 B 私聊·视频段无 url(逼 get_private_file_url→get_file 兜底)+ 追问历史引用;
-场景 C 群聊 @ + 视频。全程记录 Miyu 调的 API 与回复。"""
+场景 C 群聊 @ + 视频。全程记录 Nonoka 调的 API 与回复。"""
 import base64, json, os, re, socket, struct, sys, threading, time, http.server, functools
 HERE=os.path.dirname(os.path.abspath(__file__))
 HOST, PORT, PATH = "127.0.0.1", 8401, "/ws"
@@ -57,7 +57,7 @@ REPLIES=[]; API_LOG=[]; SENT={}
 def api_data(action,params):
     if action in("send_group_msg","send_msg","send_private_msg"): return {"message_id":int(time.time()*1000)%2**31}
     if action=="get_group_info": return {"group_id":GROUP_ID,"group_name":"假群(测具)","member_count":3,"max_member_count":200}
-    if action=="get_login_info": return {"user_id":SELF_ID,"nickname":"Miyu"}
+    if action=="get_login_info": return {"user_id":SELF_ID,"nickname":"Nonoka"}
     if action=="get_group_member_info":
         return {"group_id":GROUP_ID,"user_id":int(params.get("user_id") or SENDER),"nickname":"测试群友","card":"","role":"member"}
     if action=="get_group_member_list":
@@ -89,7 +89,7 @@ def pump(ws):
             action,params=fr["action"],fr.get("params",{})
             API_LOG.append((time.time(),action,params))
             if action in("send_group_msg","send_msg","send_private_msg"):
-                REPLIES.append(params.get("message")); print(f"\n  ← Miyu 回复: {render(params.get('message'))}")
+                REPLIES.append(params.get("message")); print(f"\n  ← Nonoka 回复: {render(params.get('message'))}")
             else:
                 print(f"  [api] {action} {json.dumps(params,ensure_ascii=False)[:160]}")
             data=api_data(action,params)

@@ -25,11 +25,11 @@ AstrBot 侧 8 个插件各带一个 `pages/dashboard/`，通过 `register_web_ap
 
 共 108 项功能 / 89 个端点 / 9564 行前端。**技术栈全部同构**：原生 JS、零框架、零图表库（手写 CSS 条形图）、零 WebSocket/SSE（只有三个页面在重建索引时 2s 轮询）。90% 的页面是同一套模板：统计卡 → 筛选条 → 列表/画廊 → 分页 → 详情抽屉/弹窗 → toast + confirm。8 份代码里 `esc/toast/confirmAction/api()` 逐字重复。
 
-**不能照搬的三个原因**：① Miyu 的数据落点与 AstrBot 完全不同（见下表）；② Miyu WebUI 是 MD3 令牌体系、深色分层 surface，与 AstrBot 观感无关；③ AstrBot 的 iframe/asset_token/base64 图片全是为跨域隔离设计的，Miyu 同源直出用不着。
+**不能照搬的三个原因**：① Nonoka 的数据落点与 AstrBot 完全不同（见下表）；② Nonoka WebUI 是 MD3 令牌体系、深色分层 surface，与 AstrBot 观感无关；③ AstrBot 的 iframe/asset_token/base64 图片全是为跨域隔离设计的，Nonoka 同源直出用不着。
 
-### 2. Miyu 侧对应关系（决定每个面板"有没有数据可展示"）
+### 2. Nonoka 侧对应关系（决定每个面板"有没有数据可展示"）
 
-| 原面板 | Miyu 数据落点 | 已有 /api | 结论 |
+| 原面板 | Nonoka 数据落点 | 已有 /api | 结论 |
 |---|---|---|---|
 | persona_memory | `data/personas/<p>/memory/memory.db`（facts/episodes/memory_revisions）+ evicted_context.db（FTS5） | 只有 `POST /api/memory/reset` | **纯 UI 工作，价值最高**（09-03 调研 §5.3 已点名） |
 | mixed_knowledge_base | `data/kb/`：kb_meta.db（files 表）+ semantic_index.db + files/ | 无 | 数据齐；星图不做 |
@@ -37,7 +37,7 @@ AstrBot 侧 8 个插件各带一个 `pages/dashboard/`，通过 `register_web_ap
 | qq_group_manage | SQLite `platform_plugin_kv`（offender_history / kick_history） | **已有 3 条**（qq_history.rs）+ 设置页内嵌 UI | 扩成完整三表 + 编辑 |
 | real_context·聊天记录/发言统计 | `data/platforms/onebot/message_history/history.sqlite3` | 无 | 数据齐，统计是纯查询 |
 | real_context·好感度 | `platform_plugin_kv` 的 `affection_profile:*` | 无 | 数据齐 |
-| real_context·赞助/情绪 | **Miyu 无对应存储** | — | 不做，除非确认有需求 |
+| real_context·赞助/情绪 | **Nonoka 无对应存储** | — | 不做，除非确认有需求 |
 | file_manager | 分享文件（`shared_files` 表 + `data/shared/`）；QQ 收到的文件在 `cache/platform_files/qq/` | 已有 list/download/delete，**09-03 已补上传** | 分享面板已覆盖主功能；QQ 收文件浏览可选 |
 | deep_thinking | `data/documents/deep-thinking/` 报告文件 | 无 | 列表 + 预览即可，小 |
 | web_search 图片缓存 | `pictures/web-images/` 目录 | 无 | 最低优先级 |
@@ -46,7 +46,7 @@ AstrBot 侧 8 个插件各带一个 `pages/dashboard/`，通过 `register_web_ap
 
 **A. 挂载位置：控制台整页视图 + 左侧 rail**（`index.html` `.con-rail-item[data-console-panel]` + `.con-panel`，`app.js:9876 setConsolePanel` 懒加载分支）。现有"用量/设置"就是这个模式，新增一个面板 = HTML 加一个 rail 按钮和一个 panel div，JS 加一个懒加载分支。**不走 iframe，不做插件页面发现机制**。
 
-**B. 前端拆文件，不往 app.js（10785 行）里塞**。照 `web/shared.js` 的 `window.MiyuXxx = (() => {...})()` 模式：
+**B. 前端拆文件，不往 app.js（10785 行）里塞**。照 `web/shared.js` 的 `window.NonokaXxx = (() => {...})()` 模式：
 - `web/dashboards.js`：共享层——面板注册表、`api()` 封装（统一 `{ok,...}` 约定）、统计卡、筛选条、分页器、抽屉、confirm、toast 复用、lucide 图标小表。
 - `web/dash-memory.js`、`web/dash-kb.js`、`web/dash-memes.js`、`web/dash-groups.js`、`web/dash-chat.js`、`web/dash-reports.js`：每域一文件，各 300-600 行。
 - 每新增一个 JS 现在要改 4 处（`web/` 文件 → `mod.rs include_str!` → `assets.rs` handler + 版本化 replace → `server.rs` route）。**先做一次小重构**：`assets.rs` 改成一张 `(路径, include_str!)` 静态表 + 一个通用 handler，之后加文件只改一行。约 60 行。
@@ -132,5 +132,5 @@ mimalloc / AppConfig→Arc / 资源外置 / panic=abort（low-footprint）；P5 
 ## 调研来源
 
 - AstrBot 原型：`/home/shorin/Documents/Astrbot/data/plugins/*/pages/dashboard/`，挂载机制在 `/home/shorin/Downloads/AstrBot/astrbot/dashboard/services/plugin_page_service.py`。
-- Miyu WebUI 地形：`src/web/server.rs:263-383` 路由表、`web/app.js:9860-9890` 控制台面板、`web/shared.js` 独立面板范本、`styles.css:1-113` 令牌层。
+- Nonoka WebUI 地形：`src/web/server.rs:263-383` 路由表、`web/app.js:9860-9890` 控制台面板、`web/shared.js` 独立面板范本、`styles.css:1-113` 令牌层。
 - 已有裁定：`docs/plan/2026-09-03-optimization-survey.md`、`docs/plan/low-footprint.md`、`docs/fixed/2026-08-18-性能优化.md`。

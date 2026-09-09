@@ -59,7 +59,7 @@ docs/中有所有的计划和文档，可以自行按需阅读。
 5.1 **先证明不修时现象会出现，再修**；新回归用例退回修复前必须报红，否则守不住任何东西。
 5.2 量尺类测试标 #[ignore]；断言结果不断言耗时；性能对比看倍率不看绝对值。
 5.3 测试不受开发环境影响：终端探测（TERM/kitty）在 cfg!(test) 下走固定路径；PTY 测试等子进程真就位再断言。
-5.4 黑盒实测必须 MIYU_HOME 沙箱（普通 CLI 未知子命令会把参数当对话发给生产 daemon）。“改动没生效”先查幽灵 daemon 与测试 home 的配置残值。普通单次 CLI 阅后即焚会杀后台任务，测唤醒用 shellhook 形态。
+5.4 黑盒实测必须 NONOKA_HOME 沙箱（普通 CLI 未知子命令会把参数当对话发给生产 daemon）。“改动没生效”先查幽灵 daemon 与测试 home 的配置残值。普通单次 CLI 阅后即焚会杀后台任务，测唤醒用 shellhook 形态。
 5.5 仓库自 08-26 起 fmt-clean（`939a2feb` 全量格式化，字节基线验证提示词未变），改完直接 `cargo fmt` 即可，别再手工挑文件——遗留的「rustfmt 会顺着 mod 声明递归刷子模块」陷阱随之失效。涉及 agent/llm/registry/提示词的改动，`scripts/refactor-check.sh` 五道门禁是验收硬要求。
 5.6 报错信息是嫌疑人不是证词：先读规范/原始数据（curl 探针、协议原文、日志），最后才轮到推理。
 
@@ -71,5 +71,5 @@ docs/中有所有的计划和文档，可以自行按需阅读。
 
 ## 7. 构建与发布
 
-7.1 `src/prompts/*`、web/ 静态资源、assets 词表全部编译进二进制——改完必须重新构建，daemon 按 MIYU_BUILD_ID 判断重启。
+7.1 `src/prompts/*`、web/ 静态资源、assets 词表全部编译进二进制——改完必须重新构建，daemon 按 NONOKA_BUILD_ID 判断重启。
 7.2 发版链照 v0.4.5 流程：release commit → tag → 资产必须含 fonts/（`tar -tf` 验 + 包内二进制自报版本）→ AUR 包装包 → 本地 pacman 轮换。仓库 packaging/ 三份 PKGBUILD 是真相源，别让它与 AUR 克隆脱节。

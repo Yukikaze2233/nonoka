@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export a Hugging Face sentence-embedding model to the layout Miyu loads.
+"""Export a Hugging Face sentence-embedding model to the layout Nonoka loads.
 
     python scripts/export-embedding-model.py BAAI/bge-small-zh-v1.5 assets/models/bge-small-zh-v1.5-int8 \
         --dims 512 --pooling cls --min-score 0.35

@@ -373,7 +373,7 @@ impl MiniMaxTtsConfig {
 }
 
 fn default_wake_keywords() -> Vec<String> {
-    ["未有未有", "密友密友", "nonokanonoka", "みゆみゆ"]
+    ["诺娜诺娜", "nonokanonoka"]
         .into_iter()
         .map(str::to_string)
         .collect()

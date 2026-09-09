@@ -2844,7 +2844,7 @@
   }
 
   // 语音输入(流式听写):浏览器麦克风 → 16kHz PCM16 → WebSocket
-  // /api/voice/stream → daemon → miyu-voice(VAD/分句/识别)→ 识别一句回一句,
+  // /api/voice/stream → daemon → nonoka-voice(VAD/分句/识别)→ 识别一句回一句,
   // 逐句填进输入框。按一下开始,再按一下或 Esc 结束;静默 10 秒 daemon 自动收。
   // 按钮只在 daemon 说语音功能已启用时显示;LAN 上的 http 页面拿不到麦克风
   // (浏览器安全策略),这时提示改用本机 REPL 的 /stt。

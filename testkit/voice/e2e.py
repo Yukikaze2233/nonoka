@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """语音 v2 全链 e2e(隔离环境,不碰线上 daemon、不碰真实麦克风):
 
-  隔离 MIYU_HOME + 隔离 XDG_RUNTIME_DIR(IPC socket 不与 8300 撞)
-  桩 LLM(OpenAI 兼容 SSE)← daemon(__daemon --port) → miyu-voice(同目录)
+  隔离 NONOKA_HOME + 隔离 XDG_RUNTIME_DIR(IPC socket 不与 8300 撞)
+  桩 LLM(OpenAI 兼容 SSE)← daemon(__daemon --port) → nonoka-voice(同目录)
   PipeWire null sink 注入模型自带 test_wavs;stream.capture.sink 让采集口
   自动接到 sink 的 monitor(不会接到真实麦克风)
   假 notify-send 前置到 PATH,记录每条桌面通知
 
 验证点:
-  1. daemon 拉起 miyu-voice 并 attach(voice.status attached=true)
+  1. daemon 拉起 nonoka-voice 并 attach(voice.status attached=true)
   2. 播放含唤醒词的音频 → 通知「未有收到」(同一口气带指令时「在听」被抑制)
   3. 桩 LLM 收到一次请求;完成后通知「未有」+ 回复摘要
   4. 「语音会话」lane 里落了一轮(user + assistant)
@@ -17,7 +17,7 @@
   7. WebSocket /api/voice/stream 推 16k PCM16 → 逐句收到 dictation 文本
 
 用法: testkit/voice/e2e.py [--bin-dir target/release]
-需要: ~/.miyu/state/models 已有模型(或 MIYU_VOICE_MODELS_DIR)。
+需要: ~/.nonoka/state/models 已有模型(或 NONOKA_VOICE_MODELS_DIR)。
 """
 import argparse, base64, json, os, shutil, socket, subprocess, sys, time, threading
 from pathlib import Path
@@ -31,21 +31,21 @@ ap.add_argument("--bin-dir", default=str(REPO / "target" / "release"))
 ap.add_argument("--keep", action="store_true", help="结束后保留隔离目录")
 args = ap.parse_args()
 BIN_DIR = Path(args.bin_dir).resolve()
-MIYU = BIN_DIR / "miyu"
-VOICE = BIN_DIR / "miyu-voice"
-assert MIYU.is_file() and VOICE.is_file(), f"缺二进制: {MIYU} / {VOICE}"
+NONOKA = BIN_DIR / "nonoka"
+VOICE = BIN_DIR / "nonoka-voice"
+assert NONOKA.is_file() and VOICE.is_file(), f"缺二进制: {NONOKA} / {VOICE}"
 
-WORK = Path("/tmp/miyu-voice-e2e")
+WORK = Path("/tmp/nonoka-voice-e2e")
 HOME = WORK / "home"
 RUN_DIR = WORK / "run"
 FAKEBIN = WORK / "bin"
 NOTIFY_LOG = WORK / "notify.log"
 STUB_LOG = WORK / "stub.jsonl"
 STUB_PORT, WEB_PORT = 18493, 18492
-SINK = "miyu_test_sink"
-KWS = Path(os.environ.get("MIYU_VOICE_MODELS_DIR", Path.home() / ".miyu/state/models")) / \
+SINK = "nonoka_test_sink"
+KWS = Path(os.environ.get("NONOKA_VOICE_MODELS_DIR", Path.home() / ".nonoka/state/models")) / \
     "sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01/test_wavs"
-REAL_CONFIG = Path.home() / ".miyu/config/config.jsonc"
+REAL_CONFIG = Path.home() / ".nonoka/config/config.jsonc"
 t0 = time.time()
 def say(msg): print(f"{time.time()-t0:7.2f}s {msg}", flush=True)
 
@@ -75,23 +75,23 @@ if SINK not in mods:
     loaded_modules.append(r.stdout.strip())
 
 env = dict(os.environ)
-for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "MIYU_DIRECT"): env.pop(k, None)
-env.update(MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUN_DIR), NOTIFY_LOG=str(NOTIFY_LOG), LANG="zh_CN.UTF-8",
+for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "NONOKA_DIRECT"): env.pop(k, None)
+env.update(NONOKA_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUN_DIR), NOTIFY_LOG=str(NOTIFY_LOG), LANG="zh_CN.UTF-8",
            PATH=f"{FAKEBIN}:{env.get('PATH', '')}",
            # XDG_RUNTIME_DIR 被隔离后 PipeWire 找不到 socket,显式指回真实目录。
            PIPEWIRE_RUNTIME_DIR=os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"),
-           PIPEWIRE_NODE=SINK, PIPEWIRE_PROPS="{ stream.capture.sink = true }", MIYU_VOICE_DEBUG="1")
+           PIPEWIRE_NODE=SINK, PIPEWIRE_PROPS="{ stream.capture.sink = true }", NONOKA_VOICE_DEBUG="1")
 
 stub = subprocess.Popen([sys.executable, str(REPO / "testkit/low-footprint/stub_llm.py")],
                         env={**os.environ, "STUB_PORT": str(STUB_PORT), "STUB_LOG": str(STUB_LOG), "STUB_CHUNKS": "8", "STUB_DELAY_MS": "50"},
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 daemon_log = open(WORK / "daemon.log", "w")
-daemon = subprocess.Popen([str(MIYU), "__daemon", "--port", str(WEB_PORT), "--bind", "127.0.0.1"], env=env, stdout=daemon_log, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
+daemon = subprocess.Popen([str(NONOKA), "__daemon", "--port", str(WEB_PORT), "--bind", "127.0.0.1"], env=env, stdout=daemon_log, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
 results = {}
 
 def socket_path():
-    """MIYU_HOME 隔离时运行目录叫 miyu-<hash>,用 glob 找。"""
-    found = sorted(RUN_DIR.glob("miyu*/core.sock"))
+    """NONOKA_HOME 隔离时运行目录叫 nonoka-<hash>,用 glob 找。"""
+    found = sorted(RUN_DIR.glob("nonoka*/core.sock"))
     return found[0] if found else None
 
 def ipc(command, read_events=0, timeout=10.0):
@@ -180,7 +180,7 @@ try:
     ok = wait_for(lambda: socket_path() is not None, 20, "daemon socket")
     assert ok and daemon.poll() is None, "daemon 没起来"
     # 1. worker attach
-    ok = wait_for(lambda: http("GET", "/api/voice/status").get("attached") is True, 60, "miyu-voice attach")
+    ok = wait_for(lambda: http("GET", "/api/voice/status").get("attached") is True, 60, "nonoka-voice attach")
     status = http("GET", "/api/voice/status"); say(f"voice status: {status}")
     results["attached"] = bool(status.get("attached"))
     time.sleep(2)
@@ -191,7 +191,7 @@ try:
     results["notified_heard"] = ok
     ok = wait_for(lambda: STUB_LOG.exists() and sum(1 for l in STUB_LOG.read_text().splitlines() if '"end"' in l) >= 1, 60, "桩 LLM 完成一次请求")
     results["llm_called"] = ok
-    ok = wait_for(lambda: any(line.startswith("-a\tMiyu\t--\t未有\t") for line in notifications()), 30, "完成通知")
+    ok = wait_for(lambda: any(line.startswith("-a\tNonoka\t--\t未有\t") for line in notifications()), 30, "完成通知")
     results["notified_done"] = ok
     say("notifications:\n    " + "\n    ".join(notifications()))
     # 语音会话 lane 落库
@@ -199,8 +199,8 @@ try:
     results["voice_session_marker"] = marker.exists()
     if marker.exists():
         sid = marker.read_text().strip()
-        # 语音会话是 voice kind,不走 WebUI 的会话接口;用 `miyu voice history` 读。
-        history = subprocess.run([str(MIYU), "voice", "history", "--limit", "5"], env=env, capture_output=True, text=True, timeout=30)
+        # 语音会话是 voice kind,不走 WebUI 的会话接口;用 `nonoka voice history` 读。
+        history = subprocess.run([str(NONOKA), "voice", "history", "--limit", "5"], env=env, capture_output=True, text=True, timeout=30)
         count = sum(1 for line in history.stdout.splitlines() if line.rstrip().endswith(" user\x1b[0m"))
         say(f"voice session {sid} turns={count}")
         results["voice_session_turns"] = count

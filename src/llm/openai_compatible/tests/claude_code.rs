@@ -33,11 +33,11 @@ echo '{"type":"stream_event","event":{"type":"content_block_stop","index":1}}'
 <<<<<<< HEAD
 echo '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"mcp__nonoka__use_meme","input":{"action":"show","id":"m1"}}]}}'
 =======
-echo '{"type":"stream_event","event":{"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"toolu_1","name":"mcp__miyu__use_meme","input":{}}}}'
+echo '{"type":"stream_event","event":{"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"toolu_1","name":"mcp__nonoka__use_meme","input":{}}}}'
 echo '{"type":"stream_event","event":{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"action\":\"show\""}}}'
-echo '{"type":"stream_event","event":{"type":"content_block_start","index":3,"content_block":{"type":"tool_use","id":"toolu_q","name":"mcp__miyu__ask_question","input":{}}}}'
+echo '{"type":"stream_event","event":{"type":"content_block_start","index":3,"content_block":{"type":"tool_use","id":"toolu_q","name":"mcp__nonoka__ask_question","input":{}}}}'
 echo '{"type":"stream_event","event":{"type":"content_block_stop","index":2}}'
-echo '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"mcp__miyu__use_meme","input":{"action":"show","id":"m1"}}]}}'
+echo '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"mcp__nonoka__use_meme","input":{"action":"show","id":"m1"}}]}}'
 >>>>>>> upstream/main
 echo '{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":[{"type":"text","text":"meme sent ok"}]}]}}'
 echo '{"type":"stream_event","event":{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":10,"output_tokens":5}}}'

@@ -7,7 +7,7 @@
  * 同一套后端逻辑,这里只是把它们摆出来给人看、给人点。
  */
 (() => {
-  const D = window.MiyuDash;
+  const D = window.NonokaDash;
   if (!D) return;
 
   const state = { overview: null, filter: "all", q: "", loadSeq: 0, persona: D.recall("scripts.persona"), personas: [], active: "" };
@@ -231,7 +231,7 @@
         ["参数来源", script.parameters ? sourceLabel(script, "parameters") : "无 schema,自由 JSON 走 stdin"],
         ["超时", `${script.timeout_seconds}s${script.timeout_default ? "(默认)" : ""}`],
         ["分组 / 加载", `${script.groups.join(", ") || "—"} · ${script.load_policy} · ${script.always_loaded ? "常驻" : "按需"}`],
-        ["argv", script.argv === "flags" ? "flags:参数同时展开为 --key=value" : "none:只走 stdin JSON 与 MIYU_ARGS_JSON"],
+        ["argv", script.argv === "flags" ? "flags:参数同时展开为 --key=value" : "none:只走 stdin JSON 与 NONOKA_ARGS_JSON"],
         ["index 覆盖", overrideText]
       ]),
       script.parameters ? D.el("h4.dash-section", { text: "参数 schema" }) : null,

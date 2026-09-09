@@ -1,7 +1,7 @@
 # zhihu-search —— 给 AI 用的知乎检索脚本
 
-单文件 CLI，同时是 Miyu script 工具（stdin 传 JSON、stdout 出 Markdown 或 JSON）。
-形态对齐 `Miyu/src/scripts/goofish-search`，架构参考 `~/Projects/xhs-search`。
+单文件 CLI，同时是 Nonoka script 工具（stdin 传 JSON、stdout 出 Markdown 或 JSON）。
+形态对齐 `Nonoka/src/scripts/goofish-search`，架构参考 `~/Projects/xhs-search`。
 
 ## 用法：只需要传一个 query
 
@@ -100,6 +100,6 @@ echo '{"action":"doctor"}'                               | zhihu-search
 ## 目录
 
 ```
-zhihu-search       单文件脚本(CLI + Miyu 工具)
-index-entry.json   Miyu index.json 的注册项(尚未安装)
+zhihu-search       单文件脚本(CLI + Nonoka 工具)
+index-entry.json   Nonoka index.json 的注册项(尚未安装)
 ```

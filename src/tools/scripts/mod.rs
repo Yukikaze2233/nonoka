@@ -28,7 +28,11 @@ const MAX_SCRIPT_OUTPUT_CHARS: usize = 20_000;
 /// 只走 stdin——stdin 那份永远在,环境变量只是让脚本少写一段读管道的代码。
 const MAX_ARGS_ENV_BYTES: usize = 64 * 1024;
 
-pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, paths: &NonokaPaths) {
+pub fn register(
+    registry: &mut ToolRegistry,
+    config: &crate::config::AppConfig,
+    paths: &NonokaPaths,
+) {
     // 内置脚本装在 <system>/personas/default/ 下,自定义人格天然扫不到——
     // 别人换上自定义人格拿到纯净状态(09-01)。覆盖链与四层细节见
     // script_scan_roots。启动这一次也走指纹路径,后续回合只在目录变了才重扫。

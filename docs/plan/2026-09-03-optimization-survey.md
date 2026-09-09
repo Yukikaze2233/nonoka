@@ -86,14 +86,14 @@
 
 ## 4. 工程面漂移
 
-- 无 CI。`cargo test --offline` 13 s 全过，网络测试均已标 ignore，`tests/daemon_reload.rs` 用 tempfile + MIYU_HOME 隔离可进 CI。加 fmt+clippy(不带 -D warnings)+test 三道门约 20 分钟，前提先清那 9 处 fmt diff。
+- 无 CI。`cargo test --offline` 13 s 全过，网络测试均已标 ignore，`tests/daemon_reload.rs` 用 tempfile + NONOKA_HOME 隔离可进 CI。加 fmt+clippy(不带 -D warnings)+test 三道门约 20 分钟，前提先清那 9 处 fmt diff。
 - `scripts/refactor-check.sh` 实际在 `test_scripts/refactor-check.sh`，AGENTS 5.5 与 wiki/14 §4 路径写错。
 - 三份 PKGBUILD 停 0.4.5，Cargo.toml 已 0.4.6（发版中间态，但无机制提醒）。
 - `docs/wiki/05` 的 `loading_mode` 默认值仍写 stub 且介绍已删除的 hybrid 档；代码 09-01 已改 full。
 - `docs/wiki/08` §3 读起来像"配了 embedding 联想就会用"，实际 `recall.rs` 无 embedding 分支，只有 `evicted.rs:214` 一处用向量。
 - 模型可见的中文错误回灌 5 处（`message_history/tools/mod.rs:587`、`message_recall.rs:155,184,197`、`access_manager.rs:98`），违反 AGENTS 1.5。
 - `test_scripts/check-model-english.sh` 已存在，可挂 CI。
-- crossterm 0.28（直接）与 0.29（经 termimad→coolor/crokey）双版本；fancy-regex 0.14（ratex-parser）与 0.17 双版本。termimad 唯一用途是 `miyu history` 回放，导致 history 与 REPL 观感是两套。
+- crossterm 0.28（直接）与 0.29（经 termimad→coolor/crokey）双版本；fancy-regex 0.14（ratex-parser）与 0.17 双版本。termimad 唯一用途是 `nonoka history` 回放，导致 history 与 REPL 观感是两套。
 - 六种哈希 crate 各司其职（sha1/sha3/md5/blake2/crc32fast 五个全部且仅服务 `hash_codec` 工具），不建议收敛。
 - `[profile.release]` 未设 `opt-level`（默认 3），`lto = "thin"`；可量一次 `lto = "fat"`。
 
@@ -105,7 +105,7 @@
 4. **MCP**：每次调用新起子进程（`src/tools/mcp.rs:164-172`），有状态 server 用不了；无 HTTP/SSE；config TUI 无 MCP 项。
 5. **dev 模式**：无 git 只读工具、不读项目 AGENTS.md/CLAUDE.md、无文件级 undo、B2 未修。
 6. **voice 分支**：落后 main 264 commit，改的 `src/web.rs`、`src/tools/memes.rs` 在 main 已不存在；建议先只合 TTS 约 400 行。
-7. 缺 `miyu usage` / `miyu doctor` / `miyu history --export`；无版本更新提示（默认知识库反而有）。
+7. 缺 `nonoka usage` / `nonoka doctor` / `nonoka history --export`；无版本更新提示（默认知识库反而有）。
 8. 平台配置 `platforms.qq` 硬编码单字段（`config/platform.rs:94`），web 侧 12 文件有 qq 硬编码；上 Telegram 前必须先泛化。
 9. 终端：颜色 100% 硬编码，`PRIMARY_STYLE` 256 色 189 在亮色终端不可读；无 `NO_COLOR`、非 TTY 不自动 plain（全仓仅 `daemon_log.rs:24` 读 NO_COLOR）；config_tui 零颜色；缺 Ctrl+A/E/K/U、Ctrl+R；Tab 只在唯一候选时补全；`![](url)` 不出图；chafa 缺失时图片直接报错而公式有三级降级；费用显示 `usage_view.rs` 文件头承诺了但未实现；`is_native_kitty` 精确等于 `xterm-kitty`。
 10. WebUI：无跟随系统主题（`setTheme` 里 `[data-theme-choice]` 是死代码）；无 gzip（首屏 ~700 KB 明文）；设置面板无 `platforms.*` 表单；`/workspace` `/history` 无 GUI 入口；`.session-time` 9.5px 对比度约 3.4:1；模态无 focus trap。做得好的：移动端适配、reduced-motion、隐藏页暂停动画、CSP 无 unsafe-inline、SSE 双水位重放。

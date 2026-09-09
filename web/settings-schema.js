@@ -591,13 +591,13 @@
       id: "voice",
       title: "语音功能",
       description:
-        "麦克风常开的唤醒词对话与听写。识别在本机独立的 miyu-voice 进程里跑,关着时零占用;" +
+        "麦克风常开的唤醒词对话与听写。识别在本机独立的 nonoka-voice 进程里跑,关着时零占用;" +
         "首次启用会下载约 190MB 识别模型。改动需重载配置生效。",
       fields: [
         {
           path: "voice.enabled",
           label: "语音唤醒",
-          hint: "麦克风常开、唤醒词、听写。需要安装 miyu-voice;与文本转语音独立",
+          hint: "麦克风常开、唤醒词、听写。需要安装 nonoka-voice;与文本转语音独立",
           kind: "toggle",
           default: false,
         },
@@ -697,7 +697,7 @@
         {
           path: "voice.tts.enabled",
           label: "文本转语音",
-          hint: "唤醒对话的回复合成成语音播出;也给模型提供 speak 工具主动说话。与语音唤醒独立,任一开启都会运行 miyu-voice",
+          hint: "唤醒对话的回复合成成语音播出;也给模型提供 speak 工具主动说话。与语音唤醒独立,任一开启都会运行 nonoka-voice",
           kind: "toggle",
           default: false,
         },

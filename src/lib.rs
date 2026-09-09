@@ -7,8 +7,8 @@
 
 mod agent;
 mod alarm;
-pub(crate) mod backend;
 mod args;
+pub(crate) mod backend;
 mod cli;
 mod clipboard;
 mod config;

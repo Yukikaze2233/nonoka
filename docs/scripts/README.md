@@ -1,14 +1,14 @@
-# Miyu 脚本工具接口
+# Nonoka 脚本工具接口
 
-一个脚本工具 = 一个可执行文件。Miyu 从文件开头的注释里读工具契约，用 JSON 传参把它跑起来，再把 stdout 交给模型。本文是编写者（人或 AI）的接口说明；模型侧的同一份契约在内置技能 `script-creator`（`src/skills/script-creator.md`）里。
+一个脚本工具 = 一个可执行文件。Nonoka 从文件开头的注释里读工具契约，用 JSON 传参把它跑起来，再把 stdout 交给模型。本文是编写者（人或 AI）的接口说明；模型侧的同一份契约在内置技能 `script-creator`（`src/skills/script-creator.md`）里。
 
 ## 目录与优先级
 
 | 层 | 目录 | 说明 |
 |---|---|---|
-| 内置 | `/usr/share/miyu/scripts/personas/default/` | 随包安装，只有默认人格看得到 |
-| 全局 | `~/.miyu/data/scripts/` | 所有人格可见 |
-| 人格 | `~/.miyu/data/scripts/personas/<人格>/` | 只有该人格可见，`manage_script` 默认落在这里 |
+| 内置 | `/usr/share/nonoka/scripts/personas/default/` | 随包安装，只有默认人格看得到 |
+| 全局 | `~/.nonoka/data/scripts/` | 所有人格可见 |
+| 人格 | `~/.nonoka/data/scripts/personas/<人格>/` | 只有该人格可见，`manage_script` 默认落在这里 |
 
 同名（同 id）后者覆盖前者。每层目录下可有一个 `index.json`，它是**覆盖层**：条目里显式写了的字段压住脚本头部，没写的从头部补；`disabled` 名单能屏蔽本层和更低层的同名脚本（内置脚本只能这样屏蔽）。
 
@@ -47,12 +47,12 @@
 
 ## 运行时契约
 
-- **传参**：全部参数作为一个 JSON 对象写进 stdin；同一份 JSON 在 64KB 以内时也放在环境变量 `MIYU_ARGS_JSON`。
+- **传参**：全部参数作为一个 JSON 对象写进 stdin；同一份 JSON 在 64KB 以内时也放在环境变量 `NONOKA_ARGS_JSON`。
 - **argv**：默认不传。`Argv: flags` 时额外展开为 `--key=value`：字符串/数字 `--query=x --limit=5`，`true` 只给 `--json`，`false`/`null` 省略，数组和对象给紧凑 JSON 字符串。键按字典序。
 - **无 schema 时**：工具接受任意对象；特殊键 `stdin`（字符串）会替换 stdin 里的 JSON，原文透传。
-- **输出**：结果打到 stdout；退出码 0 成功。失败时非零退出并输出 `{"ok":false,"error":"…","fix":"用户该做什么"}`。Miyu 回给模型的是 `{success, exit_code, stdout, stderr}`。
+- **输出**：结果打到 stdout；退出码 0 成功。失败时非零退出并输出 `{"ok":false,"error":"…","fix":"用户该做什么"}`。Nonoka 回给模型的是 `{success, exit_code, stdout, stderr}`。
 - **上限**：单流 8MiB 硬截断，展示 20000 字符软截断。列表类结果要给 `limit` 参数。
-- **缓存目录**：`MIYU_SCRIPT_CACHE_DIR` 指向 Miyu 的缓存目录，登录态、cookie、中间产物放这里；变量不存在（终端直接跑）时退回 XDG 默认。
+- **缓存目录**：`NONOKA_SCRIPT_CACHE_DIR` 指向 Nonoka 的缓存目录，登录态、cookie、中间产物放这里；变量不存在（终端直接跑）时退回 XDG 默认。
 - **输出格式**：默认紧凑可读，提供 `format=json` 供逐字段处理。
 
 ## 用 manage_script 注册
@@ -81,7 +81,7 @@ def fail(error, fix=None, code=2):
     sys.exit(code)
 
 def main():
-    raw = os.environ.get("MIYU_ARGS_JSON") or sys.stdin.read() or "{}"
+    raw = os.environ.get("NONOKA_ARGS_JSON") or sys.stdin.read() or "{}"
     args = json.loads(raw)
     query = args.get("query") or fail("query is required")
     print(f"result for {query}")
